@@ -1,256 +1,209 @@
-# Sandra
+# Sandra — AI Assistant for the EdLight Ecosystem
 
-**Sandra** is the AI assistant for the **EdLight ecosystem**.
+<p align="center">
+  <strong>Sandra</strong> is the unified AI assistant for all EdLight initiatives.<br/>
+  She supports Haitian Creole, French, and English.
+</p>
 
-Sandra is designed to serve as the unified conversational interface connecting all EdLight platforms. Through natural language conversations, Sandra helps users access education, programs, news, and digital tools across the EdLight ecosystem.
+---
 
-Sandra supports **Haitian Creole, French, and English** and is designed to interact through multiple channels including web chat, messaging platforms, and voice.
+## What is Sandra?
 
-The long-term vision is for Sandra to become the **AI backbone of EdLight**, enabling users to access all EdLight services through simple conversation.
+Sandra is the central conversational AI platform for the EdLight ecosystem. She is designed to:
+
+- **Answer questions** about EdLight platforms and initiatives
+- **Guide users** to the right EdLight platform for their needs
+- **Support multilingual** interactions (English, French, Haitian Creole)
+- **Index and learn** from EdLight GitHub repositories automatically
+- **Use tools** to search knowledge, look up repositories, and take actions
+- **Work across channels** — web chat, WhatsApp, Instagram, email, and voice
+
+## EdLight Ecosystem
+
+Sandra currently supports these EdLight initiatives:
+
+| Platform | Repository | Description |
+|----------|-----------|-------------|
+| EdLight Code | [edlinitiative/code](https://github.com/edlinitiative/code) | Core codebase and platform |
+| EdLight Academy | [edlinitiative/EdLight-Academy](https://github.com/edlinitiative/EdLight-Academy) | Educational platform and learning resources |
+| EdLight News | [edlinitiative/EdLight-News](https://github.com/edlinitiative/EdLight-News) | News and community updates |
+| EdLight Initiative | [edlinitiative/EdLight-Initiative](https://github.com/edlinitiative/EdLight-Initiative) | Organization and community hub |
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│                   Channels                       │
+│   Web Chat │ WhatsApp │ Instagram │ Email │ Voice│
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │   Sandra Agent  │  ← Orchestration loop
+              │   Orchestrator  │    (tool calls, retrieval, memory)
+              └────────┬────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+    ┌──────────┐ ┌──────────┐ ┌──────────┐
+    │ AI       │ │ Knowledge│ │  Tools   │
+    │ Provider │ │ (RAG)    │ │ Registry │
+    │ (OpenAI) │ │          │ │          │
+    └──────────┘ └──────────┘ └──────────┘
+          │            │            │
+          │      ┌─────┴─────┐     │
+          │      │  Vector   │     │
+          │      │  Store    │     │
+          │      └───────────┘     │
+          │                        │
+    ┌─────┴────────────────────────┴─────┐
+    │           Memory Layer              │
+    │   Session Memory │ User Memory      │
+    └────────────────────────────────────┘
+          │
+    ┌─────┴─────────────┐
+    │   GitHub Indexer   │
+    │   (Repo content)   │
+    └───────────────────┘
+```
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS
+- **Database**: PostgreSQL + Prisma
+- **AI**: OpenAI (provider-agnostic abstraction)
+- **Vector Store**: In-memory (upgradeable to Pinecone/Qdrant/pgvector)
+- **Validation**: Zod
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL (optional for development — memory stores are used by default)
+- OpenAI API key
+
+### Setup
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment file
+cp .env.example .env
+
+# 3. Add your OpenAI API key to .env
+#    OPENAI_API_KEY=sk-your-key-here
+
+# 4. Generate Prisma client
+npm run db:generate
+
+# 5. (Optional) Push schema to database
+#    Requires PostgreSQL running
+npm run db:push
+
+# 6. Start development server
+npm run dev
+```
+
+### Access
+
+- **Home**: http://localhost:3000
+- **Chat**: http://localhost:3000/chat
+- **Admin**: http://localhost:3000/admin
+- **Health**: http://localhost:3000/api/health
+
+## How Indexing Works
+
+1. Repositories are registered in `src/lib/github/config.ts`
+2. The indexer fetches README and docs from each repo via GitHub API
+3. Content is chunked into overlapping segments
+4. Chunks are embedded using OpenAI embeddings
+5. Embedded chunks are stored in the vector store
+6. During chat, relevant chunks are retrieved via similarity search
+
+Trigger indexing via:
+- Admin panel → "Index All Repositories" button
+- API: `POST /api/index`
+
+## How the Agent Loop Works
+
+1. User sends a message through a channel (web, WhatsApp, etc.)
+2. The channel adapter normalizes the message
+3. The agent loads session memory (conversation history) and user memory (long-term facts)
+4. Retrieval: the knowledge base is searched for relevant context
+5. A system prompt is built with identity, language, context, and tool awareness
+6. The LLM is called with the full message history and tool definitions
+7. If the LLM requests tool calls, they are executed and the loop continues
+8. The final response is returned to the user
+9. Messages are saved to session memory
+
+## How to Add New Initiatives
+
+1. Add a new entry to `DEFAULT_REPOS` in `src/lib/github/config.ts`:
+   ```typescript
+   {
+     owner: 'edlinitiative',
+     name: 'New-Repo',
+     displayName: 'EdLight New Platform',
+     description: 'Description of the new platform.',
+     url: 'https://github.com/edlinitiative/New-Repo',
+     branch: 'main',
+     docsPath: 'docs/',
+     isActive: true,
+   }
+   ```
+2. Trigger indexing via the admin panel or API
+3. Sandra will automatically include the new content in her knowledge base
+
+## API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/chat` | Send a message to Sandra |
+| `GET` | `/api/conversations/[sessionId]` | Get conversation history |
+| `GET` | `/api/repos` | List registered repositories |
+| `POST` | `/api/index` | Trigger repo indexing |
+| `GET` | `/api/health` | System health check |
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── chat/              # Chat page
+│   ├── admin/             # Admin page
+│   └── layout.tsx         # Root layout
+├── components/            # React components
+│   ├── chat/             # Chat UI components
+│   ├── admin/            # Admin UI components
+│   ├── layout/           # Layout components
+│   └── ui/               # Base UI primitives
+└── lib/                   # Core business logic
+    ├── agents/           # Sandra agent orchestration
+    ├── ai/               # AI provider abstraction
+    ├── channels/         # Channel adapters
+    ├── config/           # Environment & constants
+    ├── db/               # Database client
+    ├── github/           # GitHub integration
+    ├── i18n/             # Multilingual support
+    ├── knowledge/        # RAG pipeline
+    ├── memory/           # Session & user memory
+    ├── tools/            # Tool framework
+    └── utils/            # Shared utilities
+```
 
 ## Documentation
 
-Full product documentation is available below:
-
-- [Product Requirements Document](docs/PRD.md)
-
----
-
-# Vision
-
-Sandra is not just a chatbot. She is designed as an **agentic AI system** capable of interacting with multiple EdLight services and learning from new initiatives automatically.
-
-Instead of navigating multiple platforms, users will be able to simply ask Sandra questions such as:
-
-- How can I learn coding?
-- What scholarships are available?
-- How do I apply to the EdLight Summer Leadership Program?
-- What are today’s important news headlines?
-
-Sandra retrieves the relevant information and guides users through the appropriate EdLight platform.
-
----
-
-# Core Capabilities
-
-## Conversational AI
-
-Sandra supports natural conversation in:
-
-- Haitian Creole
-- French
-- English
-
-Users can interact with Sandra through both **text and voice**.
-
----
-
-## Voice Interaction
-
-Sandra is designed to support live voice communication.
-
-Users will be able to:
-
-- Speak with Sandra over phone calls
-- Send voice messages
-- Receive spoken responses
-
-This is particularly important for accessibility in environments where literacy or internet access may be limited.
-
----
-
-## Multi-Platform Communication
-
-Sandra can communicate across multiple platforms including:
-
-### Web
-- Embedded assistant on EdLight websites
-
-### Messaging
-- WhatsApp
-- Instagram
-- Email
-
-### Voice
-- Voice calls
-- Voice messages
-
-These integrations allow users to access EdLight services through the platforms they already use.
-
----
-
-# EdLight Ecosystem Integration
-
-Sandra connects and interacts with multiple EdLight platforms.
-
-Current repositories within the ecosystem include:
-
-- https://github.com/edlinitiative/code
-- https://github.com/edlinitiative/EdLight-News
-- https://github.com/edlinitiative/EdLight-Initiative
-- https://github.com/edlinitiative/EdLight-Academy
-
-Sandra can retrieve information, guide users, and automate workflows across these systems.
-
----
-
-# Automatic Ecosystem Expansion
-
-Sandra is designed to expand automatically as new EdLight initiatives are created.
-
-When a new EdLight repository is added:
-
-1. Sandra scans the repository
-2. Documentation and README files are indexed
-3. APIs and services are connected
-4. The initiative becomes part of Sandra’s knowledge base
-
-This architecture allows Sandra to evolve alongside the EdLight ecosystem.
-
----
-
-# Architecture
-
-Sandra is built using a modular AI architecture.
-
-## Interface Layer
-
-Handles all user interactions.
-
-Examples include:
-
-- Web chat widgets
-- WhatsApp bot
-- Instagram messaging
-- Email assistant
-- Voice interface
-
----
-
-## Agent Layer
-
-The reasoning engine responsible for:
-
-- Understanding user requests
-- Selecting appropriate tools
-- Managing conversations
-- Generating responses
-
----
-
-## Knowledge Layer
-
-Sandra maintains a structured knowledge base containing information from:
-
-- EdLight platforms
-- Documentation repositories
-- Educational content
-- Public datasets
-
----
-
-## Integration Layer
-
-This layer connects Sandra to the EdLight ecosystem via APIs.
-
-Examples include:
-
-- EdLight Code course data
-- EdLight Academy learning content
-- EdLight News articles
-- EdLight program information
-
----
-
-## Communication Layer
-
-Handles integrations with external platforms.
-
-Examples include:
-
-- WhatsApp Business API
-- Instagram messaging APIs
-- Email services
-- Voice services
-
----
-
-# Example Use Cases
-
-Sandra can help users with tasks such as:
-
-## Education
-
-- Recommending courses
-- Explaining technical concepts
-- Guiding users through learning paths
-
-## Programs
-
-- Explaining EdLight initiatives
-- Helping users apply to programs
-- Answering eligibility questions
-
-## News
-
-- Summarizing important news
-- Delivering daily briefings
-- Explaining global events
-
-## Platform Support
-
-- Helping users navigate EdLight platforms
-- Answering frequently asked questions
-- Providing onboarding guidance
-
----
-
-# Future Capabilities
-
-Planned features include:
-
-- Real-time AI tutoring
-- Personalized learning assistants
-- Scholarship discovery tools
-- AI mentorship for leadership programs
-- Voice-based education tools
-- Low-bandwidth and offline support
-
-Sandra is designed to become the **AI infrastructure powering the EdLight ecosystem.**
-
----
-
-# Contributing
-
-Sandra is an evolving project and contributions are welcome.
-
-Areas where contributions may be helpful include:
-
-- AI engineering
-- Creole language processing
-- Voice technologies
-- Messaging platform integrations
-- Platform integrations
-- Educational tooling
-
----
-
-# About EdLight
-
-EdLight is a technology-driven education initiative focused on expanding access to education and leadership development for youth in Haiti and beyond.
-
-The ecosystem includes initiatives such as:
-
-- EdLight Academy
-- EdLight Code
-- EdLight News
-- EdLight Summer Leadership Program
-- EdLight Labs
-
-Sandra is designed to serve as the AI layer connecting these initiatives and making them accessible to a broader audience.
-
----
-
-# License
-
-This project is released under the Apache 2.0 License.
+- [Product Requirements](docs/PRD.md)
+- [Architecture](docs/architecture.md)
+- [Agent System](docs/agent-system.md)
+- [Integrations](docs/integrations.md)
+- [Roadmap](docs/roadmap.md)
+
+## License
+
+Internal — EdLight Initiative

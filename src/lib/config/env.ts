@@ -1,0 +1,55 @@
+import { z } from 'zod';
+
+/**
+ * Runtime-validated environment configuration.
+ * Fails fast on startup if required vars are missing.
+ */
+const envSchema = z.object({
+  // Core
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
+  APP_SECRET: z.string().min(8).default('change-me-to-a-random-secret'),
+
+  // Database
+  DATABASE_URL: z.string().default('postgresql://sandra:sandra@localhost:5432/sandra?schema=public'),
+
+  // OpenAI
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_MODEL: z.string().default('gpt-4o'),
+  OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+
+  // GitHub
+  GITHUB_TOKEN: z.string().default(''),
+  GITHUB_ORG: z.string().default('edlinitiative'),
+
+  // Vector Store
+  VECTOR_STORE_PROVIDER: z.enum(['memory', 'pinecone', 'qdrant', 'weaviate']).default('memory'),
+  VECTOR_STORE_URL: z.string().optional(),
+  VECTOR_STORE_API_KEY: z.string().optional(),
+
+  // Logging
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+function loadEnv(): Env {
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    console.error('❌ Invalid environment variables:');
+    for (const issue of parsed.error.issues) {
+      console.error(`  ${issue.path.join('.')}: ${issue.message}`);
+    }
+    // In development, continue with defaults; in production, fail hard
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Missing required environment variables');
+    }
+    // Return parsed data with defaults applied
+    return envSchema.parse({});
+  }
+
+  return parsed.data;
+}
+
+export const env = loadEnv();

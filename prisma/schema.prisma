@@ -1,0 +1,160 @@
+// =============================================================================
+// Sandra — Prisma Schema
+// =============================================================================
+// PostgreSQL-ready schema for the Sandra AI platform.
+// Run `npx prisma db push` or `npx prisma migrate dev` to apply.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  externalId     String?   @unique // ID from external auth provider
+  name           String?
+  email          String?   @unique
+  language       String    @default("en") // en | fr | ht
+  channel        String    @default("web") // web | whatsapp | instagram | email | voice
+  metadata       Json?     // Flexible extra data
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions       Session[]
+  memories       Memory[]
+
+  @@index([email])
+  @@index([externalId])
+}
+
+// ── Sessions ─────────────────────────────────────────────────────────────────
+
+model Session {
+  id             String    @id @default(cuid())
+  userId         String?
+  channel        String    @default("web")
+  language       String    @default("en")
+  title          String?
+  metadata       Json?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages       Message[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+// ── Messages ─────────────────────────────────────────────────────────────────
+
+model Message {
+  id             String    @id @default(cuid())
+  sessionId      String
+  role           String    // user | assistant | system | tool
+  content        String
+  language       String?
+  toolName       String?   // If role=tool, which tool produced this
+  toolCallId     String?   // Correlation ID for tool calls
+  metadata       Json?     // Token counts, latency, model used, etc.
+  createdAt      DateTime  @default(now())
+
+  session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ── Memory (long-term user facts) ────────────────────────────────────────────
+
+model Memory {
+  id             String    @id @default(cuid())
+  userId         String
+  key            String    // e.g., "preferred_language", "name", "interests"
+  value          String
+  source         String?   // How was this learned? "conversation", "profile", etc.
+  confidence     Float     @default(1.0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+// ── Knowledge: Indexed Sources ───────────────────────────────────────────────
+
+model IndexedSource {
+  id             String    @id @default(cuid())
+  name           String    // e.g., "EdLight Academy"
+  type           String    // github_repo | website | document | manual
+  url            String?
+  owner          String?   // GitHub org/user
+  repo           String?   // GitHub repo name
+  branch         String?   @default("main")
+  lastIndexedAt  DateTime?
+  status         String    @default("pending") // pending | indexing | indexed | error
+  documentCount  Int       @default(0)
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  documents      IndexedDocument[]
+
+  @@unique([type, url])
+  @@index([status])
+}
+
+// ── Knowledge: Indexed Documents ─────────────────────────────────────────────
+
+model IndexedDocument {
+  id             String    @id @default(cuid())
+  sourceId       String
+  title          String?
+  path           String?   // File path or URL path within the source
+  content        String    // Raw text content
+  chunkIndex     Int       @default(0) // Position in chunked sequence
+  chunkTotal     Int       @default(1) // Total chunks for this document
+  contentHash    String?   // For dedup / change detection
+  embedding      Bytes?    // Serialized embedding vector (for simple local store)
+  metadata       Json?     // Extra fields: language, section, etc.
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  source         IndexedSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([contentHash])
+  @@index([path])
+}
+
+// ── Repo Registry ────────────────────────────────────────────────────────────
+
+model RepoRegistry {
+  id             String    @id @default(cuid())
+  owner          String    // GitHub org or user
+  name           String    // Repo name
+  displayName    String    // Human-friendly name
+  description    String?
+  url            String
+  branch         String    @default("main")
+  docsPath       String?   // Path within repo to docs, e.g., "docs/"
+  isActive       Boolean   @default(true)
+  lastSyncAt     DateTime?
+  syncStatus     String    @default("pending") // pending | syncing | synced | error
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([owner, name])
+  @@index([isActive])
+}

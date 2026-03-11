@@ -1,0 +1,50 @@
+import { z } from 'zod';
+import { ValidationError } from './errors';
+
+/**
+ * Validate data against a Zod schema, throwing a structured error on failure.
+ */
+export function validate<T>(schema: z.ZodSchema<T>, data: unknown, context?: string): T {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+    throw new ValidationError(
+      context ? `${context}: validation failed` : 'Validation failed',
+      { issues },
+    );
+  }
+  return result.data;
+}
+
+/**
+ * Generate a short ID from uuid v4 (first 8 chars).
+ */
+export function shortId(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
+
+/**
+ * Truncate a string to a max length with ellipsis.
+ */
+export function truncate(str: string, max: number): string {
+  if (str.length <= max) return str;
+  return str.slice(0, max - 3) + '...';
+}
+
+/**
+ * Sleep for a given number of milliseconds.
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Safely parse JSON, returning null on failure.
+ */
+export function safeJsonParse<T = unknown>(str: string): T | null {
+  try {
+    return JSON.parse(str) as T;
+  } catch {
+    return null;
+  }
+}
