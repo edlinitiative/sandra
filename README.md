@@ -8,6 +8,12 @@ Sandra supports **Haitian Creole, French, and English** and is designed to inter
 
 The long-term vision is for Sandra to become the **AI backbone of EdLight**, enabling users to access all EdLight services through simple conversation.
 
+## Documentation
+
+Full product documentation is available below:
+
+- [Product Requirements Document](docs/PRD.md)
+
 ---
 
 # Vision
