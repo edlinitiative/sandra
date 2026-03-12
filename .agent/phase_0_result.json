@@ -11,5 +11,5 @@
     "src/lib/__tests__/helpers.ts",
     "src/lib/__tests__/setup.test.ts"
   ],
-  "notes": "Installed Vitest 4.x with @vitejs/plugin-react. Created vitest.config.ts with @/ alias, globals:true, environment:node, passWithNoTests:true. Added test/test:watch/test:coverage npm scripts. Created mock Prisma client (7 models, vi.fn stubs), mock AIProvider (chat/embed/health with canned responses), and fixture factories. All 8 smoke tests pass; tsc and next lint are clean."
+  "notes": "Installed Vitest 4.x with @vitejs/plugin-react. Created vitest.config.ts with @/ alias, globals:true, environment:node, passWithNoTests:true. Added test/test:watch/test:coverage npm scripts. Created mock Prisma client (7 models, vi.fn stubs), mock AIProvider (chat/embed/health with canned responses), and fixture factories. All 8 smoke tests pass; tsc and next lint are clean. Verification pass (2026-03-12): 104 tests across 12 files all pass, tsc --noEmit clean, next lint no warnings/errors."
 }
