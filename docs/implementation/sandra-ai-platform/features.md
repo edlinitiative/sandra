@@ -184,7 +184,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F2, F6, F12
 - **Blocks:** F1, F11
 - **User Stories:** US-14, US-15
-- **Tasks:** T090–T096
+- **Tasks:** T090–T094, T096
 - **PRD Reference:** Section 14 (Infrastructure — Backend Server)
 - **Key Deliverables:**
   - POST /api/chat — main chat endpoint (accepts message, sessionId, language)
@@ -220,7 +220,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F4, F9
 - **Blocks:** None
 - **User Stories:** US-20, US-21
-- **Tasks:** T107–T111
+- **Tasks:** T107–T109, T111
 - **PRD Reference:** Section 8 (Automatic Ecosystem Expansion)
 - **Key Deliverables:**
   - GET /api/repos — list indexed repositories with status

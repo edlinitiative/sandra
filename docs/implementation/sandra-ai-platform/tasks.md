@@ -10,11 +10,11 @@
 
 ## Progress Summary
 
-- **Total tasks:** 88
+- **Total tasks:** 86
 - **Completed:** 0
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 88
+- **Remaining:** 86
 
 ---
 
@@ -139,8 +139,7 @@
 - [ ] T092 POST /api/chat/stream SSE endpoint (depends: T090, T066)
 - [ ] T093 GET /api/conversations/[sessionId] endpoint (depends: T090, T030)
 - [ ] T094 [P] GET /api/health endpoint (depends: T090)
-- [ ] T095 Zod validation on all routes (verification pass) (depends: T018, T091, T092, T093)
-- [ ] T096 API layer unit tests (depends: T091, T092, T093, T094, T095, T002)
+- [ ] T096 API layer unit tests (depends: T091, T092, T093, T094, T002)
 
 ### Task 4.2: Web Chat Interface (F1)
 
@@ -160,8 +159,7 @@
 - [ ] T107 API key authentication middleware (x-api-key header) (depends: T015, T016)
 - [ ] T108 GET /api/repos endpoint (list repos with status) (depends: T107, T090, T013)
 - [ ] T109 POST /api/index endpoint (trigger indexing) (depends: T107, T090, T072)
-- [ ] T110 Indexing status response formatting (depends: T108, T109, T074)
-- [ ] T111 Admin endpoints unit tests (depends: T107, T108, T109, T110, T002)
+- [ ] T111 Admin endpoints unit tests (depends: T107, T108, T109, T002)
 
 ---
 

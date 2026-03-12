@@ -31,14 +31,14 @@
 | US-11 | Ecosystem navigation | F2 | T061, T063, T067, T068 | [ ] |
 | US-12 | Repository indexing | F4 | T069, T070, T072, T073, T075, T121 | [ ] |
 | US-13 | Incremental re-indexing | F4 | T071, T072, T074, T075, T121 | [ ] |
-| US-14 | Chat API endpoint | F9 | T090, T091, T092, T093, T095, T096 | [ ] |
+| US-14 | Chat API endpoint | F9 | T090, T091, T092, T093, T096 | [ ] |
 | US-15 | Health check endpoint | F9 | T094, T096 | [ ] |
 | US-16 | Web chat interaction | F1 | T097, T098, T099, T102, T105, T106, T120 | [ ] |
 | US-17 | Streaming responses | F1 | T100, T101, T106 | [ ] |
 | US-18 | Mobile-friendly chat | F1 | T105, T106 | [ ] |
 | US-19 | Suggested questions | F1 | T103, T106 | [ ] |
 | US-20 | Trigger repository indexing | F11 | T107, T109, T111 | [ ] |
-| US-21 | View indexing status | F11 | T107, T108, T110, T111 | [ ] |
+| US-21 | View indexing status | F11 | T107, T108, T111 | [ ] |
 
 ---
 

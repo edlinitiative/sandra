@@ -120,10 +120,14 @@ Complete the main chat endpoint that accepts user messages and returns agent res
 - [ ] Returns: `{ success: true, data: { response: string, sessionId: string }, meta: { requestId: string } }`
 - [ ] Invalid input returns 400 with validation error details
 - [ ] Agent errors return 500 with user-friendly error message
+- [ ] All chat-related routes (POST /api/chat, POST /api/chat/stream, GET /api/conversations/[sessionId]) validate input with the appropriate Zod schema (chatInputSchema, sessionIdSchema)
+- [ ] All validation errors across routes return 400 with `{ success: false, error: { code: 'VALIDATION_ERROR', message: '...', details: [...] } }`
 
 #### Files to Create/Modify
 
 - `src/app/api/chat/route.ts` — (modify) complete POST handler
+- `src/app/api/chat/stream/route.ts` — (verify) Zod validation in place
+- `src/app/api/conversations/[sessionId]/route.ts` — (verify) Zod validation in place
 
 #### Implementation Notes
 
@@ -132,11 +136,16 @@ Complete the main chat endpoint that accepts user messages and returns agent res
 - Use `withRequestId` wrapper for request tracing
 - Catch and handle errors: ValidationError → 400, ProviderError → 502, others → 500
 - Log: request received, agent called, response sent (with requestId and duration)
+- Wrap Zod parse in try-catch: `catch (e) { if (e instanceof ZodError) return errorResponse(new ValidationError(e.message), requestId) }`
+- Use Zod's `flatten()` method for structured field errors in the `details` field
+- Verify all POST endpoints reject empty or malformed bodies with 400
 
 #### Evaluation Checklist
 
 - [ ] `curl -X POST /api/chat -d '{"message":"hi"}' -H 'Content-Type: application/json'` returns success
 - [ ] `curl -X POST /api/chat -d '{}'` returns 400 validation error
+- [ ] All POST endpoints reject empty or malformed bodies with 400
+- [ ] Error responses follow the standard envelope format
 
 ---
 
@@ -145,7 +154,7 @@ Complete the main chat endpoint that accepts user messages and returns agent res
 **PRD Reference:** Section 14 (Backend Server)
 **Depends on:** T090, T066 (agent streaming)
 **Blocks:** T096
-**User Stories:** US-14, US-15
+**User Stories:** US-14
 **Estimated scope:** 1 hour
 
 #### Description
@@ -259,49 +268,10 @@ Complete the health check endpoint that verifies Sandra's dependencies are acces
 
 ---
 
-### T095: Zod Validation on All Routes
-
-**PRD Reference:** Section 15 (Security and Privacy)
-**Depends on:** T018 (validation schemas), T091, T092, T093
-**Blocks:** T096
-**User Stories:** US-14
-**Estimated scope:** 30 min
-
-#### Description
-
-Verify that all API routes use Zod validation for input and return consistent error responses for invalid requests.
-
-#### Acceptance Criteria
-
-- [ ] POST /api/chat validates body with `chatInputSchema`
-- [ ] POST /api/chat/stream validates body with `chatInputSchema`
-- [ ] GET /api/conversations/[sessionId] validates sessionId with `sessionIdSchema`
-- [ ] POST /api/index validates body with `indexInputSchema`
-- [ ] All validation errors return 400 with `{ success: false, error: { code: 'VALIDATION_ERROR', message: '...', details: [...] } }`
-
-#### Files to Create/Modify
-
-- `src/app/api/chat/route.ts` — (modify) ensure validation is in place
-- `src/app/api/chat/stream/route.ts` — (modify) ensure validation is in place
-- `src/app/api/conversations/[sessionId]/route.ts` — (modify) ensure validation is in place
-
-#### Implementation Notes
-
-- Wrap Zod parse in try-catch: `catch (e) { if (e instanceof ZodError) return errorResponse(new ValidationError(e.message), requestId) }`
-- Zod's `flatten()` method can produce structured field errors for the `details` field
-- This is a verification/completion task — most routes should already have validation from their implementation tasks
-
-#### Evaluation Checklist
-
-- [ ] All POST endpoints reject empty or malformed bodies with 400
-- [ ] Error responses follow the standard envelope format
-
----
-
 ### T096: API Layer Unit Tests
 
 **PRD Reference:** N/A (quality)
-**Depends on:** T091, T092, T093, T094, T095, T002
+**Depends on:** T091, T092, T093, T094, T002
 **Blocks:** Nothing
 **User Stories:** US-14, US-15
 **Estimated scope:** 1 hour 30 min
@@ -799,10 +769,15 @@ Implement the admin endpoint to list all registered repositories with their inde
 - [ ] Returns: `{ success: true, data: { repos: [...], totalDocuments: number } }`
 - [ ] Each repo includes: name, displayName, url, syncStatus, lastIndexedAt, documentCount
 - [ ] Repos sorted by name alphabetically
+- [ ] Sync status values formatted as: "not_indexed", "indexing", "indexed", "error"
+- [ ] Timestamps formatted as ISO 8601 strings
+- [ ] Document counts are integers
+- [ ] Error details included when status is "error"
 
 #### Files to Create/Modify
 
 - `src/app/api/repos/route.ts` — (modify) complete GET handler
+- `src/app/api/index/route.ts` — (verify) ensure response formatting consistency
 
 #### Implementation Notes
 
@@ -811,11 +786,15 @@ Implement the admin endpoint to list all registered repositories with their inde
 - Use `getActiveRepos()` from data access helpers
 - For documentCount, join with IndexedDocument count per source
 - `totalDocuments`: sum of all documentCounts across repos
+- Map Prisma dates to ISO strings: `date.toISOString()`
+- Map enum values to lowercase strings
+- Include `lastIndexedAt: null` for repos that have never been indexed
 
 #### Evaluation Checklist
 
 - [ ] `curl /api/repos -H 'x-api-key: valid'` returns repo list
 - [ ] `curl /api/repos` without API key returns 401
+- [ ] API responses have consistent date and status formatting
 
 ---
 
@@ -862,47 +841,10 @@ Implement the admin endpoint to trigger repository indexing.
 
 ---
 
-### T110: Indexing Status Response Formatting
-
-**PRD Reference:** Section 8 (Automatic Ecosystem Expansion)
-**Depends on:** T108, T109, T074 (job tracking)
-**Blocks:** T111
-**User Stories:** US-21
-**Estimated scope:** 15 min
-
-#### Description
-
-Ensure indexing status is properly formatted in API responses with human-readable timestamps and status values.
-
-#### Acceptance Criteria
-
-- [ ] Sync status values: "not_indexed", "indexing", "indexed", "error"
-- [ ] Timestamps formatted as ISO 8601 strings
-- [ ] Document counts are integers
-- [ ] Error details included when status is "error"
-
-#### Files to Create/Modify
-
-- `src/app/api/repos/route.ts` — (modify) ensure response formatting
-- `src/app/api/index/route.ts` — (modify) ensure response formatting
-
-#### Implementation Notes
-
-- This is a formatting/verification task — ensure the API responses are clean and consistent
-- Map Prisma dates to ISO strings: `date.toISOString()`
-- Map enum values to lowercase strings
-- Include `lastIndexedAt: null` for repos that have never been indexed
-
-#### Evaluation Checklist
-
-- [ ] API responses have consistent date and status formatting
-
----
-
 ### T111: Admin Endpoints Unit Tests
 
 **PRD Reference:** N/A (quality)
-**Depends on:** T107, T108, T109, T110, T002
+**Depends on:** T107, T108, T109, T002
 **Blocks:** Nothing
 **User Stories:** US-20, US-21
 **Estimated scope:** 45 min

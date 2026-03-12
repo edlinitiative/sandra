@@ -3,7 +3,7 @@
 ## Current Status
 
 - **Phase:** 0 (not started)
-- **Tasks completed:** 0 / 88
+- **Tasks completed:** 0 / 86
 - **Test coverage:** N/A
 - **Last session:** N/A
 
