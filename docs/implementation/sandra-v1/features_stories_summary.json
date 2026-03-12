@@ -1,6 +1,0 @@
-{
-  "feature_count": 12,
-  "story_count": 25,
-  "feature_ids": ["F11", "F8", "F12", "F9", "F7", "F5", "F4", "F3", "F2", "F10", "F1", "F6"],
-  "categories": ["Foundation & Infrastructure", "Authentication & Sessions", "Agent Core", "Knowledge Pipeline", "API Layer", "User Interface"]
-}
