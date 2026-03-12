@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** 0 (completed)
-- **Tasks completed:** 3 / 86
-- **Test coverage:** 8 tests, all passing
+- **Phase:** 1 (completed)
+- **Tasks completed:** 23 / 86
+- **Test coverage:** 104 tests, all passing
 - **Last session:** 2026-03-12
 
 ## Phase Completion Loop
@@ -72,14 +72,34 @@ Each phase follows an implement → review → fix cycle:
 **Quality:** tsc --noEmit clean, next lint clean, vitest run 8/8
 **Next:** Phase 1 — Foundation
 
-### Session 2 — YYYY-MM-DD
+### Session 2 — 2026-03-12
 
-**Goal:** Review Phase 0 implementation
-**Issues Found:** (count)
-**Fixes Applied:**
-- (Fix description)
-**Tests Added:** (count)
-**Regressions:** None
-**Coverage:** (updated %)
-**Quality:** (status)
-**Next:** Phase 1 — Foundation
+**Goal:** Implement Phase 1 — Foundation
+**Completed:** T010, T011, T012, T013, T014, T015, T016, T017, T018, T019, T020, T021, T022, T023, T024, T025, T026, T027, T028, T029
+**Infrastructure Updates Applied:** None
+**Blockers:**
+- PostgreSQL not running in sandbox; migration SQL created manually but could not be applied with `prisma migrate dev`. `prisma generate` succeeded and produced typed client.
+**Discoveries:**
+- Prisma `metadata: Record<string, unknown>` requires explicit cast to `Prisma.InputJsonValue` for Json field types.
+- New `resolveLanguage()` signature (`{ explicit?, sessionLanguage? }`) broke existing API route calls that passed a plain string; fixed by updating callers to use named param.
+- `AIProvider` interface needed `streamChatCompletion` and `generateEmbedding` methods added; all consumers updated.
+**Changes:**
+- `prisma/schema.prisma` — added MessageRole/SyncStatus enums, changed embedding to Float[], compound indexes
+- `prisma/migrations/20260312000000_v1_foundation/` — migration SQL for all 7 tables
+- `src/lib/db/sessions.ts` — createSession, getSessionById, getSessionMessages, updateSession
+- `src/lib/db/messages.ts` — createMessage, getMessagesBySessionId
+- `src/lib/db/repos.ts` — getActiveRepos, getRepoByOwnerAndName, updateRepoSyncStatus
+- `src/lib/db/documents.ts` — createIndexedDocument, getDocumentsBySourceId, getDocumentByHash
+- `src/lib/utils/errors.ts` — added AuthError (401), ToolError (500)
+- `src/lib/config/env.ts` — added ADMIN_API_KEY optional field
+- `src/lib/utils/logger.ts` — JSON format, withRequestId(), default logger export
+- `src/lib/utils/validation.ts` — sanitizeInput, chatInputSchema, indexInputSchema, sessionIdSchema
+- `src/lib/ai/types.ts` — StreamChunk type, streamChatCompletion + generateEmbedding on AIProvider
+- `src/lib/ai/openai.ts` — streamChatCompletion (async generator), generateEmbedding
+- `src/lib/i18n/types.ts` — Language alias, LanguageConfig, DEFAULT_LANGUAGE, isValidLanguage
+- `src/lib/i18n/languages.ts` — resolveLanguage({explicit, sessionLanguage}), getLanguageInstruction
+- `src/lib/agents/prompts.ts` — getSandraSystemPrompt(language, tools)
+- 9 new test files (104 total tests, all passing)
+**Coverage:** 104/104 tests pass
+**Quality:** tsc --noEmit clean, next lint clean, vitest run 104/104
+**Next:** Phase 2 — Core Engine
