@@ -1,0 +1,13 @@
+{
+  "phase_count": 6,
+  "task_count": 88,
+  "task_id_range": "T001-T129",
+  "phase_filenames": [
+    "phase0_test_infrastructure.md",
+    "phase1_foundation.md",
+    "phase2_core_engine.md",
+    "phase3_agent_and_indexing.md",
+    "phase4_interface_layer.md",
+    "phase5_integration_and_polish.md"
+  ]
+}

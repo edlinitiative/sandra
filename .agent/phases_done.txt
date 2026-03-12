@@ -1,0 +1,5 @@
+Output directory: docs/implementation/sandra-ai-platform
+Phases: 6
+Total tasks: 88
+Phase documents: phase0_test_infrastructure.md, phase1_foundation.md, phase2_core_engine.md, phase3_agent_and_indexing.md, phase4_interface_layer.md, phase5_integration_and_polish.md
+Task ID range: T001-T129

@@ -36,7 +36,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** None
 - **Blocks:** F6, F3, F4
 - **User Stories:** US-01
-- **Tasks:** TBD
+- **Tasks:** T010–T014
 - **PRD Reference:** Section 14 (Infrastructure — Database)
 - **Key Deliverables:**
   - Finalized Prisma schema with all V1 models (User, Session, Message, Memory, IndexedSource, IndexedDocument, RepoRegistry)
@@ -52,7 +52,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** None
 - **Blocks:** F5, F9
 - **User Stories:** US-02
-- **Tasks:** TBD
+- **Tasks:** T015–T019
 - **PRD Reference:** Section 15 (Security and Privacy)
 - **Key Deliverables:**
   - SandraError subclasses for all error categories (validation, auth, not-found, provider, tool)
@@ -69,7 +69,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** None
 - **Blocks:** F2, F3
 - **User Stories:** US-03
-- **Tasks:** TBD
+- **Tasks:** T020–T025
 - **PRD Reference:** Section 14 (Infrastructure — AI Model)
 - **Key Deliverables:**
   - AIProvider interface with chat completion, tool calling, and streaming methods
@@ -85,7 +85,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** None
 - **Blocks:** F2, F9
 - **User Stories:** US-04
-- **Tasks:** TBD
+- **Tasks:** T026–T029
 - **PRD Reference:** Section 11 (Multilingual Support)
 - **Key Deliverables:**
   - Language enum (en, fr, ht) and type definitions
@@ -101,7 +101,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F10
 - **Blocks:** F2, F9
 - **User Stories:** US-05, US-06
-- **Tasks:** TBD
+- **Tasks:** T030–T034
 - **PRD Reference:** Section 13 (Agent Components — Memory System)
 - **Key Deliverables:**
   - Session creation, retrieval, and update operations via Prisma
@@ -117,7 +117,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F12
 - **Blocks:** F2
 - **User Stories:** US-07
-- **Tasks:** TBD
+- **Tasks:** T035–T040
 - **PRD Reference:** Section 13 (Agent Components — Tool System)
 - **Key Deliverables:**
   - Tool interface with name, description, inputSchema, requiredScopes, handler
@@ -133,7 +133,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F8, F10
 - **Blocks:** F4, F2 (via searchKnowledgeBase tool)
 - **User Stories:** US-08
-- **Tasks:** TBD
+- **Tasks:** T041–T046
 - **PRD Reference:** Section 12 (Knowledge Layer), Section 14 (Knowledge Index)
 - **Key Deliverables:**
   - Markdown-aware document chunker with configurable chunk size
@@ -150,7 +150,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F5, F6, F7, F8
 - **Blocks:** F9
 - **User Stories:** US-09, US-10, US-11
-- **Tasks:** TBD
+- **Tasks:** T060–T068
 - **PRD Reference:** Section 13 (Sandra Agent System Design)
 - **Key Deliverables:**
   - ReAct-style agent loop: input → context → LLM → tool calls → response
@@ -167,7 +167,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F3
 - **Blocks:** F11
 - **User Stories:** US-12, US-13
-- **Tasks:** TBD
+- **Tasks:** T069–T075
 - **PRD Reference:** Section 7 (EdLight Ecosystem Integration), Section 8 (Automatic Ecosystem Expansion)
 - **Key Deliverables:**
   - GitHub API client for fetching repository documentation files
@@ -184,7 +184,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F2, F6, F12
 - **Blocks:** F1, F11
 - **User Stories:** US-14, US-15
-- **Tasks:** TBD
+- **Tasks:** T090–T096
 - **PRD Reference:** Section 14 (Infrastructure — Backend Server)
 - **Key Deliverables:**
   - POST /api/chat — main chat endpoint (accepts message, sessionId, language)
@@ -202,7 +202,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F9, F8
 - **Blocks:** None
 - **User Stories:** US-16, US-17, US-18, US-19
-- **Tasks:** TBD
+- **Tasks:** T097–T106
 - **PRD Reference:** Section 5 (Supported Platforms — Web), Section 6 (Conversational AI)
 - **Key Deliverables:**
   - Chat container component with message list and input area
@@ -220,7 +220,7 @@ F7: Multilingual ─────────────────────
 - **Depends on:** F4, F9
 - **Blocks:** None
 - **User Stories:** US-20, US-21
-- **Tasks:** TBD
+- **Tasks:** T107–T111
 - **PRD Reference:** Section 8 (Automatic Ecosystem Expansion)
 - **Key Deliverables:**
   - GET /api/repos — list indexed repositories with status

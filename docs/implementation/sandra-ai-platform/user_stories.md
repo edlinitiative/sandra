@@ -18,27 +18,27 @@
 
 | US ID | Title | Feature | Task(s) | Status |
 |-------|-------|---------|---------|--------|
-| US-01 | Database schema setup | F10 | TBD | [ ] |
-| US-02 | Structured error handling | F12 | TBD | [ ] |
-| US-03 | LLM provider integration | F8 | TBD | [ ] |
-| US-04 | Language selection | F7 | TBD | [ ] |
-| US-05 | Conversation persistence | F6 | TBD | [ ] |
-| US-06 | Session context continuity | F6 | TBD | [ ] |
-| US-07 | Tool-based data access | F5 | TBD | [ ] |
-| US-08 | Knowledge base search | F3 | TBD | [ ] |
-| US-09 | Conversational Q&A | F2 | TBD | [ ] |
-| US-10 | Multi-turn reasoning | F2 | TBD | [ ] |
-| US-11 | Ecosystem navigation | F2 | TBD | [ ] |
-| US-12 | Repository indexing | F4 | TBD | [ ] |
-| US-13 | Incremental re-indexing | F4 | TBD | [ ] |
-| US-14 | Chat API endpoint | F9 | TBD | [ ] |
-| US-15 | Health check endpoint | F9 | TBD | [ ] |
-| US-16 | Web chat interaction | F1 | TBD | [ ] |
-| US-17 | Streaming responses | F1 | TBD | [ ] |
-| US-18 | Mobile-friendly chat | F1 | TBD | [ ] |
-| US-19 | Suggested questions | F1 | TBD | [ ] |
-| US-20 | Trigger repository indexing | F11 | TBD | [ ] |
-| US-21 | View indexing status | F11 | TBD | [ ] |
+| US-01 | Database schema setup | F10 | T010, T011, T012, T013, T014 | [ ] |
+| US-02 | Structured error handling | F12 | T015, T016, T017, T018, T019, T123, T126 | [ ] |
+| US-03 | LLM provider integration | F8 | T020, T021, T022, T023, T024, T025 | [ ] |
+| US-04 | Language selection | F7 | T026, T027, T028, T029, T104, T122 | [ ] |
+| US-05 | Conversation persistence | F6 | T030, T031, T034, T124 | [ ] |
+| US-06 | Session context continuity | F6 | T032, T033, T034, T124 | [ ] |
+| US-07 | Tool-based data access | F5 | T035, T036, T037, T038, T039, T040 | [ ] |
+| US-08 | Knowledge base search | F3 | T041, T042, T043, T044, T045, T046 | [ ] |
+| US-09 | Conversational Q&A | F2 | T060, T061, T062, T063, T067, T120 | [ ] |
+| US-10 | Multi-turn reasoning | F2 | T063, T064, T065, T066, T067, T068 | [ ] |
+| US-11 | Ecosystem navigation | F2 | T061, T063, T067, T068 | [ ] |
+| US-12 | Repository indexing | F4 | T069, T070, T072, T073, T075, T121 | [ ] |
+| US-13 | Incremental re-indexing | F4 | T071, T072, T074, T075, T121 | [ ] |
+| US-14 | Chat API endpoint | F9 | T090, T091, T092, T093, T095, T096 | [ ] |
+| US-15 | Health check endpoint | F9 | T094, T096 | [ ] |
+| US-16 | Web chat interaction | F1 | T097, T098, T099, T102, T105, T106, T120 | [ ] |
+| US-17 | Streaming responses | F1 | T100, T101, T106 | [ ] |
+| US-18 | Mobile-friendly chat | F1 | T105, T106 | [ ] |
+| US-19 | Suggested questions | F1 | T103, T106 | [ ] |
+| US-20 | Trigger repository indexing | F11 | T107, T109, T111 | [ ] |
+| US-21 | View indexing status | F11 | T107, T108, T110, T111 | [ ] |
 
 ---
 
@@ -57,7 +57,7 @@
 - [ ] Prisma client is generated and all models are accessible with full TypeScript types
 - [ ] Each model has appropriate indexes for query performance (e.g., Session by userId, Message by sessionId)
 
-**Feature:** F10 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F10 | **Tasks:** T010–T014 | **Priority:** Must-have
 
 ---
 
@@ -72,7 +72,7 @@
 - [ ] Structured logger outputs JSON logs with timestamp, level, message, and optional requestId
 - [ ] Zod schemas exist for all API route input validation and produce user-friendly error messages
 
-**Feature:** F12 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F12 | **Tasks:** T015–T019 | **Priority:** Must-have
 
 ---
 
@@ -87,7 +87,7 @@
 - [ ] Embedding generation uses text-embedding-3-small and returns a float array
 - [ ] Provider is instantiated via a factory function configured by environment variables
 
-**Feature:** F8 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F8 | **Tasks:** T020–T025 | **Priority:** Must-have
 
 ---
 
@@ -102,7 +102,7 @@
 - [ ] Default language is English when no preference is specified
 - [ ] User language preference is stored and retrieved for returning users within a session
 
-**Feature:** F7 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F7 | **Tasks:** T026–T029 | **Priority:** Must-have
 
 ---
 
@@ -119,7 +119,7 @@
 - [ ] Sessions are associated with an optional user ID for future auth integration
 - [ ] Deleting or expiring old sessions does not break active conversations
 
-**Feature:** F6 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F6 | **Tasks:** T030–T034 | **Priority:** Must-have
 
 ---
 
@@ -133,7 +133,7 @@
 - [ ] Session context window has a configurable maximum message count to avoid exceeding LLM token limits
 - [ ] Context loading completes within an acceptable time for sessions with up to 50 messages
 
-**Feature:** F6 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F6 | **Tasks:** T030–T034 | **Priority:** Must-have
 
 ---
 
@@ -150,7 +150,7 @@
 - [ ] Tool execution errors are caught and returned to the agent as structured error messages, not thrown exceptions
 - [ ] Three MVP tools are registered: searchKnowledgeBase, getEdLightInitiatives, lookupRepoInfo
 
-**Feature:** F5 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F5 | **Tasks:** T035–T040 | **Priority:** Must-have
 
 ---
 
@@ -165,7 +165,7 @@
 - [ ] The top-K most relevant chunks are returned with similarity scores and source metadata
 - [ ] The retrieval module returns results within acceptable latency for interactive use (< 2 seconds)
 
-**Feature:** F3 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F3 | **Tasks:** T041–T046 | **Priority:** Must-have
 
 ---
 
@@ -180,7 +180,7 @@
 - [ ] The agent responds in the language specified by the request
 - [ ] The full request-response cycle completes within acceptable latency for conversational interaction
 
-**Feature:** F2 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F2 | **Tasks:** T060–T068 | **Priority:** Must-have
 
 ---
 
@@ -195,7 +195,7 @@
 - [ ] Each tool call and result is included in the LLM context for the next iteration
 - [ ] The final response synthesizes information from all tool calls made during the turn
 
-**Feature:** F2 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F2 | **Tasks:** T060–T068 | **Priority:** Must-have
 
 ---
 
@@ -210,7 +210,7 @@
 - [ ] The agent uses lookupRepoInfo and getEdLightInitiatives tools to provide accurate platform information
 - [ ] Responses include actionable next steps (e.g., "Visit EdLight Code to start learning" with context)
 
-**Feature:** F2 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F2 | **Tasks:** T060–T068 | **Priority:** Must-have
 
 ---
 
@@ -227,7 +227,7 @@
 - [ ] The indexing job reports success or failure with details about documents processed
 - [ ] Indexing completes successfully for all four EdLight repositories: code, EdLight-News, EdLight-Initiative, EdLight-Academy
 
-**Feature:** F4 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F4 | **Tasks:** T069–T075 | **Priority:** Must-have
 
 ---
 
@@ -242,7 +242,7 @@
 - [ ] The indexing job report includes counts of: skipped, updated, and newly added documents
 - [ ] Re-indexing a repository with no changes completes quickly with zero embedding API calls
 
-**Feature:** F4 | **Tasks:** TBD | **Priority:** Should-have
+**Feature:** F4 | **Tasks:** T069–T075 | **Priority:** Should-have
 
 ---
 
@@ -260,7 +260,7 @@
 - [ ] All endpoints validate input with Zod and return structured error responses for invalid requests
 - [ ] All responses include a unique requestId for tracing
 
-**Feature:** F9 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F9 | **Tasks:** T090–T096 | **Priority:** Must-have
 
 ---
 
@@ -274,7 +274,7 @@
 - [ ] The endpoint responds within 5 seconds even under load
 - [ ] An unhealthy state returns an appropriate HTTP error status with details about which dependency failed
 
-**Feature:** F9 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F9 | **Tasks:** T090–T096 | **Priority:** Must-have
 
 ---
 
@@ -289,7 +289,7 @@
 - [ ] A loading/typing indicator is visible while waiting for the response
 - [ ] The chat maintains session continuity — refreshing the page within the same browser session restores the conversation
 
-**Feature:** F1 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F1 | **Tasks:** T097–T106 | **Priority:** Must-have
 
 ---
 
@@ -304,7 +304,7 @@
 - [ ] Network interruptions during streaming display a user-friendly error message
 - [ ] Streaming works correctly on low-bandwidth connections (tokens buffer and render progressively)
 
-**Feature:** F1 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F1 | **Tasks:** T097–T106 | **Priority:** Must-have
 
 ---
 
@@ -318,7 +318,7 @@
 - [ ] Message bubbles wrap text correctly and are readable on small screens
 - [ ] The chat component does not require excessive client-side JavaScript (lightweight for low-bandwidth)
 
-**Feature:** F1 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F1 | **Tasks:** T097–T106 | **Priority:** Must-have
 
 ---
 
@@ -332,7 +332,7 @@
 - [ ] Suggested questions are displayed in the user's selected language
 - [ ] The suggested questions disappear once the conversation begins
 
-**Feature:** F1 | **Tasks:** TBD | **Priority:** Should-have
+**Feature:** F1 | **Tasks:** T097–T106 | **Priority:** Should-have
 
 ---
 
@@ -347,7 +347,7 @@
 - [ ] Attempting to index a non-existent repository returns a 404 error with a clear message
 - [ ] Concurrent indexing requests for the same repository are handled gracefully (queued or rejected with explanation)
 
-**Feature:** F11 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F11 | **Tasks:** T107–T111 | **Priority:** Must-have
 
 ---
 
@@ -361,4 +361,4 @@
 - [ ] Repositories that have never been indexed show status "not_indexed" with null timestamp
 - [ ] The response includes the total count of indexed documents across all repositories
 
-**Feature:** F11 | **Tasks:** TBD | **Priority:** Must-have
+**Feature:** F11 | **Tasks:** T107–T111 | **Priority:** Must-have
