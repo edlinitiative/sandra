@@ -74,8 +74,8 @@ Sandra currently supports these EdLight initiatives:
 - **Styling**: Tailwind CSS
 - **Database**: PostgreSQL + Prisma
 - **AI**: OpenAI (provider-agnostic abstraction)
-- **Vector Store**: pgvector on PostgreSQL for persistent semantic search in production; in-memory store may be used only for local development/testing- **Validation**: Zod
-
+- **Vector Store**: pgvector on PostgreSQL in production, with optional in-memory fallback for local development
+ 
 ## Getting Started
 
 ### Prerequisites
