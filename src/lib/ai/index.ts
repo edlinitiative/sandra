@@ -4,6 +4,7 @@ export type {
   MessageRole,
   ChatCompletionRequest,
   ChatCompletionResponse,
+  StreamChunk,
   EmbeddingRequest,
   EmbeddingResponse,
   ToolDefinition,

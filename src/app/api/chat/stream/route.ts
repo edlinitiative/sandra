@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const { message, userId, channel } = parsed.data;
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
-    const language = resolveLanguage(parsed.data.language);
+    const language = resolveLanguage({ explicit: parsed.data.language });
 
     const encoder = new TextEncoder();
 

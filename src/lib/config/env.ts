@@ -27,6 +27,9 @@ const envSchema = z.object({
   VECTOR_STORE_URL: z.string().optional(),
   VECTOR_STORE_API_KEY: z.string().optional(),
 
+  // Admin
+  ADMIN_API_KEY: z.string().optional(),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });

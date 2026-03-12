@@ -1,2 +1,12 @@
-export { SUPPORTED_LANGUAGES, LANGUAGES, type SupportedLanguage, type LanguageMeta } from './types';
-export { resolveLanguage, getLanguageInfo, languagePromptInstruction } from './languages';
+export {
+  SUPPORTED_LANGUAGES,
+  LANGUAGES,
+  LANGUAGE_CONFIGS,
+  DEFAULT_LANGUAGE,
+  isValidLanguage,
+  type SupportedLanguage,
+  type Language,
+  type LanguageMeta,
+  type LanguageConfig,
+} from './types';
+export { resolveLanguage, normalizeLanguageCode, getLanguageInfo, getLanguageInstruction, languagePromptInstruction } from './languages';

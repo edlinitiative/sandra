@@ -10,34 +10,53 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 };
 
 function shouldLog(level: LogLevel): boolean {
+  if (level === 'debug' && process.env.NODE_ENV === 'production') return false;
   return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[env.LOG_LEVEL];
 }
 
-function formatMessage(level: LogLevel, context: string, message: string, meta?: Record<string, unknown>): string {
-  const timestamp = new Date().toISOString();
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
-  return `[${timestamp}] [${level.toUpperCase()}] [${context}] ${message}${metaStr}`;
+function logEntry(
+  level: LogLevel,
+  context: string,
+  message: string,
+  meta: Record<string, unknown>,
+): void {
+  if (!shouldLog(level)) return;
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      context,
+      message,
+      ...meta,
+    }),
+  );
 }
 
 /**
  * Lightweight structured logger.
- * Outputs to console; replace with a transport (e.g., Pino) for production.
+ * Outputs JSON to console; each entry includes timestamp, level, context, message, and any extra fields.
  */
-export function createLogger(context: string) {
+export function createLogger(context: string, boundMeta: Record<string, unknown> = {}) {
   return {
     debug(message: string, meta?: Record<string, unknown>) {
-      if (shouldLog('debug')) console.debug(formatMessage('debug', context, message, meta));
+      logEntry('debug', context, message, { ...boundMeta, ...meta });
     },
     info(message: string, meta?: Record<string, unknown>) {
-      if (shouldLog('info')) console.info(formatMessage('info', context, message, meta));
+      logEntry('info', context, message, { ...boundMeta, ...meta });
     },
     warn(message: string, meta?: Record<string, unknown>) {
-      if (shouldLog('warn')) console.warn(formatMessage('warn', context, message, meta));
+      logEntry('warn', context, message, { ...boundMeta, ...meta });
     },
     error(message: string, meta?: Record<string, unknown>) {
-      if (shouldLog('error')) console.error(formatMessage('error', context, message, meta));
+      logEntry('error', context, message, { ...boundMeta, ...meta });
+    },
+    withRequestId(requestId: string) {
+      return createLogger(context, { ...boundMeta, requestId });
     },
   };
 }
+
+/** Default application-level logger */
+export const logger = createLogger('app');
 
 export type Logger = ReturnType<typeof createLogger>;

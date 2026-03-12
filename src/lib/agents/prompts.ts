@@ -1,5 +1,6 @@
-import type { SupportedLanguage } from '@/lib/i18n/types';
-import { languagePromptInstruction } from '@/lib/i18n';
+import type { SupportedLanguage, Language } from '@/lib/i18n/types';
+import { languagePromptInstruction, getLanguageInstruction } from '@/lib/i18n';
+import type { ToolDefinition } from '@/lib/ai/types';
 import { APP_NAME } from '@/lib/config';
 
 /**
@@ -59,6 +60,47 @@ Guidelines:
 - When discussing EdLight platforms, use the knowledge base search tool for accurate information.
 - Be concise but thorough. Avoid unnecessary filler.
 - If the user seems to need a specific platform, proactively suggest it.
+- Remember context from the conversation.`);
+
+  return parts.join('\n\n');
+}
+
+/**
+ * Build Sandra's system prompt with tool definitions.
+ * Used by the agent runtime for each conversation turn.
+ */
+export function getSandraSystemPrompt(params: {
+  language: Language;
+  tools?: ToolDefinition[];
+}): string {
+  const { language, tools = [] } = params;
+  const parts: string[] = [];
+
+  // Core identity
+  parts.push(`You are ${APP_NAME}, the AI assistant for the EdLight ecosystem.
+
+EdLight is an organization dedicated to education and technology. The EdLight ecosystem includes:
+- **EdLight Code**: The core codebase and development platform
+- **EdLight Academy**: Educational platform and learning resources
+- **EdLight News**: News and updates for the EdLight community
+- **EdLight Initiative**: The organization and community hub
+
+You are friendly, knowledgeable, and helpful. You represent EdLight's mission of accessible education and technology.`);
+
+  // Language instruction
+  parts.push(getLanguageInstruction(language));
+
+  // Tool awareness
+  if (tools.length > 0) {
+    const toolDescriptions = tools.map((t) => `- **${t.name}**: ${t.description}`).join('\n');
+    parts.push(`You have access to the following tools:\n${toolDescriptions}\n\nUse them when they would help answer the user's question accurately.`);
+  }
+
+  // Behavioral guidelines
+  parts.push(`Guidelines:
+- If you don't have specific information, say so honestly rather than making things up.
+- When discussing EdLight platforms, use the knowledge base search tool for accurate information.
+- Be concise but thorough. Avoid unnecessary filler.
 - Remember context from the conversation.`);
 
   return parts.join('\n\n');

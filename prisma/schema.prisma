@@ -14,6 +14,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum MessageRole {
+  user
+  assistant
+  system
+  tool
+}
+
+enum SyncStatus {
+  not_indexed
+  indexing
+  indexed
+  error
+}
+
 // ── Users ────────────────────────────────────────────────────────────────────
 
 model User {
@@ -50,24 +66,23 @@ model Session {
   user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages       Message[]
 
-  @@index([userId])
-  @@index([isActive])
+  @@index([userId, isActive])
 }
 
 // ── Messages ─────────────────────────────────────────────────────────────────
 
 model Message {
-  id             String    @id @default(cuid())
+  id             String      @id @default(cuid())
   sessionId      String
-  role           String    // user | assistant | system | tool
+  role           MessageRole
   content        String
   language       String?
-  toolName       String?   // If role=tool, which tool produced this
-  toolCallId     String?   // Correlation ID for tool calls
-  metadata       Json?     // Token counts, latency, model used, etc.
-  createdAt      DateTime  @default(now())
+  toolName       String?     // If role=tool, which tool produced this
+  toolCallId     String?     // Correlation ID for tool calls
+  metadata       Json?       // Token counts, latency, model used, etc.
+  createdAt      DateTime    @default(now())
 
-  session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session        Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([createdAt])
@@ -125,7 +140,7 @@ model IndexedDocument {
   chunkIndex     Int       @default(0) // Position in chunked sequence
   chunkTotal     Int       @default(1) // Total chunks for this document
   contentHash    String?   // For dedup / change detection
-  embedding      Bytes?    // Serialized embedding vector (for simple local store)
+  embedding      Float[]   // Embedding vector for similarity search
   metadata       Json?     // Extra fields: language, section, etc.
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -134,26 +149,27 @@ model IndexedDocument {
 
   @@index([sourceId])
   @@index([contentHash])
+  @@index([sourceId, contentHash])
   @@index([path])
 }
 
 // ── Repo Registry ────────────────────────────────────────────────────────────
 
 model RepoRegistry {
-  id             String    @id @default(cuid())
-  owner          String    // GitHub org or user
-  name           String    // Repo name
-  displayName    String    // Human-friendly name
+  id             String     @id @default(cuid())
+  owner          String     // GitHub org or user
+  name           String     // Repo name
+  displayName    String     // Human-friendly name
   description    String?
   url            String
-  branch         String    @default("main")
-  docsPath       String?   // Path within repo to docs, e.g., "docs/"
-  isActive       Boolean   @default(true)
+  branch         String     @default("main")
+  docsPath       String?    // Path within repo to docs, e.g., "docs/"
+  isActive       Boolean    @default(true)
   lastSyncAt     DateTime?
-  syncStatus     String    @default("pending") // pending | syncing | synced | error
+  syncStatus     SyncStatus @default(not_indexed)
   metadata       Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   @@unique([owner, name])
   @@index([isActive])

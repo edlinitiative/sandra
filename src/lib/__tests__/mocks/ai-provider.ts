@@ -5,6 +5,7 @@ import type {
   ChatCompletionResponse,
   EmbeddingRequest,
   EmbeddingResponse,
+  StreamChunk,
 } from '@/lib/ai/types';
 
 /** Default canned chat completion response */
@@ -42,9 +43,19 @@ export const mockAIProvider: AIProvider = {
       ({ ...defaultChatResponse }),
   ),
 
+  // eslint-disable-next-line require-yield
+  streamChatCompletion: vi.fn(async function* (_request: ChatCompletionRequest): AsyncIterable<StreamChunk> {
+    yield { content: 'This is a mock response.', toolCalls: null, done: false };
+    yield { content: null, toolCalls: null, done: true };
+  }),
+
   generateEmbeddings: vi.fn(
     async (_request: EmbeddingRequest): Promise<EmbeddingResponse> =>
       ({ ...defaultEmbeddingResponse }),
+  ),
+
+  generateEmbedding: vi.fn(async (_text: string): Promise<number[]> =>
+    new Array(1536).fill(0) as number[],
   ),
 
   healthCheck: vi.fn(async (): Promise<boolean> => true),
@@ -53,11 +64,15 @@ export const mockAIProvider: AIProvider = {
 /** Reset all mock function call history between tests */
 export function resetAIProviderMocks(): void {
   const chatMock = mockAIProvider.chatCompletion as ReturnType<typeof vi.fn>;
+  const streamMock = mockAIProvider.streamChatCompletion as ReturnType<typeof vi.fn>;
   const embedMock = mockAIProvider.generateEmbeddings as ReturnType<typeof vi.fn>;
+  const embedOneMock = mockAIProvider.generateEmbedding as ReturnType<typeof vi.fn>;
   const healthMock = mockAIProvider.healthCheck as ReturnType<typeof vi.fn>;
 
   chatMock.mockReset();
+  streamMock.mockReset();
   embedMock.mockReset();
+  embedOneMock.mockReset();
   healthMock.mockReset();
 
   // Restore default implementations after reset
@@ -65,9 +80,17 @@ export function resetAIProviderMocks(): void {
     async (_request: ChatCompletionRequest): Promise<ChatCompletionResponse> =>
       ({ ...defaultChatResponse }),
   );
+  // eslint-disable-next-line require-yield
+  streamMock.mockImplementation(async function* (_request: ChatCompletionRequest): AsyncIterable<StreamChunk> {
+    yield { content: 'This is a mock response.', toolCalls: null, done: false };
+    yield { content: null, toolCalls: null, done: true };
+  });
   embedMock.mockImplementation(
     async (_request: EmbeddingRequest): Promise<EmbeddingResponse> =>
       ({ ...defaultEmbeddingResponse }),
+  );
+  embedOneMock.mockImplementation(async (_text: string): Promise<number[]> =>
+    new Array(1536).fill(0) as number[],
   );
   healthMock.mockImplementation(async (): Promise<boolean> => true);
 }

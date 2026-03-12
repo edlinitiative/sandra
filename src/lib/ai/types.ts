@@ -68,12 +68,25 @@ export interface EmbeddingResponse {
   };
 }
 
+/** A single chunk from a streaming chat completion */
+export interface StreamChunk {
+  /** Incremental content delta, or null if this chunk carries only tool calls */
+  content: string | null;
+  /** Accumulated tool calls at stream end, or null during content streaming */
+  toolCalls: ToolCall[] | null;
+  /** True on the final chunk when streaming is complete */
+  done: boolean;
+}
+
 /** Interface that all AI providers must implement */
 export interface AIProvider {
   readonly name: string;
 
   chatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
+  streamChatCompletion(request: ChatCompletionRequest): AsyncIterable<StreamChunk>;
   generateEmbeddings(request: EmbeddingRequest): Promise<EmbeddingResponse>;
+  /** Convenience method: generate a single embedding vector for one text */
+  generateEmbedding(text: string): Promise<number[]>;
 
   /** Check whether the provider is configured and reachable */
   healthCheck(): Promise<boolean>;

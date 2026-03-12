@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     const { message, userId, channel } = parsed.data;
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
-    const language = resolveLanguage(parsed.data.language);
+    const language = resolveLanguage({ explicit: parsed.data.language });
 
     // Demo mode: return canned response when API key is not configured
     if (isApiKeyMissing()) {
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
     if (isAuthError) {
       const body = chatRequestSchema.safeParse(await request.clone().json().catch(() => ({})));
-      const language = body.success ? resolveLanguage(body.data.language) : 'en';
+      const language = body.success ? resolveLanguage({ explicit: body.data.language }) : 'en';
       const message = body.success ? body.data.message : '';
       return NextResponse.json({
         data: {

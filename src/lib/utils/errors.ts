@@ -5,11 +5,13 @@
 
 export type ErrorCode =
   | 'VALIDATION_ERROR'
+  | 'AUTH_ERROR'
   | 'NOT_FOUND'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
   | 'RATE_LIMITED'
   | 'PROVIDER_ERROR'
+  | 'TOOL_ERROR'
   | 'INTERNAL_ERROR'
   | 'CONFIGURATION_ERROR'
   | 'TOOL_EXECUTION_ERROR'
@@ -52,6 +54,13 @@ export class ValidationError extends SandraError {
   }
 }
 
+export class AuthError extends SandraError {
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(message, 'AUTH_ERROR', 401, details);
+    this.name = 'AuthError';
+  }
+}
+
 export class NotFoundError extends SandraError {
   constructor(resource: string, id?: string) {
     super(
@@ -67,6 +76,13 @@ export class ProviderError extends SandraError {
   constructor(provider: string, message: string, details?: Record<string, unknown>) {
     super(`[${provider}] ${message}`, 'PROVIDER_ERROR', 502, details);
     this.name = 'ProviderError';
+  }
+}
+
+export class ToolError extends SandraError {
+  constructor(toolName: string, message: string, details?: Record<string, unknown>) {
+    super(`Tool '${toolName}' failed: ${message}`, 'TOOL_ERROR', 500, details);
+    this.name = 'ToolError';
   }
 }
 

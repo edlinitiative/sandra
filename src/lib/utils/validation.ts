@@ -2,6 +2,43 @@ import { z } from 'zod';
 import { ValidationError } from './errors';
 
 /**
+ * Strip HTML tags and trim whitespace from user input.
+ */
+export function sanitizeInput(str: string): string {
+  return str.replace(/<[^>]*>/g, '').trim();
+}
+
+/** Schema for chat message input (POST /api/chat) */
+export const chatInputSchema = z.object({
+  message: z
+    .string()
+    .min(1, 'Message cannot be empty')
+    .max(4000, 'Message too long (max 4000 characters)')
+    .describe('The user message to send'),
+  sessionId: z
+    .string()
+    .uuid('Invalid session ID format')
+    .optional()
+    .describe('Optional existing session ID'),
+  language: z
+    .enum(['en', 'fr', 'ht'])
+    .optional()
+    .describe('Optional language override (en, fr, ht)'),
+});
+
+export type ChatInput = z.infer<typeof chatInputSchema>;
+
+/** Schema for index trigger input (POST /api/index) */
+export const indexInputSchema = z.object({
+  repoId: z.string().min(1, 'Repository ID is required').describe('ID of the repository to index'),
+});
+
+export type IndexInput = z.infer<typeof indexInputSchema>;
+
+/** Schema for validating a UUID session ID */
+export const sessionIdSchema = z.string().uuid('Invalid session ID format');
+
+/**
  * Validate data against a Zod schema, throwing a structured error on failure.
  */
 export function validate<T>(schema: z.ZodSchema<T>, data: unknown, context?: string): T {
