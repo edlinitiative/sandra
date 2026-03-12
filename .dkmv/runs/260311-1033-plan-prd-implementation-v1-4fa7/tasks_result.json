@@ -1,0 +1,12 @@
+{
+  "run_id": "260311-1033-plan-prd-implementation-v1-4fa7",
+  "component": "plan",
+  "status": "failed",
+  "repo": "https://github.com/edlinitiative/sandra",
+  "branch": "feature/sandra-v1",
+  "feature_name": "PRD-implementation-v1",
+  "total_cost_usd": 0.0,
+  "duration_seconds": 13.628024499979801,
+  "task_results": [],
+  "error_message": "Shared input 'prd': source not found: docs/PRD-implementation-v1.md"
+}

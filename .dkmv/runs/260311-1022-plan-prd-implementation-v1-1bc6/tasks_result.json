@@ -1,0 +1,12 @@
+{
+  "run_id": "260311-1022-plan-prd-implementation-v1-1bc6",
+  "component": "plan",
+  "status": "failed",
+  "repo": "https://github.com/edlinitiative/sandra",
+  "branch": "feature/sandra-v1",
+  "feature_name": "PRD-implementation-v1",
+  "total_cost_usd": 0.0,
+  "duration_seconds": 3.2652296669984935,
+  "task_results": [],
+  "error_message": "Failed to pull image dkmv-sandbox:latest. Error: Error response from daemon: pull access denied for dkmv-sandbox, repository does not exist or may require 'docker login'\nOutput: "
+}

@@ -1,0 +1,297 @@
+{
+  "output_dir": "docs/implementation/sandra-v1",
+  "features": [
+    {
+      "id": "F1",
+      "name": "Web Chat Interface",
+      "description": "Browser-based chat UI where users interact with Sandra. Includes chat input, assistant response rendering, loading states, session persistence, empty state, and branding-ready layout. Built with Next.js App Router, TypeScript, and Tailwind CSS."
+    },
+    {
+      "id": "F2",
+      "name": "Public Knowledge Question Answering",
+      "description": "Sandra answers questions about EdLight Code, EdLight News, EdLight Academy, and EdLight Initiative using indexed repository content. Responses are generated via LLM with RAG-retrieved context from the vector store."
+    },
+    {
+      "id": "F3",
+      "name": "Repository Indexing Pipeline",
+      "description": "System to fetch README and documentation files from four EdLight GitHub repositories, extract text, chunk documents, generate embeddings, store vector references, and track metadata in Postgres. Indexed content must be retrievable by the Sandra runtime."
+    },
+    {
+      "id": "F4",
+      "name": "Sandra Agent Runtime",
+      "description": "Central orchestration runtime using a ReAct-style agent loop: receives normalized user requests, loads session context, retrieves relevant knowledge, executes tools when necessary, generates responses via LLM, and logs actions. All channels feed into this single runtime."
+    },
+    {
+      "id": "F5",
+      "name": "Tool-Based Architecture",
+      "description": "Tool registry system where Sandra accesses functionality through self-registering tools rather than direct database access. Each tool defines name, description, inputSchema, requiredScopes, and handler. MVP tools: searchKnowledgeBase, getEdLightInitiatives, lookupRepoInfo, triggerRepoIndexing, getIndexingStatus."
+    },
+    {
+      "id": "F6",
+      "name": "Admin Indexing Controls",
+      "description": "Admin interface allowing administrators to list indexed repositories, trigger indexing manually, and view indexing status. Exposed through admin UI and API endpoints (GET /api/sandra/repos, POST /api/sandra/repos/:repoId/index, GET /api/sandra/index-jobs/:jobId)."
+    },
+    {
+      "id": "F7",
+      "name": "Conversation Session Management",
+      "description": "Session-based conversation persistence using Firestore. Each conversation gets a session ID, message history is stored in chat_sessions/{sessionId}/messages subcollection, and follow-up questions reference prior context."
+    },
+    {
+      "id": "F8",
+      "name": "Multilingual Foundation",
+      "description": "Language support for Haitian Creole, French, and English. Includes language enums, response language selection, user language preference handling, and system prompt helpers for multilingual behavior. Language is passed per request."
+    },
+    {
+      "id": "F9",
+      "name": "Authentication Integration",
+      "description": "Firebase Auth integration for user identity. Includes token verification on backend, canonical user resolution flow (Firebase UID to Postgres user), and user session helpers. Admin actions require authenticated admin role."
+    },
+    {
+      "id": "F10",
+      "name": "API Gateway",
+      "description": "REST API layer with endpoints: POST /api/sandra/chat, GET /api/sandra/conversations/:sessionId, GET /api/sandra/repos, POST /api/sandra/repos/:repoId/index, GET /api/sandra/index-jobs/:jobId, GET /api/sandra/health. All use standard success/error JSON envelope with request IDs."
+    },
+    {
+      "id": "F11",
+      "name": "Database Schema",
+      "description": "Postgres schema via Prisma ORM with MVP tables: users, initiatives, repo_registry, indexed_sources, indexed_documents, index_jobs, tool_executions, audit_logs. Firestore for chat_sessions and messages subcollection."
+    },
+    {
+      "id": "F12",
+      "name": "Security and Audit Layer",
+      "description": "Permission scope enforcement on tool execution (read:public_content, admin:indexing), tool call logging, admin action logging, environment secrets protection from client code, and structured error handling via SandraError subclasses."
+    }
+  ],
+  "personas": [
+    {
+      "name": "Visitor",
+      "description": "General public user who opens Sandra in a browser to ask questions about EdLight initiatives, programs, and services. May speak Haitian Creole, French, or English. Expects conversational Q&A with session continuity."
+    },
+    {
+      "name": "Administrator",
+      "description": "EdLight team member who manages the knowledge base. Needs to register repositories, trigger indexing, monitor indexing status, and ensure Sandra has up-to-date documentation. Accesses admin UI and admin API endpoints."
+    }
+  ],
+  "constraints": [
+    "Must use Next.js App Router with TypeScript and Tailwind CSS for frontend",
+    "Must use Next.js server routes and Node.js runtime for backend",
+    "Must use Firebase Auth for authentication",
+    "Must use Firestore for realtime chat session state",
+    "Must use Postgres with Prisma ORM for structured data",
+    "Must use Zod for input validation",
+    "Must use LLM provider abstraction layer (not tied to specific provider)",
+    "Must use vector store abstraction (not tied to specific vector DB)",
+    "Sandra runtime must not query raw databases directly — all access through services/tools",
+    "Tool execution must enforce permission scopes",
+    "All tool calls and admin actions must be logged",
+    "Environment secrets must never be exposed to client code",
+    "Must support Haitian Creole, French, and English",
+    "Must index four specific EdLight GitHub repositories",
+    "Implementation must follow the 13-milestone order defined in PRD section 13"
+  ],
+  "risks": [
+    {
+      "risk": "PRD specifies monorepo structure (apps/, services/, packages/) but existing codebase is a single Next.js app with src/lib/ — architectural mismatch",
+      "mitigation": "The architecture doc explicitly endorses the single Next.js app with library layer approach. Follow the existing src/lib/ structure which achieves the same separation. Document this decision clearly. The PRD structure can be seen as a logical grouping guide rather than a literal filesystem requirement."
+    },
+    {
+      "risk": "Vector store abstraction may limit retrieval quality without a production vector database",
+      "mitigation": "Start with in-memory vector store (already in codebase) for development. Design the abstraction so pgvector, Pinecone, or Qdrant can be swapped in without runtime changes. The architecture doc already identifies this as a scalability path."
+    },
+    {
+      "risk": "LLM provider abstraction adds complexity and may delay MVP",
+      "mitigation": "The existing codebase already has an AIProvider interface with OpenAI implementation. Use this pattern — implement OpenAI first, keep the abstraction thin. Only add providers when needed."
+    },
+    {
+      "risk": "Multilingual support (especially Haitian Creole) may have limited LLM quality",
+      "mitigation": "Rely on the LLM's built-in multilingual capabilities with clear system prompt instructions for language handling. Test Haitian Creole responses early. Consider language-specific prompt templates if quality is insufficient."
+    },
+    {
+      "risk": "GitHub rate limiting during repository indexing",
+      "mitigation": "Use authenticated GitHub API requests. Implement backoff and retry logic. Cache fetched content. Track checksums to avoid re-indexing unchanged content."
+    },
+    {
+      "risk": "Firestore and Postgres dual-database complexity increases operational burden",
+      "mitigation": "Clear separation of concerns: Firestore for realtime chat state only, Postgres for everything else. This is a deliberate architectural choice from the PRD. Keep the boundary strict to avoid confusion."
+    },
+    {
+      "risk": "Scope creep from the extensive architecture document which describes features beyond V1",
+      "mitigation": "Strictly scope to PRD V1 features only. The architecture and roadmap docs describe the full vision — use them for interface design decisions but do not implement post-V1 features (WhatsApp, Instagram, email, voice, private user data tools, autonomous workflows)."
+    }
+  ],
+  "non_goals": [
+    "WhatsApp integration",
+    "Instagram messaging",
+    "Email sending",
+    "Voice interaction",
+    "Private user data access (certificates, enrollments, application status)",
+    "Course enrollment retrieval",
+    "Certificate retrieval",
+    "Autonomous multi-step agent workflows",
+    "Advanced analytics dashboards",
+    "Cross-platform workflow automation",
+    "User memory / long-term personalization beyond session",
+    "Connector framework for external EdLight systems"
+  ],
+  "architecture_notes": [
+    "Single Next.js application with modular src/lib/ layer — NOT the monorepo structure in PRD section 6. The existing codebase and architecture doc confirm this approach.",
+    "ReAct-style agent loop: receive input → build context (memory, retrieval, tools) → call LLM → if tool calls, execute and loop → return final response",
+    "Two-tier data: Firestore for realtime chat sessions, Postgres for structured business data. Clear boundary — no mixing.",
+    "Tool registry pattern: tools self-register, agent reads registry at runtime. Adding a tool = create file + implement interface + import in index.ts.",
+    "Channel normalization: all adapters convert to standard InboundMessage format. V1 only implements web channel.",
+    "AIProvider interface abstracts LLM. OpenAI is first implementation. No code outside src/lib/ai/ knows which provider is used.",
+    "Environment config via Zod validation at startup — fail fast if required vars missing, safe defaults in dev.",
+    "All errors flow through SandraError subclasses. API routes return structured JSON with error codes.",
+    "Vector store abstraction: InMemoryVectorStore for MVP, designed for swap to pgvector/Pinecone/Qdrant.",
+    "Knowledge pipeline: Fetch → Chunk → Embed → Store → Retrieve — each step is a separate function/class."
+  ],
+  "adrs_created": [],
+  "adrs_reviewed": [],
+  "estimated_complexity": "large",
+  "technology_decisions": [
+    {
+      "area": "LLM Provider",
+      "chosen": "OpenAI (via provider abstraction)",
+      "alternatives_considered": ["Anthropic Claude", "Google Gemini"],
+      "rationale": "PRD requires an LLM provider abstraction layer. The existing codebase already implements an AIProvider interface with OpenAI as first provider. OpenAI has the broadest tool-calling support and multilingual capability. The abstraction allows swapping providers later without code changes outside src/lib/ai/."
+    },
+    {
+      "area": "Vector Store",
+      "chosen": "In-memory vector store (MVP) with abstraction for production swap",
+      "alternatives_considered": ["pgvector (Postgres extension)", "Pinecone", "Qdrant"],
+      "rationale": "PRD requires vector store abstraction. For MVP, in-memory store minimizes infrastructure. The architecture doc explicitly lists pgvector/Pinecone/Qdrant as scalability paths. The abstraction interface is already in the codebase. pgvector is the most natural upgrade since Postgres is already required."
+    },
+    {
+      "area": "Embedding Model",
+      "chosen": "OpenAI text-embedding-3-small",
+      "alternatives_considered": ["OpenAI text-embedding-3-large", "Cohere embed-v3"],
+      "rationale": "Using the same provider for LLM and embeddings simplifies API key management and billing. text-embedding-3-small offers good quality at lower cost for an MVP with four repositories. Can upgrade to large model if retrieval quality needs improvement."
+    },
+    {
+      "area": "Session Memory Storage",
+      "chosen": "Firestore (as specified by PRD)",
+      "alternatives_considered": ["Redis", "Postgres"],
+      "rationale": "PRD explicitly requires Firestore for chat sessions. Firestore provides realtime updates for the web chat UI and natural subcollection structure for messages. The architecture doc confirms this as the right layer for conversational state."
+    },
+    {
+      "area": "Background Job Processing",
+      "chosen": "Synchronous execution in API routes (MVP)",
+      "alternatives_considered": ["BullMQ with Redis", "Inngest", "Trigger.dev"],
+      "rationale": "V1 indexes only four repositories on manual admin trigger. Synchronous processing is sufficient. The architecture doc suggests BullMQ for future scaling. Adding a job queue for MVP adds infrastructure complexity without proportional benefit."
+    },
+    {
+      "area": "Document Chunking Strategy",
+      "chosen": "Recursive character text splitting with markdown-aware boundaries",
+      "alternatives_considered": ["Fixed-size chunking", "Semantic chunking"],
+      "rationale": "Repository content is primarily markdown (READMEs, docs). Markdown-aware splitting preserves heading structure and avoids splitting mid-section. Recursive character splitting is well-understood and predictable. Semantic chunking adds LLM cost per chunk without clear MVP benefit."
+    },
+    {
+      "area": "Monorepo vs Single App",
+      "chosen": "Single Next.js app with src/lib/ module layer",
+      "alternatives_considered": ["Turborepo monorepo (as PRD section 6 describes)", "Nx monorepo"],
+      "rationale": "The existing codebase is already structured as a single Next.js app with well-organized src/lib/ modules (agents, ai, channels, config, db, github, knowledge, memory, tools, utils). The architecture doc explicitly endorses this pattern. Converting to a monorepo would require significant rework for no V1 benefit. The modular lib layer achieves the same separation of concerns."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Which vector store should be targeted for production readiness?",
+      "options": [
+        {
+          "value": "pgvector",
+          "label": "pgvector (Postgres extension)",
+          "description": "Runs inside the existing Postgres database. No additional infrastructure. Good for small-to-medium scale. Simplifies ops but may have lower search performance at scale."
+        },
+        {
+          "value": "pinecone",
+          "label": "Pinecone (managed service)",
+          "description": "Fully managed, scales automatically. Best search performance. Adds external dependency and cost. Good if expecting rapid knowledge base growth."
+        },
+        {
+          "value": "inmemory",
+          "label": "In-memory only (defer decision)",
+          "description": "Use in-memory store for V1, defer production vector store choice. Fastest to ship but limits deployment to single-process and loses data on restart."
+        }
+      ],
+      "default": "pgvector"
+    },
+    {
+      "id": "q2",
+      "question": "How should repository indexing be triggered and scheduled?",
+      "options": [
+        {
+          "value": "manual",
+          "label": "Manual admin trigger only",
+          "description": "Admins click a button to index. Simplest implementation. Requires admin attention when repos change."
+        },
+        {
+          "value": "manual_plus_webhook",
+          "label": "Manual trigger + GitHub webhook on push",
+          "description": "Manual trigger plus automatic re-indexing when repos are updated via GitHub webhooks. More operational complexity but keeps knowledge fresh automatically."
+        },
+        {
+          "value": "manual_plus_cron",
+          "label": "Manual trigger + daily scheduled sync",
+          "description": "Manual trigger plus a daily cron/scheduled job to check for changes. Middle ground — less real-time than webhooks but doesn't require GitHub webhook setup."
+        }
+      ],
+      "default": "manual"
+    },
+    {
+      "id": "q3",
+      "question": "Should the web chat require authentication or allow anonymous usage?",
+      "options": [
+        {
+          "value": "anonymous_first",
+          "label": "Anonymous by default, optional sign-in",
+          "description": "Anyone can chat without signing in. Firebase Auth is available but not required for V1 public Q&A. Lowest friction for visitors. Admin features still require auth."
+        },
+        {
+          "value": "auth_required",
+          "label": "Authentication required for all chat",
+          "description": "All users must sign in before chatting. Enables user tracking from day one. Higher friction but simplifies session management and prepares for V2 private data features."
+        }
+      ],
+      "default": "anonymous_first"
+    },
+    {
+      "id": "q4",
+      "question": "What level of admin UI should be built for V1?",
+      "options": [
+        {
+          "value": "minimal",
+          "label": "Minimal admin page",
+          "description": "Single page showing repo list, index trigger buttons, and job status. No auth-gated admin layout. Fastest to build. Admin access controlled by checking role on API endpoints."
+        },
+        {
+          "value": "full_admin",
+          "label": "Dedicated admin section with layout",
+          "description": "Separate /admin route with its own layout, navigation, and role-gated access. Includes repo management, indexing status dashboard, and audit log viewer. More polished but takes longer."
+        }
+      ],
+      "default": "minimal"
+    },
+    {
+      "id": "q5",
+      "question": "Should the LLM response be streamed to the client?",
+      "options": [
+        {
+          "value": "streaming",
+          "label": "Streaming responses (SSE/ReadableStream)",
+          "description": "Tokens stream to the chat UI as they are generated. Better perceived performance and UX. More complex to implement with tool calls in the agent loop. The existing codebase already has a /api/chat/stream route."
+        },
+        {
+          "value": "non_streaming",
+          "label": "Non-streaming (wait for full response)",
+          "description": "Client waits for the complete response. Simpler implementation, especially with the ReAct tool-calling loop. Worse perceived latency for longer answers."
+        },
+        {
+          "value": "both",
+          "label": "Both (streaming default, non-streaming fallback)",
+          "description": "Implement streaming as primary with non-streaming endpoint as fallback. Most flexible but doubles the API surface. The existing codebase has both routes already."
+        }
+      ],
+      "default": "streaming"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "run_id": "260311-1022-plan-prd-implementation-v1-1bc6",
+  "component": "plan",
+  "status": "failed",
+  "repo": "https://github.com/edlinitiative/sandra",
+  "branch": "feature/sandra-v1",
+  "feature_name": "PRD-implementation-v1",
+  "model": "",
+  "total_cost_usd": 0.0,
+  "duration_seconds": 3.2652296669984935,
+  "num_turns": 0,
+  "timestamp": "2026-03-11T14:22:05.663830Z",
+  "session_id": "",
+  "error_message": ""
+}

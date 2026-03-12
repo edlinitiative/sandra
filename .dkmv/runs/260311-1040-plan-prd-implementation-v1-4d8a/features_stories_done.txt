@@ -1,0 +1,4 @@
+Output directory: docs/implementation/sandra-v1
+Features: 12 features written to docs/implementation/sandra-v1/features.md
+Stories: 25 stories written to docs/implementation/sandra-v1/user_stories.md
+Categories: Foundation & Infrastructure, Authentication & Sessions, Agent Core, Knowledge Pipeline, API Layer, User Interface

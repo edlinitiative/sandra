@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "project_name": "sandra",
+  "repo": "https://github.com/edlinitiative/sandra",
+  "default_branch": "main",
+  "credentials": {
+    "auth_method": "api_key",
+    "anthropic_api_key_source": "env",
+    "oauth_token_source": "none",
+    "github_token_source": "gh auth token",
+    "codex_api_key_source": "none"
+  },
+  "defaults": {
+    "model": null,
+    "max_turns": null,
+    "timeout_minutes": null,
+    "max_budget_usd": null,
+    "memory": null,
+    "agent": null
+  },
+  "sandbox": {
+    "image": null,
+    "docker_socket": false
+  }
+}
