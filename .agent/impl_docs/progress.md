@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** 0 (complete)
-- **Tasks completed:** 3 / 86
+- **Phase:** 1 (complete)
+- **Tasks completed:** 23 / 86
 - **Test coverage:** 196 tests passing
 - **Last session:** 2026-03-13
 
@@ -73,14 +73,27 @@ Each phase follows an implement → review → fix cycle:
 **Quality:** tsc clean, ESLint clean, vitest run clean
 **Next:** Phase 1 — Foundation
 
-### Session 2 — YYYY-MM-DD
+### Session 2 — 2026-03-13
 
-**Goal:** Review Phase 0 implementation
-**Issues Found:** (count)
-**Fixes Applied:**
-- (Fix description)
-**Tests Added:** (count)
-**Regressions:** None
-**Coverage:** (updated %)
-**Quality:** (status)
-**Next:** Phase 1 — Foundation
+**Goal:** Implement Phase 1 — Foundation (T010–T029)
+**Completed:** T010, T011, T012, T013, T014, T015, T016, T017, T018, T019, T020, T021, T022, T023, T024, T025, T026, T027, T028, T029
+**Discoveries:**
+- All Phase 1 files were pre-authored in the codebase; tasks were review + verification rather than creation
+- Prisma schema already has all 7 models (User, Session, Message, Memory, IndexedSource, IndexedDocument, RepoRegistry) with correct enums (MessageRole, SyncStatus), indexes, and relations
+- Migration SQL at `prisma/migrations/20260312000000_v1_foundation/migration.sql` is complete
+- Seed script is idempotent (upsert pattern) with 4 EdLight repos and admin user
+- DB helpers in `src/lib/db/` are fully typed and DI-friendly
+- SandraError + 5 subclasses (ValidationError, AuthError, NotFoundError, ProviderError, ToolError) all implemented with toJSON()
+- env.ts uses Zod with all required fields; ADMIN_API_KEY optional; startup validation
+- logger.ts outputs JSON with withRequestId support
+- validation.ts has sanitizeInput, chatInputSchema, indexInputSchema, sessionIdSchema
+- OpenAI provider implements chatCompletion, streamChatCompletion, generateEmbedding, generateEmbeddings, healthCheck
+- Provider factory is singleton pattern; getAIProvider() / registerAIProvider()
+- Language types (en/fr/ht), resolveLanguage(), getLanguageInstruction(), getSandraSystemPrompt() all complete
+- All 21 test files, 196 tests passing before and after session
+**Changes:**
+- `src/lib/config/constants.ts` — added MAX_AGENT_ITERATIONS, CONTEXT_WINDOW_MESSAGES, CHUNK_SIZE, CHUNK_OVERLAP, TOP_K_RESULTS constants
+- `src/lib/config/index.ts` — exported new constants
+**Coverage:** 196 tests passing, 21 test files
+**Quality:** tsc clean, ESLint clean, vitest run clean
+**Next:** Phase 2 — Core Engine
