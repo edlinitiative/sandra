@@ -1,11 +1,47 @@
 import { z } from 'zod';
-import type { SandraTool, ToolResult } from './types';
+import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
 import { EDLIGHT_PLATFORMS } from '@/lib/config/constants';
 
 const inputSchema = z.object({
-  platform: z.string().optional().describe('Filter by specific EdLight platform name'),
+  category: z.string().optional().describe('Filter by category: coding, news, leadership, education'),
 });
+
+// Curated initiative data for V1 — sourced from RepoRegistry + hardcoded descriptions
+const INITIATIVES = [
+  {
+    name: 'EdLight Code',
+    category: 'coding',
+    repo: 'edlinitiative/code',
+    url: 'https://github.com/edlinitiative/code',
+    description: 'The core EdLight coding education platform — hands-on coding curriculum and learning tools for students.',
+    status: 'active',
+  },
+  {
+    name: 'EdLight Academy',
+    category: 'education',
+    repo: 'edlinitiative/EdLight-Academy',
+    url: 'https://github.com/edlinitiative/EdLight-Academy',
+    description: 'Educational platform and learning resources for the EdLight ecosystem — structured courses and tutorials.',
+    status: 'active',
+  },
+  {
+    name: 'EdLight News',
+    category: 'news',
+    repo: 'edlinitiative/EdLight-News',
+    url: 'https://github.com/edlinitiative/EdLight-News',
+    description: 'News and updates platform for the EdLight community — announcements, events, and community stories.',
+    status: 'active',
+  },
+  {
+    name: 'EdLight Initiative',
+    category: 'leadership',
+    repo: 'edlinitiative/EdLight-Initiative',
+    url: 'https://github.com/edlinitiative/EdLight-Initiative',
+    description: 'The EdLight Initiative organization and community hub — leadership programs and community building.',
+    status: 'active',
+  },
+];
 
 const getEdLightInitiatives: SandraTool = {
   name: 'getEdLightInitiatives',
@@ -14,50 +50,23 @@ const getEdLightInitiatives: SandraTool = {
   parameters: {
     type: 'object',
     properties: {
-      platform: { type: 'string', description: 'Filter by specific EdLight platform name' },
+      category: {
+        type: 'string',
+        description: 'Filter by category: coding, news, leadership, education',
+        enum: ['coding', 'news', 'leadership', 'education'],
+      },
     },
     required: [],
   },
   inputSchema,
+  requiredScopes: ['repos:read'],
 
-  async execute(input: unknown): Promise<ToolResult> {
+  async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
 
-    // Structured knowledge about EdLight platforms
-    const initiatives = [
-      {
-        name: 'EdLight Code',
-        repo: 'edlinitiative/code',
-        url: 'https://github.com/edlinitiative/code',
-        description: 'The core EdLight codebase and platform.',
-        status: 'active',
-      },
-      {
-        name: 'EdLight Academy',
-        repo: 'edlinitiative/EdLight-Academy',
-        url: 'https://github.com/edlinitiative/EdLight-Academy',
-        description: 'Educational platform and learning resources for the EdLight ecosystem.',
-        status: 'active',
-      },
-      {
-        name: 'EdLight News',
-        repo: 'edlinitiative/EdLight-News',
-        url: 'https://github.com/edlinitiative/EdLight-News',
-        description: 'News and updates platform for the EdLight community.',
-        status: 'active',
-      },
-      {
-        name: 'EdLight Initiative',
-        repo: 'edlinitiative/EdLight-Initiative',
-        url: 'https://github.com/edlinitiative/EdLight-Initiative',
-        description: 'The EdLight Initiative organization and community hub.',
-        status: 'active',
-      },
-    ];
-
-    const filtered = params.platform
-      ? initiatives.filter((i) => i.name.toLowerCase().includes(params.platform!.toLowerCase()))
-      : initiatives;
+    const filtered = params.category
+      ? INITIATIVES.filter((i) => i.category === params.category)
+      : INITIATIVES;
 
     return {
       success: true,

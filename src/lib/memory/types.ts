@@ -1,4 +1,5 @@
 import type { ChatMessage } from '@/lib/ai/types';
+import type { Session, Message } from '@prisma/client';
 
 /**
  * Memory system type definitions.
@@ -29,7 +30,7 @@ export interface UserMemoryEntry {
   updatedAt: Date;
 }
 
-/** Interface for session memory storage */
+/** Interface for session memory storage (in-memory, for agent context window) */
 export interface SessionMemoryStore {
   /** Get conversation history for a session */
   getHistory(sessionId: string, limit?: number): Promise<ConversationEntry[]>;
@@ -42,6 +43,40 @@ export interface SessionMemoryStore {
 
   /** Clear session memory */
   clear(sessionId: string): Promise<void>;
+}
+
+/** Interface for DB-backed session and message persistence */
+export interface ISessionStore {
+  createSession(params: {
+    channel?: string;
+    language?: string;
+    userId?: string;
+    title?: string;
+  }): Promise<Session>;
+
+  getSession(sessionId: string): Promise<Session | null>;
+
+  updateSession(
+    sessionId: string,
+    updates: { title?: string; language?: string; isActive?: boolean },
+  ): Promise<Session>;
+
+  addMessage(params: {
+    sessionId: string;
+    role: 'user' | 'assistant' | 'system' | 'tool';
+    content: string;
+    language?: string;
+    toolName?: string;
+    toolCallId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<Message>;
+
+  getMessages(
+    sessionId: string,
+    options?: { limit?: number; order?: 'asc' | 'desc' },
+  ): Promise<Message[]>;
+
+  loadContext(sessionId: string, maxMessages?: number): Promise<ChatMessage[]>;
 }
 
 /** Interface for long-term user memory */

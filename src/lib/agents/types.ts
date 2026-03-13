@@ -13,6 +13,8 @@ export interface AgentInput {
   userId?: string;
   language: SupportedLanguage;
   channel: ChannelType;
+  /** Permission scopes for tool execution. Defaults to ['knowledge:read', 'repos:read'] */
+  scopes?: string[];
   metadata?: Record<string, unknown>;
 }
 

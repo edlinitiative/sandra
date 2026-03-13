@@ -8,12 +8,12 @@ const log = createLogger('tools:registry');
  * Global tool registry.
  * Tools register themselves here; the agent reads from here.
  */
-class ToolRegistry {
+export class ToolRegistry {
   private tools = new Map<string, SandraTool>();
 
   register(tool: SandraTool): void {
     if (this.tools.has(tool.name)) {
-      log.warn(`Overwriting existing tool: ${tool.name}`);
+      throw new Error(`Tool '${tool.name}' is already registered`);
     }
     this.tools.set(tool.name, tool);
     log.info(`Registered tool: ${tool.name}`);
@@ -25,6 +25,10 @@ class ToolRegistry {
 
   has(name: string): boolean {
     return this.tools.has(name);
+  }
+
+  getAll(): SandraTool[] {
+    return Array.from(this.tools.values());
   }
 
   /** Get all tools as AI provider ToolDefinitions */
@@ -42,6 +46,7 @@ class ToolRegistry {
       name: tool.name,
       description: tool.description,
       parameters: tool.parameters,
+      requiredScopes: tool.requiredScopes,
       registered: true,
     }));
   }
@@ -57,3 +62,8 @@ class ToolRegistry {
 }
 
 export const toolRegistry = new ToolRegistry();
+
+/** Get the global tool registry singleton */
+export function getToolRegistry(): ToolRegistry {
+  return toolRegistry;
+}

@@ -4,6 +4,13 @@ import { z } from 'zod';
  * Tool system type definitions.
  */
 
+/** Execution context passed to every tool handler */
+export interface ToolContext {
+  sessionId: string;
+  userId?: string;
+  scopes: string[];
+}
+
 /** Result of a tool execution */
 export interface ToolResult {
   success: boolean;
@@ -19,8 +26,10 @@ export interface SandraTool {
   parameters: Record<string, unknown>;
   /** Zod schema for runtime validation of parameters */
   inputSchema: z.ZodSchema;
-  /** Execute the tool with validated input */
-  execute(input: unknown): Promise<ToolResult>;
+  /** Required permission scopes to execute this tool */
+  requiredScopes: string[];
+  /** Execute the tool with validated input and context */
+  handler(input: unknown, context: ToolContext): Promise<ToolResult>;
 }
 
 /** Metadata about a registered tool (for admin/debugging) */
@@ -28,5 +37,6 @@ export interface ToolInfo {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  requiredScopes: string[];
   registered: boolean;
 }

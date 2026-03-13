@@ -3,8 +3,8 @@ import { DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP } from '@/lib/config';
 import type { RawDocument, DocumentChunk } from './types';
 
 /**
- * Split a document into overlapping chunks.
- * Uses a simple character-based strategy with paragraph awareness.
+ * Split a document into overlapping chunks with markdown heading awareness.
+ * Tracks the heading context (most recent heading above each chunk).
  */
 export function chunkDocument(
   doc: RawDocument,
@@ -16,32 +16,107 @@ export function chunkDocument(
   const text = doc.content.trim();
   if (!text) return [];
 
-  // If the document fits in one chunk, return it as-is
-  if (text.length <= chunkSize) {
-    return [
-      {
-        sourceId: doc.sourceId,
-        documentId: doc.id,
-        title: doc.title,
-        path: doc.path,
-        content: text,
-        chunkIndex: 0,
-        chunkTotal: 1,
-        contentHash: hashContent(text),
-        metadata: doc.metadata,
-      },
-    ];
+  // Parse document into sections by heading
+  const sections = parseMarkdownSections(text);
+
+  // Collect raw chunks with heading context
+  const rawChunks: Array<{ content: string; headingContext: string }> = [];
+
+  for (const section of sections) {
+    const sectionText = section.content.trim();
+    if (!sectionText) continue;
+
+    if (sectionText.length <= chunkSize) {
+      rawChunks.push({ content: sectionText, headingContext: section.heading });
+    } else {
+      // Split long sections by paragraph, then by characters if needed
+      const subChunks = splitLongSection(sectionText, chunkSize, overlap);
+      for (const sub of subChunks) {
+        rawChunks.push({ content: sub, headingContext: section.heading });
+      }
+    }
   }
 
-  // Split into paragraphs first, then recombine into chunks
+  if (rawChunks.length === 0) return [];
+
+  const chunkTotal = rawChunks.length;
+  return rawChunks.map((raw, index) => ({
+    sourceId: doc.sourceId,
+    documentId: doc.id,
+    title: doc.title,
+    path: doc.path,
+    content: raw.content,
+    chunkIndex: index,
+    chunkTotal,
+    contentHash: hashContent(raw.content),
+    metadata: {
+      ...doc.metadata,
+      headingContext: raw.headingContext,
+    },
+  }));
+}
+
+/** A section parsed from a markdown document */
+interface MarkdownSection {
+  heading: string; // Most recent heading above this content (may be empty string)
+  content: string;
+}
+
+/**
+ * Parse a markdown document into sections, tracking the current heading context.
+ * Each heading starts a new section; content between headings belongs to the
+ * most recent heading above it.
+ */
+function parseMarkdownSections(text: string): MarkdownSection[] {
+  const lines = text.split('\n');
+  const sections: MarkdownSection[] = [];
+
+  let currentHeading = '';
+  let currentLines: string[] = [];
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
+    if (headingMatch) {
+      // Flush accumulated content under previous heading
+      const accumulated = currentLines.join('\n').trim();
+      if (accumulated) {
+        sections.push({ heading: currentHeading, content: accumulated });
+      }
+      // Start new section under this heading
+      currentHeading = line.trim();
+      currentLines = [];
+    } else {
+      currentLines.push(line);
+    }
+  }
+
+  // Flush remaining content
+  const remaining = currentLines.join('\n').trim();
+  if (remaining) {
+    sections.push({ heading: currentHeading, content: remaining });
+  }
+
+  // If no sections were produced (no headings), return the whole text as one section
+  if (sections.length === 0) {
+    sections.push({ heading: '', content: text.trim() });
+  }
+
+  return sections;
+}
+
+/**
+ * Split a long text section into overlapping chunks.
+ * Tries paragraph boundaries first, falls back to character splitting.
+ */
+function splitLongSection(text: string, chunkSize: number, overlap: number): string[] {
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
+
   const chunks: string[] = [];
   let current = '';
 
   for (const para of paragraphs) {
     if (current.length + para.length + 2 > chunkSize && current.length > 0) {
       chunks.push(current.trim());
-      // Keep overlap from end of current chunk
       const overlapText = current.slice(-overlap);
       current = overlapText + '\n\n' + para;
     } else {
@@ -52,31 +127,15 @@ export function chunkDocument(
     chunks.push(current.trim());
   }
 
-  // If paragraph-based chunking produced only one chunk but text is long,
-  // fall back to character-based splitting
+  // If paragraph splitting produced only one chunk but text is too long, use char splitting
   if (chunks.length === 1 && text.length > chunkSize) {
-    return chunkByCharacters(doc, text, chunkSize, overlap);
+    return splitByCharacters(text, chunkSize, overlap);
   }
 
-  return chunks.map((content, index) => ({
-    sourceId: doc.sourceId,
-    documentId: doc.id,
-    title: doc.title,
-    path: doc.path,
-    content,
-    chunkIndex: index,
-    chunkTotal: chunks.length,
-    contentHash: hashContent(content),
-    metadata: doc.metadata,
-  }));
+  return chunks.length > 0 ? chunks : [text];
 }
 
-function chunkByCharacters(
-  doc: RawDocument,
-  text: string,
-  chunkSize: number,
-  overlap: number,
-): DocumentChunk[] {
+function splitByCharacters(text: string, chunkSize: number, overlap: number): string[] {
   const chunks: string[] = [];
   let start = 0;
 
@@ -92,17 +151,7 @@ function chunkByCharacters(
     start = end - safeOverlap;
   }
 
-  return chunks.map((content, index) => ({
-    sourceId: doc.sourceId,
-    documentId: doc.id,
-    title: doc.title,
-    path: doc.path,
-    content,
-    chunkIndex: index,
-    chunkTotal: chunks.length,
-    contentHash: hashContent(content),
-    metadata: doc.metadata,
-  }));
+  return chunks;
 }
 
 function hashContent(content: string): string {

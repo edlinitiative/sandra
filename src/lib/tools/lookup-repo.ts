@@ -1,43 +1,76 @@
 import { z } from 'zod';
-import type { SandraTool, ToolResult } from './types';
+import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
+import { db } from '@/lib/db';
+import { getActiveRepos, getRepoByOwnerAndName } from '@/lib/db/repos';
 
 const inputSchema = z.object({
-  owner: z.string().default('edlinitiative').describe('GitHub organization or user'),
-  repo: z.string().describe('Repository name'),
+  repoName: z.string().optional().describe('Repository name to look up (optional — omit to list all)'),
 });
 
 const lookupRepoInfo: SandraTool = {
   name: 'lookupRepoInfo',
   description:
-    'Look up information about a specific EdLight GitHub repository. Returns metadata, description, and indexing status.',
+    'Look up information about EdLight GitHub repositories. Returns repo metadata, description, and indexing status. Omit repoName to list all active repos.',
   parameters: {
     type: 'object',
     properties: {
-      owner: { type: 'string', description: 'GitHub organization or user', default: 'edlinitiative' },
-      repo: { type: 'string', description: 'Repository name' },
+      repoName: { type: 'string', description: 'Repository name (optional)' },
     },
-    required: ['repo'],
+    required: [],
   },
   inputSchema,
+  requiredScopes: ['repos:read'],
 
-  async execute(input: unknown): Promise<ToolResult> {
+  async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
 
-    // TODO: Wire to GitHub client + RepoRegistry in database
-    // For now, return placeholder info
+    if (params.repoName) {
+      // Search by name across all known owners
+      const repos = await getActiveRepos(db);
+      const match = repos.find(
+        (r) => r.name.toLowerCase() === params.repoName!.toLowerCase() ||
+               r.displayName.toLowerCase().includes(params.repoName!.toLowerCase()),
+      );
+      if (!match) {
+        return {
+          success: true,
+          data: {
+            repos: [],
+            message: `No repository found matching '${params.repoName}'`,
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          repos: [formatRepo(match)],
+        },
+      };
+    }
+
+    // Return all active repos
+    const repos = await getActiveRepos(db);
     return {
       success: true,
       data: {
-        owner: params.owner,
-        repo: params.repo,
-        url: `https://github.com/${params.owner}/${params.repo}`,
-        indexed: false,
-        message: `Repository ${params.owner}/${params.repo} is registered but not yet indexed. Trigger indexing from the admin panel.`,
+        repos: repos.map(formatRepo),
       },
     };
   },
 };
+
+function formatRepo(repo: Awaited<ReturnType<typeof getRepoByOwnerAndName>>) {
+  if (!repo) return null;
+  return {
+    name: repo.name,
+    displayName: repo.displayName,
+    description: repo.description,
+    url: repo.url,
+    syncStatus: repo.syncStatus,
+    lastSyncAt: repo.lastSyncAt,
+  };
+}
 
 toolRegistry.register(lookupRepoInfo);
 

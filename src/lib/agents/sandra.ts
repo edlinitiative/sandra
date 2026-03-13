@@ -155,7 +155,11 @@ export async function runSandraAgent(
       log.info(`Executing tool: ${toolCall.name}`, { id: toolCall.id });
       toolsUsed.push(toolCall.name);
 
-      const result = await executeTool(toolCall.name, toolCall.arguments);
+      const result = await executeTool(toolCall.name, JSON.parse(toolCall.arguments), {
+        sessionId: input.sessionId,
+        userId: input.userId,
+        scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+      });
       const resultStr = JSON.stringify(result.data ?? result.error ?? 'No result');
 
       // Add tool result to messages
