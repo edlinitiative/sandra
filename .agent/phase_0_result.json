@@ -9,7 +9,9 @@
     "src/lib/__tests__/mocks/prisma.ts",
     "src/lib/__tests__/mocks/ai-provider.ts",
     "src/lib/__tests__/helpers.ts",
-    "src/lib/__tests__/setup.test.ts"
+    "src/lib/__tests__/setup.test.ts",
+    ".agent/impl_docs/progress.md",
+    ".agent/phase_0_result.json"
   ],
-  "notes": "Phase 0 test infrastructure was pre-implemented. Fixed peer dependency conflict by upgrading @vitejs/plugin-react from ^5.1.4 to ^6.0.0 (required for vite@8 compatibility) and installed node_modules. All 104 tests pass across 12 test files. tsc --noEmit and next lint both clean. vitest.config.ts has globals:true, environment:node, @/ alias. npm scripts test/test:watch/test:coverage all present. Mock Prisma client (7 models), mock AIProvider (chat/stream/embed/health), and fixture factories all verified."
+  "notes": "All Phase 0 files were pre-authored. Only action required was installing vitest and @vitejs/plugin-react into node_modules via npm install. All evaluation criteria pass: 196 tests across 21 files, tsc clean, ESLint clean. vitest.config.ts has globals:true, environment:node, @/ alias. npm scripts test/test:watch/test:coverage all present. Mock Prisma client (7 models), mock AIProvider (chat/stream/embed/health), and fixture factories all verified."
 }
