@@ -80,11 +80,16 @@ function chunkByCharacters(
   const chunks: string[] = [];
   let start = 0;
 
+  // Prevent infinite loops when overlap is >= chunkSize
+  const safeOverlap = Math.min(overlap, chunkSize - 1);
+
   while (start < text.length) {
     const end = Math.min(start + chunkSize, text.length);
     chunks.push(text.slice(start, end));
-    start = end - overlap;
-    if (start >= text.length) break;
+
+    if (end === text.length) break;
+
+    start = end - safeOverlap;
   }
 
   return chunks.map((content, index) => ({
