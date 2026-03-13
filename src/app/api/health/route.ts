@@ -1,34 +1,40 @@
 import { NextResponse } from 'next/server';
-import { APP_NAME, APP_VERSION } from '@/lib/config';
+import { db } from '@/lib/db';
 import { getVectorStore } from '@/lib/knowledge';
-import { getConfiguredRepos } from '@/lib/github';
-import { toolRegistry } from '@/lib/tools';
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Timeout')), ms),
+  );
+  return Promise.race([promise, timeout]);
+}
 
 export async function GET() {
-  const vectorStore = getVectorStore();
-  const isVectorStoreReady = await vectorStore.isReady();
-  const totalChunks = await vectorStore.count();
+  const timestamp = new Date().toISOString();
+  const checks: Record<string, string> = {};
 
-  return NextResponse.json({
-    data: {
-      name: APP_NAME,
-      version: APP_VERSION,
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      components: {
-        vectorStore: {
-          ready: isVectorStoreReady,
-          totalChunks,
-        },
-        repos: {
-          total: getConfiguredRepos(true).length,
-          active: getConfiguredRepos().length,
-        },
-        tools: {
-          registered: toolRegistry.getToolNames(),
-          count: toolRegistry.getToolNames().length,
-        },
-      },
-    },
-  });
+  // Database check
+  try {
+    await withTimeout(db.$queryRaw`SELECT 1`, 5000);
+    checks.database = 'ok';
+  } catch (err) {
+    checks.database = `error: ${err instanceof Error ? err.message : 'unknown'}`;
+  }
+
+  // Vector store check
+  try {
+    const vectorStore = getVectorStore();
+    await withTimeout(vectorStore.count(), 5000);
+    checks.vectorStore = 'ok';
+  } catch (err) {
+    checks.vectorStore = `error: ${err instanceof Error ? err.message : 'unknown'}`;
+  }
+
+  const allOk = Object.values(checks).every((v) => v === 'ok');
+  const status = allOk ? 'ok' : 'degraded';
+
+  return NextResponse.json(
+    { status, timestamp, checks },
+    { status: allOk ? 200 : 503 },
+  );
 }

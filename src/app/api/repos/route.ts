@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getConfiguredRepos } from '@/lib/github';
 import { getVectorStore } from '@/lib/knowledge';
-import { errorResponse } from '@/lib/utils';
+import { apiErrorResponse, generateRequestId, successResponse } from '@/lib/utils';
+import { requireAdminAuth } from '@/lib/utils/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const requestId = generateRequestId();
+
   try {
+    requireAdminAuth(request);
+
     const repos = getConfiguredRepos(true);
     const vectorStore = getVectorStore();
 
@@ -12,29 +17,26 @@ export async function GET() {
       repos.map(async (repo) => {
         const chunkCount = await vectorStore.count(`${repo.owner}/${repo.name}`);
         return {
-          owner: repo.owner,
           name: repo.name,
           displayName: repo.displayName,
-          description: repo.description,
           url: repo.url,
-          branch: repo.branch,
-          docsPath: repo.docsPath,
-          isActive: repo.isActive,
-          indexed: chunkCount > 0,
-          chunkCount,
+          syncStatus: repo.isActive ? (chunkCount > 0 ? 'indexed' : 'not_indexed') : 'not_indexed',
+          lastIndexedAt: null,
+          documentCount: chunkCount,
         };
       }),
     );
 
-    return NextResponse.json({
-      data: {
-        repos: reposWithStatus,
-        totalRepos: repos.length,
-        activeRepos: repos.filter((r) => r.isActive).length,
-      },
-    });
+    // Sort alphabetically by name
+    reposWithStatus.sort((a, b) => a.name.localeCompare(b.name));
+
+    const totalDocuments = reposWithStatus.reduce((sum, r) => sum + r.documentCount, 0);
+
+    return NextResponse.json(
+      successResponse({ repos: reposWithStatus, totalDocuments }, { requestId }),
+    );
   } catch (error) {
-    const err = errorResponse(error);
-    return NextResponse.json({ error: err.error }, { status: err.status });
+    const { envelope, status } = apiErrorResponse(error, requestId);
+    return NextResponse.json(envelope, { status });
   }
 }

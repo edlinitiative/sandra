@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { ZodError } from 'zod';
 import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
-import { errorResponse, SandraError } from '@/lib/utils';
+import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
-
-const chatRequestSchema = z.object({
-  message: z.string().min(1, 'Message is required').max(10000),
-  sessionId: z.string().min(1).optional(),
-  userId: z.string().optional(),
-  language: z.string().optional(),
-  channel: z.enum(['web', 'whatsapp', 'instagram', 'email', 'voice']).optional().default('web'),
-});
 
 const DEMO_RESPONSES: Record<string, Record<string, string>> = {
   en: {
@@ -49,63 +41,70 @@ function isApiKeyMissing(): boolean {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const parsed = chatRequestSchema.safeParse(body);
+  const requestId = generateRequestId();
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request',
-            issues: parsed.error.issues.map((i) => ({
-              field: i.path.join('.'),
-              message: i.message,
-            })),
-          },
-        },
-        { status: 400 },
-      );
+  try {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      const err = new ValidationError('Invalid JSON body');
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, { status });
     }
 
-    const { message, userId, channel } = parsed.data;
-    const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
-    const language = resolveLanguage({ explicit: parsed.data.language });
+    const parsed = chatInputSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const details = parsed.error.flatten();
+      const err = new ValidationError('Invalid request', { details });
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, { status });
+    }
+
+    const { sessionId: rawSessionId, language: rawLanguage } = parsed.data;
+    const message = sanitizeInput(parsed.data.message);
+    const sessionId = rawSessionId ?? crypto.randomUUID();
+    const language = resolveLanguage({ explicit: rawLanguage });
 
     // Demo mode: return canned response when API key is not configured
     if (isApiKeyMissing()) {
-      return NextResponse.json({
-        data: {
-          response: getDemoResponse(message, language),
-          sessionId,
-          language,
-          toolsUsed: [],
-          retrievalUsed: false,
-          demoMode: true,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        },
-      });
+      return NextResponse.json(
+        successResponse(
+          {
+            response: getDemoResponse(message, language),
+            sessionId,
+            language,
+            toolsUsed: [],
+            retrievalUsed: false,
+            demoMode: true,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          },
+          { requestId },
+        ),
+      );
     }
 
     const result = await runSandraAgent({
       message,
       sessionId,
-      userId,
       language,
-      channel,
+      channel: 'web',
     });
 
-    return NextResponse.json({
-      data: {
-        response: result.response,
-        sessionId,
-        language: result.language,
-        toolsUsed: result.toolsUsed,
-        retrievalUsed: result.retrievalUsed,
-        usage: result.tokenUsage,
-      },
-    });
+    return NextResponse.json(
+      successResponse(
+        {
+          response: result.response,
+          sessionId,
+          language: result.language,
+          toolsUsed: result.toolsUsed,
+          retrievalUsed: result.retrievalUsed,
+          usage: result.tokenUsage,
+        },
+        { requestId },
+      ),
+    );
   } catch (error) {
     // If the error is a provider auth error, fall back to demo mode gracefully
     const isAuthError =
@@ -114,23 +113,29 @@ export async function POST(request: Request) {
       error.message.includes('401');
 
     if (isAuthError) {
-      const body = chatRequestSchema.safeParse(await request.clone().json().catch(() => ({})));
-      const language = body.success ? resolveLanguage({ explicit: body.data.language }) : 'en';
-      const message = body.success ? body.data.message : '';
-      return NextResponse.json({
-        data: {
-          response: getDemoResponse(message, language),
-          sessionId: body.success ? body.data.sessionId ?? crypto.randomUUID() : crypto.randomUUID(),
-          language,
-          toolsUsed: [],
-          retrievalUsed: false,
-          demoMode: true,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        },
-      });
+      return NextResponse.json(
+        successResponse(
+          {
+            response: getDemoResponse('', 'en'),
+            sessionId: crypto.randomUUID(),
+            language: 'en',
+            toolsUsed: [],
+            retrievalUsed: false,
+            demoMode: true,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          },
+          { requestId },
+        ),
+      );
     }
 
-    const err = errorResponse(error);
-    return NextResponse.json({ error: err.error }, { status: err.status });
+    if (error instanceof ZodError) {
+      const err = new ValidationError(error.message);
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, { status });
+    }
+
+    const { envelope, status } = apiErrorResponse(error, requestId);
+    return NextResponse.json(envelope, { status });
   }
 }

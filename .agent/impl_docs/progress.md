@@ -152,3 +152,48 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 265 tests passing, 28 test files (+69 new tests)
 **Quality:** tsc clean, ESLint clean, vitest run clean
 **Next:** Phase 4 — Interface Layer
+
+### Session 5 — 2026-03-13
+
+**Goal:** Implement Phase 4 — Interface Layer (T090–T111)
+**Completed:** T090, T091, T092, T093, T094, T096, T097, T098, T099, T100, T101, T102, T103, T104, T105, T106, T107, T108, T109, T111
+**Infrastructure Updates:**
+- IU-3: `src/lib/agents/index.ts` already exports `runSandraAgent` and `runSandraAgentStream` ✓
+- IU-4: `src/lib/github/index.ts` already exports `indexRepository` and `IndexingResult` ✓
+**Discoveries:**
+- All UI components (ChatContainer, ChatMessage, ChatInput, ChatEmptyState) were already pre-authored in kebab-case files; T097–T105 involved creating additional files and verifying existing behavior
+- Chat and streaming API routes already had substantial implementation; T091 updated the response envelope to `{ success: true, data, meta: { requestId } }` pattern throughout
+- Health route updated to use Prisma DB check and proper `ok`/`degraded` status codes
+- Repos route updated to add `requireAdminAuth()` middleware and sort alphabetically
+- Index route updated to use `repoId` parameter (was previously `owner`+`repo`), add auth
+- Conversations route updated to validate sessionId as UUID, return 404 for missing session
+- `@testing-library/react`, `@testing-library/jest-dom`, and `jsdom` installed for UI component tests
+- `vitest.config.ts` updated to add `@vitejs/plugin-react` plugin for JSX in test files
+- UI component tests use `// @vitest-environment jsdom` annotation and `window.HTMLElement.prototype.scrollIntoView = vi.fn()` for jsdom compatibility
+**Changes:**
+- `src/lib/utils/api-helpers.ts` — new: generateRequestId, successResponse, apiErrorResponse
+- `src/lib/utils/index.ts` — added api-helpers exports
+- `src/lib/utils/auth.ts` — new: requireAdminAuth with timing-safe comparison
+- `src/app/api/chat/route.ts` — updated to standard success/error envelope, uses chatInputSchema
+- `src/app/api/health/route.ts` — updated to DB check + vectorStore check, ok/degraded status
+- `src/app/api/repos/route.ts` — added requireAdminAuth, standard envelope, alphabetical sort
+- `src/app/api/index/route.ts` — added requireAdminAuth, repoId-based lookup, standard envelope
+- `src/app/api/conversations/[sessionId]/route.ts` — UUID validation, 404 for missing, standard envelope
+- `src/lib/client/chat-api.ts` — new: sendMessage, streamMessage, getConversation
+- `src/lib/client/index.ts` — new: exports
+- `src/hooks/useSession.ts` — new: localStorage-backed session ID hook
+- `src/components/chat/index.ts` — new: component re-exports
+- `src/app/api/__tests__/chat.test.ts` — new: 5 tests
+- `src/app/api/__tests__/health.test.ts` — new: 4 tests
+- `src/app/api/__tests__/conversations.test.ts` — new: 4 tests
+- `src/app/api/__tests__/repos.test.ts` — new: 4 tests
+- `src/app/api/__tests__/index.test.ts` — new: 5 tests
+- `src/lib/utils/__tests__/auth.test.ts` — new: 5 tests
+- `src/components/chat/__tests__/ChatContainer.test.tsx` — new: 5 tests
+- `src/components/chat/__tests__/MessageInput.test.tsx` — new: 6 tests
+- `src/components/chat/__tests__/EmptyState.test.tsx` — new: 4 tests
+- `vitest.config.ts` — added @vitejs/plugin-react plugin
+- `package.json` — added jsdom, @testing-library/react, @testing-library/jest-dom
+**Coverage:** 308 tests passing, 37 test files (+43 new tests)
+**Quality:** tsc clean, ESLint clean, vitest run clean
+**Next:** Phase 5 — Integration and Polish

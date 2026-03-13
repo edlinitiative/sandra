@@ -1,39 +1,50 @@
 import { NextResponse } from 'next/server';
 import { getSessionStore } from '@/lib/memory/session-store';
-import { errorResponse } from '@/lib/utils';
+import { apiErrorResponse, generateRequestId, successResponse, sessionIdSchema, ValidationError, NotFoundError } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ sessionId: string }>;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
+  const requestId = generateRequestId();
+
   try {
     const { sessionId } = await context.params;
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'sessionId is required' } },
-        { status: 400 },
-      );
+    // Validate sessionId as UUID
+    const parsed = sessionIdSchema.safeParse(sessionId);
+    if (!parsed.success) {
+      const err = new ValidationError('Invalid session ID format');
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, { status });
     }
 
     const store = getSessionStore();
     const history = await store.getHistory(sessionId);
 
-    return NextResponse.json({
-      data: {
-        sessionId,
-        messages: history.map((entry) => ({
-          role: entry.role,
-          content: entry.content,
-          timestamp: entry.timestamp.toISOString(),
-          metadata: entry.metadata,
-        })),
-        messageCount: history.length,
-      },
-    });
+    if (history.length === 0) {
+      // If no history, treat as not found
+      const err = new NotFoundError('Session', sessionId);
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, { status });
+    }
+
+    return NextResponse.json(
+      successResponse(
+        {
+          sessionId,
+          messages: history.map((entry) => ({
+            role: entry.role,
+            content: entry.content,
+            createdAt: entry.timestamp.toISOString(),
+          })),
+        },
+        { requestId },
+      ),
+    );
   } catch (error) {
-    const err = errorResponse(error);
-    return NextResponse.json({ error: err.error }, { status: err.status });
+    const { envelope, status } = apiErrorResponse(error, requestId);
+    return NextResponse.json(envelope, { status });
   }
 }
