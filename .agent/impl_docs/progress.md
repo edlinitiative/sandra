@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** 1 (complete)
-- **Tasks completed:** 23 / 86
-- **Test coverage:** 196 tests passing
+- **Phase:** 3 (complete)
+- **Tasks completed:** 39 / 86
+- **Test coverage:** 265 tests passing
 - **Last session:** 2026-03-13
 
 ## Phase Completion Loop
@@ -97,3 +97,58 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 196 tests passing, 21 test files
 **Quality:** tsc clean, ESLint clean, vitest run clean
 **Next:** Phase 2 — Core Engine
+
+### Session 3 — 2026-03-13
+
+**Goal:** Implement Phase 2 — Core Engine (T030–T046)
+**Completed:** T030, T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044, T045, T046
+**Discoveries:**
+- Phase 2 files were pre-authored; tasks were completion, wiring, and testing
+- Session management via InMemorySessionStore and PrismaSessionStore both implemented
+- Tool system: ToolRegistry singleton, executor with scope enforcement, 3 MVP tools (searchKnowledgeBase, lookupRepo, getInitiatives)
+- RAG pipeline: chunker with markdown heading context, InMemoryVectorStore (cosine similarity), retrieval with score filtering, ingestion pipeline
+- Agent skeleton at src/lib/agents/sandra.ts (basic loop)
+**Changes:** (see phase_2_result.json for full list)
+**Coverage:** 196 tests passing, 21 test files
+**Quality:** tsc clean, ESLint clean, vitest run clean
+**Next:** Phase 3 — Agent & Indexing
+
+### Session 4 — 2026-03-13
+
+**Goal:** Implement Phase 3 — Agent & Indexing (T060–T075)
+**Completed:** T060, T061, T062, T063, T064, T065, T066, T067, T068, T069, T070, T071, T072, T073, T074, T075
+**Infrastructure Updates:**
+- IU-1: getToolDefinitions() already correct format ✓
+- IU-2: Session language field already returned by getSession() ✓
+**Discoveries:**
+- Channel types (InboundMessage/OutboundMessage/ChannelAdapter) were already complete from Phase 2
+- System prompt builder (buildSandraSystemPrompt/getSandraSystemPrompt) already complete
+- Sandra agent loop had a working skeleton but was missing: outer try-catch, ProviderError handling, JSON.parse safety, correct fallback message text, streaming
+- GitHub client was missing 404/403 handling (listDirectory/getFileContent now return null on 404, throw ProviderError on 403)
+- Indexer was entirely rewritten: now takes repoId (string) from DB, tracks syncStatus, uses content hash for change detection, manages IndexedSource/IndexedDocument records
+- IndexingResult type extended with new required fields (repoId, status, documentsProcessed/Skipped/Failed, startedAt, completedAt)
+- API route at src/app/api/index/route.ts updated to use indexRepositoriesByConfig() (backward compat helper)
+**Changes:**
+- `src/lib/agents/types.ts` — added AgentContext, AgentStreamEvent types
+- `src/lib/agents/context.ts` — new context assembly module
+- `src/lib/agents/sandra.ts` — error handling, streaming, fixed fallback messages
+- `src/lib/agents/index.ts` — updated exports
+- `src/lib/github/types.ts` — added FetchedDocument, extended IndexingResult
+- `src/lib/github/client.ts` — 404 returns null, 403 throws ProviderError
+- `src/lib/github/fetcher.ts` — added fetchRepoDocuments(), null-safe directory listing
+- `src/lib/github/indexer.ts` — complete rewrite with repoId, syncStatus, content hash
+- `src/lib/github/index.ts` — updated exports
+- `src/lib/db/documents.ts` — createOrUpdateSource, saveIndexedDocuments, deleteDocumentsForSource
+- `src/lib/db/repos.ts` — getRepoById
+- `src/lib/db/index.ts` — updated exports
+- `src/app/api/index/route.ts` — fixed to use indexRepositoriesByConfig
+- `src/lib/agents/__tests__/prompts.test.ts` — new
+- `src/lib/agents/__tests__/context.test.ts` — new
+- `src/lib/agents/__tests__/sandra.test.ts` — new
+- `src/lib/agents/__tests__/integration.test.ts` — new
+- `src/lib/github/__tests__/client.test.ts` — new
+- `src/lib/github/__tests__/fetcher.test.ts` — new
+- `src/lib/github/__tests__/indexer.test.ts` — new
+**Coverage:** 265 tests passing, 28 test files (+69 new tests)
+**Quality:** tsc clean, ESLint clean, vitest run clean
+**Next:** Phase 4 — Interface Layer

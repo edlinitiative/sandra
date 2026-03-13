@@ -3,6 +3,13 @@ export { createSession, getSessionById, getSessionMessages, updateSession } from
 export type { CreateSessionInput, UpdateSessionInput } from './sessions';
 export { createMessage, getMessagesBySessionId } from './messages';
 export type { CreateMessageInput } from './messages';
-export { getActiveRepos, getRepoByOwnerAndName, updateRepoSyncStatus } from './repos';
-export { createIndexedDocument, getDocumentsBySourceId, getDocumentByHash } from './documents';
-export type { CreateIndexedDocumentInput } from './documents';
+export { getActiveRepos, getRepoByOwnerAndName, getRepoById, updateRepoSyncStatus } from './repos';
+export {
+  createIndexedDocument,
+  getDocumentsBySourceId,
+  getDocumentByHash,
+  createOrUpdateSource,
+  saveIndexedDocuments,
+  deleteDocumentsForSource,
+} from './documents';
+export type { CreateIndexedDocumentInput, CreateOrUpdateSourceInput, SaveDocumentInput } from './documents';

@@ -35,12 +35,27 @@ export class GitHubClient {
 
   /**
    * Fetch a list of files from a repository directory.
+   * Returns null if the path does not exist (404).
    */
-  async listDirectory(owner: string, repo: string, path = '', branch = 'main'): Promise<GitHubContentItem[]> {
+  async listDirectory(owner: string, repo: string, path = '', branch = 'main'): Promise<GitHubContentItem[] | null> {
     const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
     log.debug(`Listing directory: ${owner}/${repo}/${path}`);
 
     const response = await fetch(url, { headers: this.headers });
+
+    if (response.status === 404) {
+      log.debug(`Directory not found: ${owner}/${repo}/${path}`);
+      return null;
+    }
+
+    if (response.status === 403) {
+      const retryAfter = response.headers.get('X-RateLimit-Reset');
+      throw new ProviderError(
+        'github',
+        `GitHub rate limit exceeded${retryAfter ? ` — retry after ${retryAfter}` : ''}`,
+      );
+    }
+
     if (!response.ok) {
       throw new ProviderError('github', `Failed to list ${owner}/${repo}/${path}: ${response.status}`);
     }
@@ -51,12 +66,27 @@ export class GitHubClient {
 
   /**
    * Fetch the content of a single file.
+   * Returns null if the file does not exist (404).
    */
-  async getFileContent(owner: string, repo: string, path: string, branch = 'main'): Promise<GitHubFile> {
+  async getFileContent(owner: string, repo: string, path: string, branch = 'main'): Promise<GitHubFile | null> {
     const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
     log.debug(`Fetching file: ${owner}/${repo}/${path}`);
 
     const response = await fetch(url, { headers: this.headers });
+
+    if (response.status === 404) {
+      log.debug(`File not found: ${owner}/${repo}/${path}`);
+      return null;
+    }
+
+    if (response.status === 403) {
+      const retryAfter = response.headers.get('X-RateLimit-Reset');
+      throw new ProviderError(
+        'github',
+        `GitHub rate limit exceeded${retryAfter ? ` — retry after ${retryAfter}` : ''}`,
+      );
+    }
+
     if (!response.ok) {
       throw new ProviderError('github', `Failed to fetch ${owner}/${repo}/${path}: ${response.status}`);
     }
@@ -76,6 +106,13 @@ export class GitHubClient {
       size: data.size,
       url: data.html_url,
     };
+  }
+
+  /**
+   * Alias for getFileContent — for compatibility with phase doc naming.
+   */
+  async getRepoContents(owner: string, repo: string, path: string, branch = 'main'): Promise<GitHubContentItem[] | null> {
+    return this.listDirectory(owner, repo, path, branch);
   }
 
   /**

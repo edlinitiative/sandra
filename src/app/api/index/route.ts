@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { indexRepository, indexAllRepositories, getConfiguredRepos, findRepoConfig } from '@/lib/github';
+import { indexRepositoriesByConfig, getConfiguredRepos, findRepoConfig } from '@/lib/github';
 import { errorResponse } from '@/lib/utils';
 
 const indexRequestSchema = z.object({
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const { owner, repo } = parsed.data;
 
     if (owner && repo) {
-      // Index a specific repo
+      // Index a specific repo by config
       const repoConfig = findRepoConfig(owner, repo);
       if (!repoConfig) {
         return NextResponse.json(
@@ -33,13 +33,13 @@ export async function POST(request: Request) {
         );
       }
 
-      const result = await indexRepository(repoConfig);
-      return NextResponse.json({ data: { results: [result] } });
+      const results = await indexRepositoriesByConfig([repoConfig]);
+      return NextResponse.json({ data: { results } });
     }
 
     // Index all configured repos
     const repos = getConfiguredRepos();
-    const results = await indexAllRepositories(repos);
+    const results = await indexRepositoriesByConfig(repos);
 
     return NextResponse.json({
       data: {

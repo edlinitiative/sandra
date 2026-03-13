@@ -1,6 +1,6 @@
 import type { SupportedLanguage } from '@/lib/i18n/types';
 import type { ChannelType } from '@/lib/channels/types';
-import type { ChatMessage, ToolCall } from '@/lib/ai/types';
+import type { ChatMessage, ToolCall, ToolDefinition } from '@/lib/ai/types';
 
 /**
  * Agent system type definitions.
@@ -58,3 +58,16 @@ export const DEFAULT_AGENT_CONFIG: AgentConfig = {
   enableRetrieval: true,
   enableTools: true,
 };
+
+/** Assembled context for an agent turn */
+export interface AgentContext {
+  systemPrompt: string;
+  messageHistory: ChatMessage[];
+  tools: ToolDefinition[];
+}
+
+/** A streaming event from the Sandra agent */
+export interface AgentStreamEvent {
+  type: 'token' | 'tool_call' | 'tool_result' | 'done' | 'error';
+  data: string;
+}

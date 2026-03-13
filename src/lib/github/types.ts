@@ -24,9 +24,25 @@ export interface GitHubFile {
   url: string;
 }
 
+/** A markdown document fetched from a repository (simplified view for indexing) */
+export interface FetchedDocument {
+  path: string;
+  content: string;
+  url: string;
+}
+
 /** Result of an indexing operation */
 export interface IndexingResult {
+  repoId: string;
   repoFullName: string;
+  status: 'completed' | 'failed';
+  documentsProcessed: number;
+  documentsSkipped: number;
+  documentsFailed: number;
+  startedAt: Date;
+  completedAt: Date;
+  error?: string;
+  /** Kept for backward compat */
   filesIndexed: number;
   chunksCreated: number;
   errors: string[];

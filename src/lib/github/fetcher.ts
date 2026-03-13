@@ -1,5 +1,5 @@
 import { getGitHubClient } from './client';
-import type { RepoConfig, GitHubFile } from './types';
+import type { RepoConfig, GitHubFile, FetchedDocument } from './types';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('github:fetcher');
@@ -12,6 +12,9 @@ const INDEXABLE_EXTENSIONS = new Set([
   '.py', '.rb', '.go', '.rs',
   '.html', '.css', '.scss',
 ]);
+
+/** Markdown-only extensions for fetchRepoDocuments */
+const MARKDOWN_EXTENSIONS = new Set(['.md', '.mdx']);
 
 const MAX_FILE_SIZE = 100_000; // 100KB max per file
 
@@ -56,6 +59,65 @@ export async function fetchRepoContent(repo: RepoConfig): Promise<GitHubFile[]> 
   return unique;
 }
 
+/**
+ * Fetch only markdown documents from a repository.
+ * Returns FetchedDocument[] (simplified, with URL).
+ * Fetches README + all .md files from docsPath.
+ */
+export async function fetchRepoDocuments(repo: RepoConfig): Promise<FetchedDocument[]> {
+  const client = getGitHubClient();
+  const documents: FetchedDocument[] = [];
+  const seen = new Set<string>();
+
+  log.info(`Fetching documents from ${repo.owner}/${repo.name}`);
+
+  // Always try to get README
+  const readme = await client.getReadme(repo.owner, repo.name);
+  if (readme && !seen.has(readme.path)) {
+    seen.add(readme.path);
+    documents.push({
+      path: readme.path,
+      content: readme.content,
+      url: readme.url,
+    });
+  }
+
+  // Fetch .md files from docsPath (or root if no docsPath)
+  const docsPath = repo.docsPath ?? '';
+  const items = await client.listDirectory(repo.owner, repo.name, docsPath, repo.branch);
+
+  if (items === null) {
+    log.warn(`Docs path not found: ${repo.owner}/${repo.name}/${docsPath}`);
+  } else {
+    for (const item of items) {
+      if (item.type !== 'file') continue;
+      const ext = '.' + item.name.split('.').pop()?.toLowerCase();
+      if (!MARKDOWN_EXTENSIONS.has(ext)) continue;
+      if (item.size > MAX_FILE_SIZE) continue;
+      if (seen.has(item.path)) continue;
+
+      try {
+        const file = await client.getFileContent(repo.owner, repo.name, item.path, repo.branch);
+        if (file) {
+          seen.add(file.path);
+          documents.push({
+            path: file.path,
+            content: file.content,
+            url: file.url,
+          });
+        }
+      } catch (e) {
+        log.warn(`Failed to fetch ${item.path}`, {
+          error: e instanceof Error ? e.message : 'unknown',
+        });
+      }
+    }
+  }
+
+  log.info(`Fetched ${documents.length} documents from ${repo.owner}/${repo.name}`);
+  return documents;
+}
+
 async function fetchDirectory(
   client: ReturnType<typeof getGitHubClient>,
   repo: RepoConfig,
@@ -67,13 +129,20 @@ async function fetchDirectory(
   try {
     const items = await client.listDirectory(repo.owner, repo.name, path, repo.branch);
 
+    if (items === null) {
+      log.debug(`Directory not found, skipping: ${path}`);
+      return;
+    }
+
     for (const item of items) {
       if (item.type === 'dir' && recursive) {
         await fetchDirectory(client, repo, item.path, files, errors, true);
       } else if (item.type === 'file' && isIndexable(item.name, item.size)) {
         try {
           const file = await client.getFileContent(repo.owner, repo.name, item.path, repo.branch);
-          files.push(file);
+          if (file) {
+            files.push(file);
+          }
         } catch (e) {
           errors.push(`Failed to fetch ${item.path}: ${e instanceof Error ? e.message : 'unknown'}`);
         }

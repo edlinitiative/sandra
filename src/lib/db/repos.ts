@@ -17,6 +17,13 @@ export async function getRepoByOwnerAndName(
   });
 }
 
+export async function getRepoById(
+  prisma: PrismaClient,
+  id: string,
+): Promise<RepoRegistry | null> {
+  return prisma.repoRegistry.findUnique({ where: { id } });
+}
+
 export async function updateRepoSyncStatus(
   prisma: PrismaClient,
   id: string,
