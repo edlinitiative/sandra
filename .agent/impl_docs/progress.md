@@ -110,3 +110,25 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 309 tests passing across 37 test files
 **Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, all tests green
 **Next:** Phase 3 — Agent & Indexing
+
+### Session 4 — 2026-03-14
+
+**Goal:** Implement Phase 3 — Agent & Indexing (T060–T075)
+**Completed:** T060, T061, T062, T063, T064, T065, T066, T067, T068, T069, T070, T071, T072, T073, T074, T075
+**Infrastructure Updates Applied:** IU-1 (tool definitions export already present), IU-2 (session language already in session store)
+**Blockers:** None
+**Discoveries:**
+- All 16 Phase 3 tasks were already fully implemented from a prior session
+- Agent runtime: `src/lib/agents/sandra.ts` — complete ReAct loop with tool execution, max-iteration guard, error recovery, streaming support
+- Context assembly: `src/lib/agents/context.ts` — loads session history, user memory, tool definitions → AgentContext
+- System prompt: `src/lib/agents/prompts.ts` — `buildSandraSystemPrompt` and `getSandraSystemPrompt` with persona, language, tools, guidelines
+- GitHub client: `src/lib/github/client.ts` — authenticated fetch-based client with listDirectory, getFileContent, getReadme, rate limit handling
+- Content fetcher: `src/lib/github/fetcher.ts` — `fetchRepoContent` and `fetchRepoDocuments` with deduplication, markdown-only filter
+- Indexer: `src/lib/github/indexer.ts` — `indexRepository` with full pipeline: SHA-256 hash, change detection, ingestion, DB records
+- DB helpers: `src/lib/db/documents.ts` — `createOrUpdateSource`, `saveIndexedDocuments`, `deleteDocumentsForSource` all complete
+- Types: `src/lib/github/types.ts` — `IndexingResult` with all required fields including duration, chunksCreated, errors
+- Test coverage: 69 Phase 3 tests across 7 test files; all 309 tests pass
+**Changes:** Updated tasks.md checkboxes (T060–T075) and progress.md
+**Coverage:** 309 tests passing across 37 test files
+**Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, all tests green
+**Next:** Phase 4 — Interface Layer
