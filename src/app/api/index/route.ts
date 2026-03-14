@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, getActiveRepos } from '@/lib/db';
-import { indexRepository } from '@/lib/github';
+import { indexRepositoriesByConfig, findRepoConfig } from '@/lib/github';
 import {
   apiErrorResponse,
   generateRequestId,
@@ -35,30 +34,18 @@ export async function POST(request: Request) {
 
     const { repoId } = parsed.data;
 
-    const repos = await getActiveRepos(db);
+    const repoConfig = findRepoConfig(repoId);
 
-    let repo = repos.find((r) => r.id === repoId) ?? null;
-
-    if (!repo) {
-      const parts = repoId.split('/');
-      if (parts.length === 2) {
-        const [owner, name] = parts;
-        repo = repos.find((r) => r.owner === owner && r.name === name) ?? null;
-      } else {
-        repo = repos.find((r) => r.name === repoId) ?? null;
-      }
-    }
-
-    if (!repo) {
+    if (!repoConfig) {
       const err = new NotFoundError('Repository', repoId);
       const { envelope, status } = apiErrorResponse(err, requestId);
       return NextResponse.json(envelope, { status });
     }
 
-    const result = await indexRepository(repo.id);
+    const results = await indexRepositoriesByConfig([repoConfig]);
 
     return NextResponse.json(
-      successResponse({ results: [result] }, { requestId }),
+      successResponse({ results }, { requestId }),
     );
   } catch (error) {
     const { envelope, status } = apiErrorResponse(error, requestId);

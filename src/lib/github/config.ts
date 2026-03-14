@@ -54,8 +54,14 @@ export function getConfiguredRepos(includeInactive = false): RepoConfig[] {
 }
 
 /**
- * Find a repo config by owner/name.
+ * Find a repo config by repoId.
+ * Accepts "owner/name", "name", or bare name.
  */
-export function findRepoConfig(owner: string, name: string): RepoConfig | undefined {
-  return DEFAULT_REPOS.find((r) => r.owner === owner && r.name === name);
+export function findRepoConfig(repoId: string): RepoConfig | undefined {
+  const parts = repoId.split('/');
+  if (parts.length === 2) {
+    const [owner, name] = parts;
+    return DEFAULT_REPOS.find((r) => r.owner === owner && r.name === name);
+  }
+  return DEFAULT_REPOS.find((r) => r.name === repoId);
 }
