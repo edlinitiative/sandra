@@ -1,7 +1,0 @@
-{
-  "q1": "postgres",
-  "q2": "pgvector",
-  "q3": "anonymous",
-  "q4": "streaming",
-  "q5": "full_mvp"
-}
