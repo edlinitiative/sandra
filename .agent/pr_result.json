@@ -1,0 +1,7 @@
+{
+  "pr_url": "https://github.com/edlinitiative/sandra/pull/1",
+  "pr_number": 1,
+  "pr_title": "feat(sandra): implement Sandra AI platform v1 — chat, RAG, agentic runtime, admin API",
+  "base_branch": "main",
+  "status": "created"
+}
