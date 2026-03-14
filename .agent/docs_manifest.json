@@ -1,0 +1,22 @@
+{
+  "files_created": [],
+  "files_updated": [
+    "README.md",
+    ".env.example"
+  ],
+  "changes": [
+    {
+      "file": "README.md",
+      "action": "updated",
+      "reason": "API reference was missing the streaming chat endpoint (POST /api/chat/stream) and did not document admin authentication requirements. Setup instructions did not mention ADMIN_API_KEY.",
+      "sections_changed": ["Setup", "API Reference"]
+    },
+    {
+      "file": ".env.example",
+      "action": "updated",
+      "reason": "ADMIN_API_KEY environment variable was defined in src/lib/config/env.ts and required by /api/repos and /api/index routes (via requireAdminAuth), but was absent from the example config file.",
+      "sections_changed": ["Admin section (new)"]
+    }
+  ],
+  "summary": "Added missing POST /api/chat/stream endpoint to the README API reference table (with auth column for all routes), updated setup instructions to call out ADMIN_API_KEY alongside OPENAI_API_KEY, and added ADMIN_API_KEY to .env.example with usage instructions. All other docs (docs/architecture.md, docs/agent-system.md, docs/integrations.md, docs/roadmap.md) were found to be accurate and complete for the current implementation."
+}

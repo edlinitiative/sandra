@@ -93,8 +93,10 @@ npm install
 # 2. Copy environment file
 cp .env.example .env
 
-# 3. Add your OpenAI API key to .env
-#    OPENAI_API_KEY=sk-your-key-here
+# 3. Configure required variables in .env:
+#    OPENAI_API_KEY=sk-your-key-here          (required for AI)
+#    ADMIN_API_KEY=your-admin-key-here        (required for /api/repos, /api/index)
+#    GITHUB_TOKEN=ghp_your-token             (optional, for GitHub indexing)
 
 # 4. Generate Prisma client
 npm run db:generate
@@ -159,13 +161,16 @@ Trigger indexing via:
 
 ## API Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/chat` | Send a message to Sandra |
-| `GET` | `/api/conversations/[sessionId]` | Get conversation history |
-| `GET` | `/api/repos` | List registered repositories |
-| `POST` | `/api/index` | Trigger repo indexing |
-| `GET` | `/api/health` | System health check |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/chat` | Send a message to Sandra (JSON response) | None |
+| `POST` | `/api/chat/stream` | Send a message, receive Server-Sent Events (streaming) | None |
+| `GET` | `/api/conversations/[sessionId]` | Get conversation history | None |
+| `GET` | `/api/repos` | List registered repositories with indexing status | API key |
+| `POST` | `/api/index` | Trigger repo indexing (body: `{ repoId: "owner/repo" }`) | API key |
+| `GET` | `/api/health` | System health check | None |
+
+Admin endpoints (`/api/repos`, `/api/index`) require an `x-api-key` header matching `ADMIN_API_KEY`.
 
 ## Project Structure
 
