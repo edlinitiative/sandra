@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './chat-message';
 import { ChatInput } from './chat-input';
 import { ChatEmptyState } from './chat-empty-state';
+import { useSession } from '@/hooks/useSession';
+import { getConversation } from '@/lib/client';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -21,8 +23,10 @@ interface Message {
 export function ChatContainer() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
+  const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
+  const [newSessionId] = useState(() => crypto.randomUUID());
+  const sessionId = storedSessionId ?? newSessionId;
   const [language, setLanguage] = useState<string>(() => {
     if (typeof navigator !== 'undefined') {
       const browserLang = navigator.language?.slice(0, 2);
@@ -31,6 +35,26 @@ export function ChatContainer() {
     return 'en';
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Restore conversation history on mount when a persisted session exists
+  useEffect(() => {
+    if (!storedSessionId) return;
+    getConversation(storedSessionId)
+      .then((data) => {
+        const restored: Message[] = data.messages.map((m) => ({
+          id: crypto.randomUUID(),
+          role: m.role,
+          content: m.content,
+          timestamp: m.createdAt,
+        }));
+        setMessages(restored);
+      })
+      .catch(() => {
+        // Session expired or not found — clear stale ID so a new one is generated
+        clearSession();
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -79,6 +103,11 @@ export function ChatContainer() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Persist session ID after first successful exchange
+      if (!storedSessionId) {
+        setSessionId(newSessionId);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
@@ -124,7 +153,7 @@ export function ChatContainer() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          <ChatEmptyState onSend={handleSend} />
+          <ChatEmptyState onSend={handleSend} language={language} />
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
             {messages.map((msg) => (

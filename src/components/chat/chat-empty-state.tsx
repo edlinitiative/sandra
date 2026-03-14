@@ -1,8 +1,32 @@
+const SUGGESTED_QUESTIONS: Record<string, string[]> = {
+  en: [
+    'What is EdLight?',
+    'Tell me about EdLight Academy',
+    'How can EdLight help my school?',
+    'What resources does EdLight offer?',
+  ],
+  fr: [
+    "Qu'est-ce qu'EdLight?",
+    "Parlez-moi d'EdLight Academy",
+    'Comment EdLight peut-il aider mon école?',
+    "Quelles ressources EdLight offre-t-il?",
+  ],
+  ht: [
+    'Kisa EdLight ye?',
+    'Pale mwen sou EdLight Academy',
+    'Kijan EdLight ka ede lekòl mwen?',
+    'Ki resous EdLight ofri?',
+  ],
+};
+
 interface ChatEmptyStateProps {
   onSend?: (message: string) => void;
+  language?: string;
 }
 
-export function ChatEmptyState({ onSend }: ChatEmptyStateProps) {
+export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps) {
+  const questions = SUGGESTED_QUESTIONS[language] ?? SUGGESTED_QUESTIONS['en']!;
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-sandra-500 to-sandra-700 text-white shadow-lg">
@@ -20,10 +44,9 @@ export function ChatEmptyState({ onSend }: ChatEmptyStateProps) {
         EdLight platforms, documentation, and resources.
       </p>
       <div className="grid max-w-lg gap-3 sm:grid-cols-2">
-        <SuggestionCard text="What is EdLight?" onSend={onSend} />
-        <SuggestionCard text="Tell me about EdLight Academy" onSend={onSend} />
-        <SuggestionCard text="Kisa EdLight ye?" onSend={onSend} />
-        <SuggestionCard text="Qu'est-ce qu'EdLight?" onSend={onSend} />
+        {questions.map((text) => (
+          <SuggestionCard key={text} text={text} onSend={onSend} />
+        ))}
       </div>
     </div>
   );

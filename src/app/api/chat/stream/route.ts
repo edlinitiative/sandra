@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { runSandraAgent } from '@/lib/agents';
+import { runSandraAgentStream } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
 import { env } from '@/lib/config';
 
@@ -21,8 +21,8 @@ function isApiKeyMissing(): boolean {
  *
  * Events emitted:
  *   - { type: 'start', sessionId, language }
- *   - { type: 'chunk', content }   (partial response text)
- *   - { type: 'tool', name }       (tool was invoked)
+ *   - { type: 'token', data }      (partial response text)
+ *   - { type: 'tool_call', data }  (tool was invoked)
  *   - { type: 'done', toolsUsed, retrievalUsed, usage }
  *   - { type: 'error', message }
  */
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
             const words = demoMsg.split(' ');
             for (let i = 0; i < words.length; i++) {
               const chunk = (i === 0 ? '' : ' ') + words[i]!;
-              send({ type: 'chunk', content: chunk });
+              send({ type: 'token', data: chunk });
               // Small delay to simulate streaming (only in demo mode)
               await new Promise((r) => setTimeout(r, 30));
             }
@@ -89,33 +89,43 @@ export async function POST(request: Request) {
             return;
           }
 
-          // Real agent execution (non-streaming for now, sends final response as chunks)
-          // TODO: Implement true token-level streaming when provider supports it
-          const result = await runSandraAgent({
+          // True token-level streaming via runSandraAgentStream
+          const toolsUsed: string[] = [];
+
+          for await (const event of runSandraAgentStream({
             message,
             sessionId,
             userId,
             language,
             channel,
-          });
-
-          // Report tool usage
-          for (const tool of result.toolsUsed) {
-            send({ type: 'tool', name: tool });
+          })) {
+            switch (event.type) {
+              case 'token':
+                send({ type: 'token', data: event.data });
+                break;
+              case 'tool_call':
+                toolsUsed.push(event.data);
+                send({ type: 'tool_call', data: event.data });
+                break;
+              case 'error':
+                send({ type: 'error', message: event.data });
+                break;
+              case 'tool_result':
+              case 'done':
+                // Internal events — not forwarded individually
+                break;
+            }
           }
 
-          // Stream the response in word-level chunks for smooth rendering
-          const words = result.response.split(' ');
-          for (let i = 0; i < words.length; i++) {
-            const chunk = (i === 0 ? '' : ' ') + words[i]!;
-            send({ type: 'chunk', content: chunk });
-          }
+          const retrievalUsed = toolsUsed.some((t) =>
+            t.includes('search') || t.includes('knowledge') || t.includes('rag'),
+          );
 
           send({
             type: 'done',
-            toolsUsed: result.toolsUsed,
-            retrievalUsed: result.retrievalUsed,
-            usage: result.tokenUsage,
+            toolsUsed,
+            retrievalUsed,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
           });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'An unexpected error occurred';

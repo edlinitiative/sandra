@@ -2,6 +2,7 @@
  * Admin API key authentication middleware.
  * Used to protect admin-only endpoints.
  */
+import { timingSafeEqual } from 'crypto';
 import { AuthError, ConfigurationError } from './errors';
 import { env } from '@/lib/config';
 
@@ -35,7 +36,7 @@ export function requireAdminAuth(request: Request): void {
     if (expectedBuf.length !== providedBuf.length) {
       match = false;
     } else {
-      match = require('crypto').timingSafeEqual(expectedBuf, providedBuf);
+      match = timingSafeEqual(expectedBuf, providedBuf);
     }
   } catch {
     match = false;
