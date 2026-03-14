@@ -6,12 +6,20 @@
 /** Roles in a conversation */
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
+/** A tool call requested by the model */
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: string; // JSON string
+}
+
 /** A single message in a conversation */
 export interface ChatMessage {
   role: MessageRole;
   content: string;
   name?: string;
   toolCallId?: string;
+  toolCalls?: ToolCall[];
 }
 
 /** Tool/function definition for the LLM */
@@ -19,13 +27,6 @@ export interface ToolDefinition {
   name: string;
   description: string;
   parameters: Record<string, unknown>; // JSON Schema object
-}
-
-/** A tool call requested by the model */
-export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: string; // JSON string
 }
 
 /** Request to the chat completion provider */

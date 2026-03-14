@@ -39,8 +39,24 @@ export class OpenAIProvider implements AIProvider {
             tool_call_id: m.toolCallId ?? '',
           };
         }
+
+        if (m.role === 'assistant') {
+          return {
+            role: 'assistant' as const,
+            content: m.content,
+            tool_calls: m.toolCalls?.map((tc) => ({
+              id: tc.id,
+              type: 'function' as const,
+              function: {
+                name: tc.name,
+                arguments: tc.arguments,
+              },
+            })),
+          };
+        }
+
         return {
-          role: m.role as 'system' | 'user' | 'assistant',
+          role: m.role as 'system' | 'user',
           content: m.content,
         };
       });
@@ -110,7 +126,23 @@ export class OpenAIProvider implements AIProvider {
         if (m.role === 'tool') {
           return { role: 'tool' as const, content: m.content, tool_call_id: m.toolCallId ?? '' };
         }
-        return { role: m.role as 'system' | 'user' | 'assistant', content: m.content };
+
+        if (m.role === 'assistant') {
+          return {
+            role: 'assistant' as const,
+            content: m.content,
+            tool_calls: m.toolCalls?.map((tc) => ({
+              id: tc.id,
+              type: 'function' as const,
+              function: {
+                name: tc.name,
+                arguments: tc.arguments,
+              },
+            })),
+          };
+        }
+
+        return { role: m.role as 'system' | 'user', content: m.content };
       });
 
       const tools = request.tools?.map((t) => ({

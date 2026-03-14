@@ -149,9 +149,10 @@ export async function runSandraAgent(
 
       // Add assistant message with tool calls to context
       state.messages.push({
-        role: 'assistant',
-        content: response.content ?? '',
-      });
+          role: 'assistant',
+          content: response.content ?? '',
+          toolCalls: response.toolCalls,
+        });
 
       // Execute tool calls sequentially
       for (const toolCall of response.toolCalls) {
