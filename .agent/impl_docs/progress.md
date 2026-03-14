@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** 2 (ready to start)
-- **Tasks completed:** 23 / 86 (T001–T003, T010–T029)
+- **Phase:** 3 (ready to start)
+- **Tasks completed:** 40 / 86 (T001–T003, T010–T046)
 - **Test coverage:** 309 tests passing
 - **Last session:** 2026-03-14
 
@@ -93,3 +93,20 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 309 tests passing across 37 test files
 **Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, all tests green
 **Next:** Phase 2 — Core Engine
+
+### Session 3 — 2026-03-14
+
+**Goal:** Implement Phase 2 — Core Engine (T030–T046)
+**Completed:** T030, T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044, T045, T046
+**Infrastructure Updates Applied:** None
+**Blockers:** None
+**Discoveries:**
+- All 17 Phase 2 tasks were already fully implemented from a prior session
+- Session management: `src/lib/memory/session-store.ts` (InMemorySessionStore + PrismaSessionStore), `src/lib/memory/user-memory.ts` (session-scoped key-value memory)
+- Tool system: `src/lib/tools/registry.ts` (ToolRegistry singleton), `src/lib/tools/executor.ts` (permission + validation + error handling), 3 MVP tools: search-knowledge.ts, lookup-repo.ts, get-initiatives.ts
+- RAG pipeline: chunker.ts (markdown-aware), embeddings.ts (batched), vector-store.ts (InMemoryVectorStore with cosine similarity), retrieval.ts, ingest.ts
+- 9 Phase 2 test files with 92 tests all passing
+**Changes:** None required — all tasks were pre-implemented; updated tasks.md checkboxes and progress.md
+**Coverage:** 309 tests passing across 37 test files
+**Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, all tests green
+**Next:** Phase 3 — Agent & Indexing
