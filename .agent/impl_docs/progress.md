@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** 4 (completed)
-- **Tasks completed:** 53 / 86 (T001–T003, T010–T046, T060–T075, T090–T109, T111)
-- **Test coverage:** 309 tests passing
+- **Phase:** 5 (completed — MVP Complete)
+- **Tasks completed:** 63 / 86 (T001–T003, T010–T046, T060–T075, T090–T109, T111, T120–T129)
+- **Test coverage:** 343 tests passing across 43 test files
 - **Last session:** 2026-03-14
 
 ## Phase Completion Loop
@@ -149,3 +149,29 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 309 tests passing across 37 test files
 **Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, all tests green
 **Next:** Phase 5 — Integration & Polish
+
+### Session 6 — 2026-03-14
+
+**Goal:** Implement Phase 5 — Integration & Polish (T120–T129)
+**Completed:** T120, T121, T122, T123, T124, T125, T126, T127, T128, T129
+**Infrastructure Updates Applied:** None
+**Blockers:** None
+**Discoveries:**
+- All prior phase implementations were solid; no regressions found
+- T120: E2E chat flow — tests POST /api/chat (sessionId roundtrip, follow-up), SSE streaming events, GET /api/conversations history
+- T121: E2E indexing — tests ingest pipeline (chunk→embed→store), retrieveContext returns results, upsert deduplication is idempotent, GET /api/repos returns list
+- T122: Multilingual — tests `buildSandraSystemPrompt` for fr/ht/en; core identity mentions all languages but language instruction is distinct per locale
+- T123: Error handling — tests 400 (invalid JSON, missing fields, empty message), 502 (ProviderError), 500 (unexpected error with no stack trace), 404 (missing session), all include requestId
+- T124: Session continuity — tests history persistence via InMemorySessionStore, context grows with turns, MAX_CONTEXT_MESSAGES limit enforced
+- T125: Build & type safety — `npx tsc --noEmit` clean, `npx next lint` clean, `npm run build` succeeds
+- T126: Security audit — no raw console.log outside logger, no hardcoded secrets, API key refs only in config/auth
+- T127: Full test suite — 343 tests across 43 test files, all passing
+- T128: Performance — health <500ms, chat <1s, vector store search with 1000 docs <500ms, upsert <2s
+- T129: Smoke test — all verification commands pass
+**Changes:**
+- Created `src/__tests__/e2e/` directory with 6 test files
+- Fixed `EmbeddedChunk` type (added chunkIndex/chunkTotal) in performance.test.ts
+- Fixed multilingual test assertion (core identity text mentions all languages; only language instruction is distinct)
+**Coverage:** 343 tests passing across 43 test files
+**Quality:** `npx tsc --noEmit` clean, `npx next lint` clean, `npm run build` succeeds, all tests green
+**Next:** MVP Complete — Sandra AI Platform Phase 5 done
