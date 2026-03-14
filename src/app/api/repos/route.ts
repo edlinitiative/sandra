@@ -11,20 +11,42 @@ export async function GET(request: Request) {
 
     const repos = await getActiveRepos(db);
 
-    const reposWithStatus = repos.map((repo) => ({
-      name: repo.name,
-      displayName: repo.displayName,
-      url: repo.url,
-      syncStatus: repo.syncStatus,
-      lastIndexedAt: repo.lastSyncAt?.toISOString() ?? null,
-      documentCount: 0,
-    }));
+    const reposWithStatus = await Promise.all(
+      repos.map(async (repo) => {
+        const source = await db.indexedSource.findFirst({
+          where: {
+            owner: repo.owner,
+            repo: repo.name,
+          },
+          select: { id: true },
+        });
 
-    // Sort alphabetically by name
+        const documentCount = source
+          ? await db.indexedDocument.count({
+              where: { sourceId: source.id },
+            })
+          : 0;
+
+        return {
+          name: repo.name,
+          displayName: repo.displayName,
+          url: repo.url,
+          syncStatus: repo.syncStatus,
+          lastIndexedAt: repo.lastSyncAt,
+          documentCount,
+        };
+      }),
+    );
+
     reposWithStatus.sort((a, b) => a.name.localeCompare(b.name));
 
+    const totalDocuments = reposWithStatus.reduce(
+      (sum, repo) => sum + repo.documentCount,
+      0,
+    );
+
     return NextResponse.json(
-      successResponse({ repos: reposWithStatus, totalDocuments: 0 }, { requestId }),
+      successResponse({ repos: reposWithStatus, totalDocuments }, { requestId }),
     );
   } catch (error) {
     const { envelope, status } = apiErrorResponse(error, requestId);
