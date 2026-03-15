@@ -2,17 +2,10 @@
   "status": "completed",
   "tasks_completed": ["T001", "T002", "T003"],
   "tests_passed": true,
-  "test_count": 343,
-  "test_files": 43,
+  "test_count": 346,
+  "test_files": 44,
   "files_changed": [
-    "vitest.config.ts",
-    "package.json",
-    "src/lib/__tests__/mocks/prisma.ts",
-    "src/lib/__tests__/mocks/ai-provider.ts",
-    "src/lib/__tests__/helpers.ts",
-    "src/lib/__tests__/setup.test.ts",
-    ".agent/impl_docs/progress.md",
-    ".agent/impl_docs/tasks.md"
+    ".agent/impl_docs/progress.md"
   ],
-  "notes": "Phase 0 infrastructure was already fully in place from a prior session. Verified vitest.config.ts (globals: true, environment: node, @/ alias), mock Prisma client (vi.fn() stubs for all V1 models), mock AIProvider (AIProvider interface with canned responses), test fixture factories (createTestSession, createTestMessage, createTestUser), and smoke test. Ran npm install to install dependencies in sandbox, then confirmed: 343 tests passing across 43 files, tsc --noEmit clean, next lint clean."
+  "notes": "Phase 0 infrastructure was already fully in place. Ran npm install to install dependencies in sandbox (first-run requirement). Verified: vitest.config.ts (globals: true, environment: node, @/ alias), mock Prisma client (vi.fn() stubs for all V1 models), mock AIProvider (AIProvider interface with canned responses), test fixture factories (createTestSession, createTestMessage, createTestUser), and smoke test (8 assertions passing). Full suite: 346 tests across 44 files, tsc --noEmit clean, next lint clean."
 }
