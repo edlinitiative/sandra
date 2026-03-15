@@ -2,10 +2,9 @@
   "status": "completed",
   "tasks_completed": ["T060", "T061", "T062", "T063", "T064", "T065", "T066", "T067", "T068", "T069", "T070", "T071", "T072", "T073", "T074", "T075"],
   "tests_passed": true,
-  "tests_total": 343,
+  "tests_total": 346,
   "phase_tests": 69,
   "files_changed": [
-    ".agent/impl_docs/tasks.md",
     ".agent/impl_docs/progress.md",
     ".agent/phase_3_result.json"
   ],
