@@ -2,8 +2,8 @@
   "status": "completed",
   "tasks_completed": ["T010", "T011", "T012", "T013", "T014", "T015", "T016", "T017", "T018", "T019", "T020", "T021", "T022", "T023", "T024", "T025", "T026", "T027", "T028", "T029"],
   "tests_passed": true,
-  "tests_count": 343,
-  "test_files_count": 43,
+  "tests_count": 346,
+  "test_files_count": 44,
   "files_changed": [
     "prisma/schema.prisma",
     "prisma/seed.ts",
@@ -39,10 +39,13 @@
     "src/lib/i18n/__tests__/prompts.test.ts",
     "src/lib/agents/prompts.ts"
   ],
-  "notes": "All Phase 1 foundation tasks verified complete. Prisma schema has all 7 V1 models with correct enums (MessageRole, SyncStatus) and indexes. DB helpers use dependency injection. Error framework has SandraError + 5 required subclasses. Zod env validation at import time. JSON logger with withRequestId. AIProvider with OpenAI chat/streaming/embeddings. Multilingual en/fr/ht with resolveLanguage, getLanguageInstruction, getSandraSystemPrompt. Quality: 343/343 tests, tsc clean, lint clean.",
+  "notes": "All Phase 1 foundation tasks verified complete. Prisma schema has all 7 V1 models with correct enums (MessageRole, SyncStatus) and indexes. Migration SQL exists at prisma/migrations/20260312000000_v1_foundation/. Seed script uses upsert for 4 EdLight repos and admin user (idempotent). DB helpers use dependency injection. Error framework has SandraError + 5 required subclasses with toJSON(). Zod env validation at import time. JSON logger with withRequestId(). AIProvider with OpenAI chat/streaming/embeddings. Multilingual en/fr/ht with resolveLanguage, getLanguageInstruction, getSandraSystemPrompt. Quality: 346/346 tests, tsc clean, lint clean. Note: prisma migrate deploy and db seed skipped — no live database in sandbox environment.",
   "quality_gates": {
-    "tests": "343/343 passing",
+    "tests": "346/346 passing",
     "typescript": "clean (0 errors)",
-    "linting": "clean (0 warnings)"
+    "linting": "clean (0 warnings)",
+    "prisma_generate": "pass",
+    "prisma_migrate_deploy": "skipped (no database in sandbox)",
+    "prisma_db_seed": "skipped (no database in sandbox)"
   }
 }

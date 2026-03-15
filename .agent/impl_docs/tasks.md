@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 82
+- **Completed:** 23
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 4
+- **Remaining:** 63
 
 ---
 
@@ -74,29 +74,29 @@
 
 ### Task 2.1: Conversation Session Management (F6)
 
-- [x] T030 Session CRUD operations (create, get, update) (depends: T013)
-- [x] T031 Message persistence (add, get with ordering and limit) (depends: T013)
-- [x] T032 Session context loader (recent N messages for LLM) (depends: T030, T031)
-- [x] T033 Session-scoped short-term memory (key-value facts) (depends: T030)
-- [x] T034 Session management unit tests (depends: T030, T031, T032, T033, T002)
+- [ ] T030 Session CRUD operations (create, get, update) (depends: T013)
+- [ ] T031 Message persistence (add, get with ordering and limit) (depends: T013)
+- [ ] T032 Session context loader (recent N messages for LLM) (depends: T030, T031)
+- [ ] T033 Session-scoped short-term memory (key-value facts) (depends: T030)
+- [ ] T034 Session management unit tests (depends: T030, T031, T032, T033, T002)
 
 ### Task 2.2: Tool Registry and Execution (F5)
 
-- [x] T035 Tool interface and self-registration registry (depends: T015)
-- [x] T036 Tool executor with permission scope enforcement (depends: T035)
-- [x] T037 searchKnowledgeBase tool implementation (depends: T035, T043, T044)
-- [x] T038 [P] lookupRepoInfo tool implementation (depends: T035, T013)
-- [x] T039 [P] getEdLightInitiatives tool implementation (depends: T035, T013)
-- [x] T040 Tool system unit tests (depends: T035, T036, T037, T038, T039, T002)
+- [ ] T035 Tool interface and self-registration registry (depends: T015)
+- [ ] T036 Tool executor with permission scope enforcement (depends: T035)
+- [ ] T037 searchKnowledgeBase tool implementation (depends: T035, T043, T044)
+- [ ] T038 [P] lookupRepoInfo tool implementation (depends: T035, T013)
+- [ ] T039 [P] getEdLightInitiatives tool implementation (depends: T035, T013)
+- [ ] T040 Tool system unit tests (depends: T035, T036, T037, T038, T039, T002)
 
 ### Task 2.3: Knowledge Retrieval (RAG) Pipeline (F3)
 
-- [x] T041 [P] Markdown-aware document chunker (depends: nothing)
-- [x] T042 Embedding generation module (batch wrapper over AIProvider) (depends: T023)
-- [x] T043 [P] VectorStore interface and InMemoryVectorStore (depends: nothing)
-- [x] T044 Retrieval module (query → embed → search → rank) (depends: T042, T043)
-- [x] T045 Knowledge ingestion pipeline (chunk → embed → store) (depends: T041, T042, T043)
-- [x] T046 RAG pipeline unit tests (depends: T041, T042, T043, T044, T045, T002)
+- [ ] T041 [P] Markdown-aware document chunker (depends: nothing)
+- [ ] T042 Embedding generation module (batch wrapper over AIProvider) (depends: T023)
+- [ ] T043 [P] VectorStore interface and InMemoryVectorStore (depends: nothing)
+- [ ] T044 Retrieval module (query → embed → search → rank) (depends: T042, T043)
+- [ ] T045 Knowledge ingestion pipeline (chunk → embed → store) (depends: T041, T042, T043)
+- [ ] T046 RAG pipeline unit tests (depends: T041, T042, T043, T044, T045, T002)
 
 ---
 
@@ -106,25 +106,25 @@
 
 ### Task 3.1: Sandra Agent Runtime (F2)
 
-- [x] T060 [P] Channel message types (InboundMessage, OutboundMessage, ChannelAdapter) (depends: nothing)
-- [x] T061 System prompt builder (persona + language + tools + guidelines) (depends: T028, T035)
-- [x] T062 Context assembly module (history + memory + tools → AgentContext) (depends: T032, T033, T061)
-- [x] T063 ReAct agent loop core (input → context → LLM → tool calls → response) (depends: T062, T036, T021)
-- [x] T064 Tool call execution within agent loop (parse, invoke, format results) (depends: T063, T036)
-- [x] T065 Max-iteration guard and error recovery (depends: T063)
-- [x] T066 Agent streaming support (async generator yielding token events) (depends: T063, T022)
-- [x] T067 Agent runtime unit tests (depends: T063, T064, T065, T002)
-- [x] T068 Agent integration test (full pipeline with mock LLM) (depends: T063, T064, T065, T066, T060)
+- [ ] T060 [P] Channel message types (InboundMessage, OutboundMessage, ChannelAdapter) (depends: nothing)
+- [ ] T061 System prompt builder (persona + language + tools + guidelines) (depends: T028, T035)
+- [ ] T062 Context assembly module (history + memory + tools → AgentContext) (depends: T032, T033, T061)
+- [ ] T063 ReAct agent loop core (input → context → LLM → tool calls → response) (depends: T062, T036, T021)
+- [ ] T064 Tool call execution within agent loop (parse, invoke, format results) (depends: T063, T036)
+- [ ] T065 Max-iteration guard and error recovery (depends: T063)
+- [ ] T066 Agent streaming support (async generator yielding token events) (depends: T063, T022)
+- [ ] T067 Agent runtime unit tests (depends: T063, T064, T065, T002)
+- [ ] T068 Agent integration test (full pipeline with mock LLM) (depends: T063, T064, T065, T066, T060)
 
 ### Task 3.2: Repository Indexing System (F4)
 
-- [x] T069 GitHub API client (authenticated requests, rate limit handling) (depends: T016)
-- [x] T070 Repository content fetcher (README + docs .md files) (depends: T069, T013)
-- [x] T071 [P] Content hash and change detection (SHA-256) (depends: T013)
-- [x] T072 Indexing orchestrator (fetch → hash check → RAG pipeline → track records) (depends: T070, T071, T045)
-- [x] T073 IndexedSource and IndexedDocument management (depends: T072)
-- [x] T074 [P] Indexing job status tracking (IndexingResult type) (depends: T072)
-- [x] T075 Repository indexing unit tests (depends: T069, T070, T071, T072, T073, T074, T002)
+- [ ] T069 GitHub API client (authenticated requests, rate limit handling) (depends: T016)
+- [ ] T070 Repository content fetcher (README + docs .md files) (depends: T069, T013)
+- [ ] T071 [P] Content hash and change detection (SHA-256) (depends: T013)
+- [ ] T072 Indexing orchestrator (fetch → hash check → RAG pipeline → track records) (depends: T070, T071, T045)
+- [ ] T073 IndexedSource and IndexedDocument management (depends: T072)
+- [ ] T074 [P] Indexing job status tracking (IndexingResult type) (depends: T072)
+- [ ] T075 Repository indexing unit tests (depends: T069, T070, T071, T072, T073, T074, T002)
 
 ---
 
@@ -134,32 +134,32 @@
 
 ### Task 4.1: API Layer (F9)
 
-- [x] T090 Request ID middleware and JSON envelope helper (depends: T017)
-- [x] T091 POST /api/chat endpoint (depends: T090, T063, T018)
-- [x] T092 POST /api/chat/stream SSE endpoint (depends: T090, T066)
-- [x] T093 GET /api/conversations/[sessionId] endpoint (depends: T090, T030)
-- [x] T094 [P] GET /api/health endpoint (depends: T090)
-- [x] T096 API layer unit tests (depends: T091, T092, T093, T094, T002)
+- [ ] T090 Request ID middleware and JSON envelope helper (depends: T017)
+- [ ] T091 POST /api/chat endpoint (depends: T090, T063, T018)
+- [ ] T092 POST /api/chat/stream SSE endpoint (depends: T090, T066)
+- [ ] T093 GET /api/conversations/[sessionId] endpoint (depends: T090, T030)
+- [ ] T094 [P] GET /api/health endpoint (depends: T090)
+- [ ] T096 API layer unit tests (depends: T091, T092, T093, T094, T002)
 
 ### Task 4.2: Web Chat Interface (F1)
 
-- [x] T097 Chat container component (message list + input area) (depends: nothing)
-- [x] T098 Message input with send functionality (Enter key, loading state) (depends: T097)
-- [x] T099 API client service (sendMessage, streamMessage, getConversation) (depends: T091, T092)
-- [x] T100 Streaming response rendering (word-by-word tokens) (depends: T097, T099)
-- [x] T101 [P] Typing indicator component (animated three dots) (depends: T097)
-- [x] T102 Session continuity (localStorage sessionId + history restore) (depends: T097, T099, T093)
-- [x] T103 [P] Empty state with suggested questions (4 per language) (depends: T097, T026)
-- [x] T104 [P] Language selector component (dropdown: en/fr/ht) (depends: T026)
-- [x] T105 Responsive layout (320px minimum, mobile-first) (depends: T097, T098)
-- [x] T106 Chat UI component tests (depends: T097, T098, T099, T100, T101, T102, T103, T104, T105)
+- [ ] T097 Chat container component (message list + input area) (depends: nothing)
+- [ ] T098 Message input with send functionality (Enter key, loading state) (depends: T097)
+- [ ] T099 API client service (sendMessage, streamMessage, getConversation) (depends: T091, T092)
+- [ ] T100 Streaming response rendering (word-by-word tokens) (depends: T097, T099)
+- [ ] T101 [P] Typing indicator component (animated three dots) (depends: T097)
+- [ ] T102 Session continuity (localStorage sessionId + history restore) (depends: T097, T099, T093)
+- [ ] T103 [P] Empty state with suggested questions (4 per language) (depends: T097, T026)
+- [ ] T104 [P] Language selector component (dropdown: en/fr/ht) (depends: T026)
+- [ ] T105 Responsive layout (320px minimum, mobile-first) (depends: T097, T098)
+- [ ] T106 Chat UI component tests (depends: T097, T098, T099, T100, T101, T102, T103, T104, T105)
 
 ### Task 4.3: Admin Indexing Controls (F11)
 
-- [x] T107 API key authentication middleware (x-api-key header) (depends: T015, T016)
-- [x] T108 GET /api/repos endpoint (list repos with status) (depends: T107, T090, T013)
-- [x] T109 POST /api/index endpoint (trigger indexing) (depends: T107, T090, T072)
-- [x] T111 Admin endpoints unit tests (depends: T107, T108, T109, T002)
+- [ ] T107 API key authentication middleware (x-api-key header) (depends: T015, T016)
+- [ ] T108 GET /api/repos endpoint (list repos with status) (depends: T107, T090, T013)
+- [ ] T109 POST /api/index endpoint (trigger indexing) (depends: T107, T090, T072)
+- [ ] T111 Admin endpoints unit tests (depends: T107, T108, T109, T002)
 
 ---
 
@@ -169,53 +169,16 @@
 
 ### Task 5.1: End-to-End Verification
 
-- [x] T120 End-to-end chat flow verification (UI → API → agent → response) (depends: T091, T097, T100, T063)
-- [x] T121 End-to-end indexing pipeline verification (trigger → fetch → RAG → search) (depends: T072, T109, T108)
-- [x] T122 [P] Multilingual response verification (system prompt adapts per language) (depends: T028, T091)
-- [x] T123 [P] Error handling verification (all endpoints return proper envelopes) (depends: T091, T092, T093, T108, T109)
-- [x] T124 [P] Session continuity verification (multi-turn context preserved) (depends: T091, T093, T102)
+- [ ] T120 End-to-end chat flow verification (UI → API → agent → response) (depends: T091, T097, T100, T063)
+- [ ] T121 End-to-end indexing pipeline verification (trigger → fetch → RAG → search) (depends: T072, T109, T108)
+- [ ] T122 [P] Multilingual response verification (system prompt adapts per language) (depends: T028, T091)
+- [ ] T123 [P] Error handling verification (all endpoints return proper envelopes) (depends: T091, T092, T093, T108, T109)
+- [ ] T124 [P] Session continuity verification (multi-turn context preserved) (depends: T091, T093, T102)
 
 ### Task 5.2: Quality Gates
 
-- [x] T125 Build and type safety verification (tsc, lint, build) (depends: all prior tasks)
-- [x] T126 [P] Security audit (no hardcoded secrets, no raw console.log, all inputs validated) (depends: all prior tasks)
-- [x] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
-- [x] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
-- [x] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
-
----
-
-## Task: Improve Sandra tool routing for EdLight Academy course questions
-
-### Problem
-Sandra currently routes course questions about EdLight Academy to `getEdLightInitiatives`, which produces generic platform descriptions instead of grounded course answers.
-
-Example:
-- User: "What kind of courses can I find on EdLight Academy?"
-- Current behavior: calls `getEdLightInitiatives`
-- Desired behavior: prefer retrieval / knowledge search
-
-### Required changes
-
-1. Update tool selection guidance so:
-   - broad ecosystem/platform questions -> `getEdLightInitiatives`
-   - course/content/curriculum/module/lesson questions about EdLight Academy -> retrieval or `searchKnowledgeBase`
-
-2. Do not default to `getEdLightInitiatives` for EdLight Academy course questions unless the user is explicitly asking for a platform overview.
-
-3. If retrieval returns no course data, Sandra should say it does not currently have indexed course information instead of inventing course categories.
-
-4. Update prompt/tool guidance in:
-   - `src/lib/agents/prompts.ts`
-
-5. Add tests covering:
-   - "What is EdLight?" -> initiatives tool
-   - "What kind of courses can I find on EdLight Academy?" -> retrieval path
-   - empty retrieval fallback behavior
-
-### Validation
-Run:
-- `npm test`
-- `npx tsc --noEmit`
-- `npm run build`
-
+- [ ] T125 Build and type safety verification (tsc, lint, build) (depends: all prior tasks)
+- [ ] T126 [P] Security audit (no hardcoded secrets, no raw console.log, all inputs validated) (depends: all prior tasks)
+- [ ] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
+- [ ] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
+- [ ] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
