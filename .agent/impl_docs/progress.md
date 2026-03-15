@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** 1 (completed)
-- **Tasks completed:** 23 / 86
+- **Phase:** 4 (completed)
+- **Tasks completed:** 43 / 86
 - **Test coverage:** 346 tests passing across 44 test files
 - **Last session:** 2026-03-15
 
@@ -115,3 +115,25 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 346 tests / 44 files (all passing); Phase 3 tests: 69 in 7 files
 **Quality:** lint ✓, tsc ✓, vitest ✓ (346/346)
 **Next:** Phase 4 — Interface Layer
+
+### Session 4 — 2026-03-15
+
+**Goal:** Implement Phase 4 — Interface Layer (T090–T111)
+**Completed:** T090, T091, T092, T093, T094, T096, T097, T098, T099, T100, T101, T102, T103, T104, T105, T106, T107, T108, T109, T111
+**Blockers:** None
+**Discoveries:**
+- All Phase 4 code was pre-built (API routes, chat UI components, admin endpoints)
+- API routes: /api/chat (POST), /api/chat/stream (SSE), /api/conversations/[sessionId], /api/health, /api/repos, /api/index
+- Chat UI: ChatContainer, ChatInput, ChatMessage, ChatEmptyState, TypingIndicator, StreamingMessage, LanguageSelector
+- API client: sendMessage, streamMessage, getConversation in src/lib/client/chat-api.ts
+- Session hook: useSession (localStorage persistence + history restore)
+- Admin auth: requireAdminAuth with timing-safe comparison via crypto.timingSafeEqual
+- Demo mode: fallback responses when OPENAI_API_KEY not configured
+- Standard JSON envelope: { success, data, meta: { requestId } } for all responses
+- SSE streaming protocol: start/token/tool_call/done/error events
+- Multilingual empty state: 4 suggested questions per language (en/fr/ht)
+- Responsive layout: mobile-first, 320px minimum viewport
+**Changes:** Updated tasks.md to mark Phase 4 tasks complete; updated progress.md current status
+**Coverage:** 346 tests / 44 files (all passing); Phase 4 tests: 10 files (API + components)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (346/346)
+**Next:** Phase 5 — Integration & Polish
