@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 56
+- **Completed:** 72
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 30
+- **Remaining:** 14
 
 ---
 
@@ -134,32 +134,32 @@
 
 ### Task 4.1: API Layer (F9)
 
-- [ ] T090 Request ID middleware and JSON envelope helper (depends: T017)
-- [ ] T091 POST /api/chat endpoint (depends: T090, T063, T018)
-- [ ] T092 POST /api/chat/stream SSE endpoint (depends: T090, T066)
-- [ ] T093 GET /api/conversations/[sessionId] endpoint (depends: T090, T030)
-- [ ] T094 [P] GET /api/health endpoint (depends: T090)
-- [ ] T096 API layer unit tests (depends: T091, T092, T093, T094, T002)
+- [x] T090 Request ID middleware and JSON envelope helper (depends: T017)
+- [x] T091 POST /api/chat endpoint (depends: T090, T063, T018)
+- [x] T092 POST /api/chat/stream SSE endpoint (depends: T090, T066)
+- [x] T093 GET /api/conversations/[sessionId] endpoint (depends: T090, T030)
+- [x] T094 [P] GET /api/health endpoint (depends: T090)
+- [x] T096 API layer unit tests (depends: T091, T092, T093, T094, T002)
 
 ### Task 4.2: Web Chat Interface (F1)
 
-- [ ] T097 Chat container component (message list + input area) (depends: nothing)
-- [ ] T098 Message input with send functionality (Enter key, loading state) (depends: T097)
-- [ ] T099 API client service (sendMessage, streamMessage, getConversation) (depends: T091, T092)
-- [ ] T100 Streaming response rendering (word-by-word tokens) (depends: T097, T099)
-- [ ] T101 [P] Typing indicator component (animated three dots) (depends: T097)
-- [ ] T102 Session continuity (localStorage sessionId + history restore) (depends: T097, T099, T093)
-- [ ] T103 [P] Empty state with suggested questions (4 per language) (depends: T097, T026)
-- [ ] T104 [P] Language selector component (dropdown: en/fr/ht) (depends: T026)
-- [ ] T105 Responsive layout (320px minimum, mobile-first) (depends: T097, T098)
-- [ ] T106 Chat UI component tests (depends: T097, T098, T099, T100, T101, T102, T103, T104, T105)
+- [x] T097 Chat container component (message list + input area) (depends: nothing)
+- [x] T098 Message input with send functionality (Enter key, loading state) (depends: T097)
+- [x] T099 API client service (sendMessage, streamMessage, getConversation) (depends: T091, T092)
+- [x] T100 Streaming response rendering (word-by-word tokens) (depends: T097, T099)
+- [x] T101 [P] Typing indicator component (animated three dots) (depends: T097)
+- [x] T102 Session continuity (localStorage sessionId + history restore) (depends: T097, T099, T093)
+- [x] T103 [P] Empty state with suggested questions (4 per language) (depends: T097, T026)
+- [x] T104 [P] Language selector component (dropdown: en/fr/ht) (depends: T026)
+- [x] T105 Responsive layout (320px minimum, mobile-first) (depends: T097, T098)
+- [x] T106 Chat UI component tests (depends: T097, T098, T099, T100, T101, T102, T103, T104, T105)
 
 ### Task 4.3: Admin Indexing Controls (F11)
 
-- [ ] T107 API key authentication middleware (x-api-key header) (depends: T015, T016)
-- [ ] T108 GET /api/repos endpoint (list repos with status) (depends: T107, T090, T013)
-- [ ] T109 POST /api/index endpoint (trigger indexing) (depends: T107, T090, T072)
-- [ ] T111 Admin endpoints unit tests (depends: T107, T108, T109, T002)
+- [x] T107 API key authentication middleware (x-api-key header) (depends: T015, T016)
+- [x] T108 GET /api/repos endpoint (list repos with status) (depends: T107, T090, T013)
+- [x] T109 POST /api/index endpoint (trigger indexing) (depends: T107, T090, T072)
+- [x] T111 Admin endpoints unit tests (depends: T107, T108, T109, T002)
 
 ---
 

@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** 3 (complete)
-- **Tasks completed:** 56 / 86 (T001–T003, T010–T046, T060–T075)
-- **Test coverage:** 343 tests passing across 43 test files
+- **Phase:** 4 (complete)
+- **Tasks completed:** 72 / 86 (T001–T003, T010–T046, T060–T075, T090–T111)
+- **Test coverage:** 346 tests passing across 44 test files
 - **Last session:** 2026-03-15
 
 ## Phase Completion Loop
@@ -149,3 +149,38 @@ Each phase follows an implement → review → fix cycle:
 - `npx tsc --noEmit` — zero errors
 - `npx next lint` — zero warnings
 **Next:** Phase 4 — Interface Layer
+
+### Session 5 — 2026-03-15
+
+**Goal:** Implement Phase 4 — Interface Layer (T090–T111)
+**Completed:** T090, T091, T092, T093, T094, T096, T097, T098, T099, T100, T101, T102, T103, T104, T105, T106, T107, T108, T109, T111
+**Blockers:** None
+**Discoveries:**
+- All API route files (T090–T096, T107–T111) were pre-existing from a prior pass and verified as complete: api-helpers.ts, auth.ts, all route handlers, and their test files
+- Chat UI components (T097–T103, T105) were pre-existing: chat-container.tsx, chat-input.tsx, chat-message.tsx, chat-empty-state.tsx, useSession.ts, chat-api.ts
+- Missing from prior pass: TypingIndicator.tsx (T101), LanguageSelector.tsx (T104), StreamingMessage.tsx (T100), streaming wired into ChatContainer (T100), LanguageSelector test (T106)
+- Created `typing-indicator.tsx` — standalone three-dot bounce animation matching assistant message style
+- Created `language-selector.tsx` — `<select>` dropdown for en/fr/ht with localStorage persistence via `sandra_language` key
+- Created `streaming-message.tsx` — in-progress streaming display with blinking cursor
+- Updated `chat-container.tsx` — replaced direct fetch('/api/chat') with streamMessage() from @/lib/client; added streamingContent state + streamBufferRef; renders TypingIndicator before first token, StreamingMessage during stream; replaced inline language buttons with LanguageSelector component; reads language from localStorage on mount
+- Updated `ChatContainer.test.tsx` — switched from global.fetch mock to vi.mock('@/lib/client') for streamMessage/getConversation
+- Created `LanguageSelector.test.tsx` — 3 tests: renders all options, shows selected, calls onChange
+- Updated `index.ts` — exports all 7 chat components
+**Changes:**
+- `src/components/chat/typing-indicator.tsx` — created
+- `src/components/chat/language-selector.tsx` — created
+- `src/components/chat/streaming-message.tsx` — created
+- `src/components/chat/chat-container.tsx` — updated (streaming, LanguageSelector, TypingIndicator)
+- `src/components/chat/__tests__/ChatContainer.test.tsx` — updated (mock @/lib/client)
+- `src/components/chat/__tests__/LanguageSelector.test.tsx` — created
+- `src/components/chat/index.ts` — updated (new exports)
+**Coverage:** 346 tests, 44 files (+3 tests, +1 file from LanguageSelector tests)
+**Quality:** tsc clean, lint clean (no warnings), vitest run all pass
+**Evaluation Criteria Met:**
+- `npx vitest run src/app/api/` — 5 files, 24 tests, all pass
+- `npx vitest run src/components/chat/` — 4 files, 18 tests, all pass
+- `npx vitest run src/lib/utils/__tests__/auth.test.ts` — 5 tests, all pass
+- `npx tsc --noEmit` — zero errors
+- `npx next lint` — zero warnings
+- Full suite: 346 tests, 44 files, all pass
+**Next:** Phase 5 — Integration & Polish
