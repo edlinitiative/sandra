@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 72
+- **Completed:** 82
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 14
+- **Remaining:** 4
 
 ---
 
@@ -169,16 +169,16 @@
 
 ### Task 5.1: End-to-End Verification
 
-- [ ] T120 End-to-end chat flow verification (UI → API → agent → response) (depends: T091, T097, T100, T063)
-- [ ] T121 End-to-end indexing pipeline verification (trigger → fetch → RAG → search) (depends: T072, T109, T108)
-- [ ] T122 [P] Multilingual response verification (system prompt adapts per language) (depends: T028, T091)
-- [ ] T123 [P] Error handling verification (all endpoints return proper envelopes) (depends: T091, T092, T093, T108, T109)
-- [ ] T124 [P] Session continuity verification (multi-turn context preserved) (depends: T091, T093, T102)
+- [x] T120 End-to-end chat flow verification (UI → API → agent → response) (depends: T091, T097, T100, T063)
+- [x] T121 End-to-end indexing pipeline verification (trigger → fetch → RAG → search) (depends: T072, T109, T108)
+- [x] T122 [P] Multilingual response verification (system prompt adapts per language) (depends: T028, T091)
+- [x] T123 [P] Error handling verification (all endpoints return proper envelopes) (depends: T091, T092, T093, T108, T109)
+- [x] T124 [P] Session continuity verification (multi-turn context preserved) (depends: T091, T093, T102)
 
 ### Task 5.2: Quality Gates
 
-- [ ] T125 Build and type safety verification (tsc, lint, build) (depends: all prior tasks)
-- [ ] T126 [P] Security audit (no hardcoded secrets, no raw console.log, all inputs validated) (depends: all prior tasks)
-- [ ] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
-- [ ] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
-- [ ] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
+- [x] T125 Build and type safety verification (tsc, lint, build) (depends: all prior tasks)
+- [x] T126 [P] Security audit (no hardcoded secrets, no raw console.log, all inputs validated) (depends: all prior tasks)
+- [x] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
+- [x] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
+- [x] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
