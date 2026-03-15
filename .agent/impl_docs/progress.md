@@ -94,3 +94,29 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 343 tests, 43 files
 **Quality:** tsc clean, lint clean, vitest run all pass
 **Next:** Phase 2 — Core Engine
+
+### Session 3 — 2026-03-15
+
+**Goal:** Implement and verify Phase 2 — Core Engine (T030–T046)
+**Completed:** T030, T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044, T045, T046
+**Blockers:** None
+**Discoveries:**
+- All Phase 2 files were pre-existing from the prior implementation pass; full verification confirmed correctness
+- `src/lib/memory/session-store.ts` — PrismaSessionStore implements createSession, getSession, updateSession, addMessage, getMessages, loadContext using db helpers
+- `src/lib/memory/user-memory.ts` — setSessionMemory/getSessionMemory using Prisma upsert with session: prefix namespacing for anonymous sessions
+- `src/lib/tools/types.ts` — SandraTool interface with name, description, parameters, inputSchema (Zod), requiredScopes, handler
+- `src/lib/tools/registry.ts` — ToolRegistry with register, get, getAll, getToolDefinitions, listTools, clear; global singleton
+- `src/lib/tools/executor.ts` — executeTool with scope enforcement (AuthError), Zod validation (ValidationError), handler error wrapping to ToolResult
+- `src/lib/tools/search-knowledge.ts` — searchKnowledgeBase tool using retrieveContext, scope: knowledge:read
+- `src/lib/tools/lookup-repo.ts` — lookupRepoInfo tool using getActiveRepos, scope: repos:read
+- `src/lib/tools/get-initiatives.ts` — getEdLightInitiatives tool with hardcoded V1 initiative data, scope: repos:read
+- `src/lib/knowledge/chunker.ts` — markdown-aware chunker with heading context tracking, paragraph splitting, character fallback
+- `src/lib/knowledge/embeddings.ts` — embedChunks/embedQuery using AIProvider.generateEmbeddings
+- `src/lib/knowledge/vector-store.ts` — InMemoryVectorStore with cosine similarity, upsert/search/deleteBySource/count
+- `src/lib/knowledge/retrieval.ts` — retrieveContext with minScore filtering, error recovery returns []
+- `src/lib/knowledge/ingest.ts` — ingestDocuments pipeline: chunk → embed → upsert
+- All 9 Phase 2 test files pass (92 tests in memory, tools, knowledge suites); full suite 343/343 passing
+**Changes:** None (pre-existing implementation verified as complete)
+**Coverage:** 343 tests, 43 files; Phase 2 specific: 92 tests, 9 files
+**Quality:** tsc clean, lint clean, vitest run all pass
+**Next:** Phase 3 — Agent & Indexing
