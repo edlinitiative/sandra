@@ -6,10 +6,6 @@ import '@testing-library/jest-dom';
 // Mock scrollIntoView (not available in jsdom)
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
-// Mock fetch before importing component
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
 // Mock crypto.randomUUID
 Object.defineProperty(global, 'crypto', {
   value: { randomUUID: () => 'test-uuid-1234-5678-9012-345678901234' },
@@ -22,23 +18,41 @@ Object.defineProperty(global, 'navigator', {
   writable: true,
 });
 
+// Mock the client API module
+vi.mock('@/lib/client', () => ({
+  streamMessage: vi.fn(),
+  getConversation: vi.fn(),
+}));
+
+// Mock useSession hook
+vi.mock('@/hooks/useSession', () => ({
+  useSession: () => ({
+    sessionId: null,
+    setSessionId: vi.fn(),
+    clearSession: vi.fn(),
+  }),
+}));
+
+import { streamMessage, getConversation } from '@/lib/client';
+
+const mockStreamMessage = vi.mocked(streamMessage);
+const mockGetConversation = vi.mocked(getConversation);
+
 describe('ChatContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        success: true,
-        data: { response: 'Hello from Sandra!', sessionId: 'session-123' },
-        meta: { requestId: 'req-123' },
-      }),
+    mockStreamMessage.mockImplementation(async (params, onToken) => {
+      onToken('Hello ');
+      onToken('from ');
+      onToken('Sandra!');
+      return { sessionId: 'session-123', toolsUsed: [], retrievalUsed: false };
     });
+    mockGetConversation.mockResolvedValue({ sessionId: '', messages: [] });
   });
 
   it('renders the empty state when no messages', async () => {
     const { ChatContainer } = await import('../chat-container');
     render(<ChatContainer />);
-    // Empty state should show the greeting
     expect(screen.getByText(/Sandra/i)).toBeInTheDocument();
   });
 
