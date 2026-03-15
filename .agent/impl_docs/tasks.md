@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 3
+- **Completed:** 23
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 83
+- **Remaining:** 63
 
 ---
 
@@ -36,35 +36,35 @@
 
 ### Task 1.1: Database Schema and Data Layer (F10)
 
-- [ ] T010 Review and finalize Prisma schema with all 7 V1 models (depends: nothing)
-- [ ] T011 Create and apply database migration (depends: T010)
-- [ ] T012 Verify and enhance seed data for 4 EdLight repositories (depends: T011)
-- [ ] T013 Create typed data access helpers (sessions, messages, repos, documents) (depends: T011)
-- [ ] T014 Database layer unit tests (depends: T013, T002)
+- [x] T010 Review and finalize Prisma schema with all 7 V1 models (depends: nothing)
+- [x] T011 Create and apply database migration (depends: T010)
+- [x] T012 Verify and enhance seed data for 4 EdLight repositories (depends: T011)
+- [x] T013 Create typed data access helpers (sessions, messages, repos, documents) (depends: T011)
+- [x] T014 Database layer unit tests (depends: T013, T002)
 
 ### Task 1.2: Security and Error Handling (F12)
 
-- [ ] T015 [P] Complete SandraError subclasses (Validation, Auth, NotFound, Provider, Tool) (depends: nothing)
-- [ ] T016 Environment secrets validation via Zod (depends: T015)
-- [ ] T017 [P] Structured logging utility with JSON output and requestId (depends: nothing)
-- [ ] T018 Input sanitization and Zod validation schemas (depends: T015)
-- [ ] T019 Security and error handling unit tests (depends: T015, T016, T017, T018, T002)
+- [x] T015 [P] Complete SandraError subclasses (Validation, Auth, NotFound, Provider, Tool) (depends: nothing)
+- [x] T016 Environment secrets validation via Zod (depends: T015)
+- [x] T017 [P] Structured logging utility with JSON output and requestId (depends: nothing)
+- [x] T018 Input sanitization and Zod validation schemas (depends: T015)
+- [x] T019 Security and error handling unit tests (depends: T015, T016, T017, T018, T002)
 
 ### Task 1.3: LLM Provider Abstraction (F8)
 
-- [ ] T020 [P] Finalize AIProvider interface types (chat, streaming, embedding) (depends: nothing)
-- [ ] T021 Complete OpenAI chat completion implementation with tool calling (depends: T020)
-- [ ] T022 [P] Complete OpenAI streaming implementation (depends: T020)
-- [ ] T023 [P] Complete embedding generation (text-embedding-3-small) (depends: T020)
-- [ ] T024 Provider factory with environment-based configuration (depends: T020, T021, T016)
-- [ ] T025 AI provider unit tests (depends: T021, T022, T023, T024, T002)
+- [x] T020 [P] Finalize AIProvider interface types (chat, streaming, embedding) (depends: nothing)
+- [x] T021 Complete OpenAI chat completion implementation with tool calling (depends: T020)
+- [x] T022 [P] Complete OpenAI streaming implementation (depends: T020)
+- [x] T023 [P] Complete embedding generation (text-embedding-3-small) (depends: T020)
+- [x] T024 Provider factory with environment-based configuration (depends: T020, T021, T016)
+- [x] T025 AI provider unit tests (depends: T021, T022, T023, T024, T002)
 
 ### Task 1.4: Multilingual Support (F7)
 
-- [ ] T026 [P] Language enum and type definitions (en, fr, ht) (depends: nothing)
-- [ ] T027 Language detection and selection utility (depends: T026)
-- [ ] T028 System prompt helpers for multilingual behavior (depends: T026)
-- [ ] T029 Multilingual support unit tests (depends: T026, T027, T028, T002)
+- [x] T026 [P] Language enum and type definitions (en, fr, ht) (depends: nothing)
+- [x] T027 Language detection and selection utility (depends: T026)
+- [x] T028 System prompt helpers for multilingual behavior (depends: T026)
+- [x] T029 Multilingual support unit tests (depends: T026, T027, T028, T002)
 
 ---
 

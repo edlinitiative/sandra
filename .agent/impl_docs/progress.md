@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** 0 (complete)
-- **Tasks completed:** 3 / 86 (T001, T002, T003)
+- **Phase:** 1 (complete)
+- **Tasks completed:** 23 / 86 (T001–T003, T010–T029)
 - **Test coverage:** 343 tests passing across 43 test files
 - **Last session:** 2026-03-15
 
@@ -72,14 +72,25 @@ Each phase follows an implement → review → fix cycle:
 **Quality:** tsc clean, lint clean, vitest run passes
 **Next:** Phase 1 — Foundation
 
-### Session 2 — YYYY-MM-DD
+### Session 2 — 2026-03-15
 
-**Goal:** Review Phase 0 implementation
-**Issues Found:** (count)
-**Fixes Applied:**
-- (Fix description)
-**Tests Added:** (count)
-**Regressions:** None
-**Coverage:** (updated %)
-**Quality:** (status)
-**Next:** Phase 1 — Foundation
+**Goal:** Implement and verify Phase 1 — Foundation (T010–T029)
+**Completed:** T010, T011, T012, T013, T014, T015, T016, T017, T018, T019, T020, T021, T022, T023, T024, T025, T026, T027, T028, T029
+**Blockers:** None
+**Discoveries:**
+- All Phase 1 files were pre-existing from a prior implementation pass; full verification confirmed correctness
+- Prisma schema has all 7 V1 models (User, Session, Message, Memory, IndexedSource, IndexedDocument, RepoRegistry) with correct enums and indexes
+- Migration at `prisma/migrations/20260312000000_v1_foundation/migration.sql` is complete and applied
+- Seed at `prisma/seed.ts` uses idempotent upsert pattern for 4 EdLight repos and admin user
+- `src/lib/db/` has typed helpers for sessions, messages, repos, and documents (DI pattern)
+- `src/lib/utils/errors.ts` has SandraError base + 5 required subclasses (ValidationError, AuthError, NotFoundError, ProviderError, ToolError) + extras
+- `src/lib/config/env.ts` has Zod validation at import time; `src/lib/config/constants.ts` has all app constants
+- `src/lib/utils/logger.ts` has structured JSON logging with withRequestId child logger
+- `src/lib/utils/validation.ts` has sanitizeInput, chatInputSchema, indexInputSchema, sessionIdSchema
+- `src/lib/ai/types.ts` defines AIProvider interface; `src/lib/ai/openai.ts` implements chat, streaming, embeddings; `src/lib/ai/provider.ts` singleton factory
+- `src/lib/i18n/` has language types (en/fr/ht), resolveLanguage, getLanguageInstruction; `src/lib/agents/prompts.ts` has getSandraSystemPrompt with language injection
+- Tests: all 12 Phase 1 test files pass (101 tests), full suite 343/343 passing
+**Changes:** None (pre-existing implementation verified as complete)
+**Coverage:** 343 tests, 43 files
+**Quality:** tsc clean, lint clean, vitest run all pass
+**Next:** Phase 2 — Core Engine
