@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 23
+- **Completed:** 39
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 63
+- **Remaining:** 47
 
 ---
 
@@ -74,29 +74,29 @@
 
 ### Task 2.1: Conversation Session Management (F6)
 
-- [ ] T030 Session CRUD operations (create, get, update) (depends: T013)
-- [ ] T031 Message persistence (add, get with ordering and limit) (depends: T013)
-- [ ] T032 Session context loader (recent N messages for LLM) (depends: T030, T031)
-- [ ] T033 Session-scoped short-term memory (key-value facts) (depends: T030)
-- [ ] T034 Session management unit tests (depends: T030, T031, T032, T033, T002)
+- [x] T030 Session CRUD operations (create, get, update) (depends: T013)
+- [x] T031 Message persistence (add, get with ordering and limit) (depends: T013)
+- [x] T032 Session context loader (recent N messages for LLM) (depends: T030, T031)
+- [x] T033 Session-scoped short-term memory (key-value facts) (depends: T030)
+- [x] T034 Session management unit tests (depends: T030, T031, T032, T033, T002)
 
 ### Task 2.2: Tool Registry and Execution (F5)
 
-- [ ] T035 Tool interface and self-registration registry (depends: T015)
-- [ ] T036 Tool executor with permission scope enforcement (depends: T035)
-- [ ] T037 searchKnowledgeBase tool implementation (depends: T035, T043, T044)
-- [ ] T038 [P] lookupRepoInfo tool implementation (depends: T035, T013)
-- [ ] T039 [P] getEdLightInitiatives tool implementation (depends: T035, T013)
-- [ ] T040 Tool system unit tests (depends: T035, T036, T037, T038, T039, T002)
+- [x] T035 Tool interface and self-registration registry (depends: T015)
+- [x] T036 Tool executor with permission scope enforcement (depends: T035)
+- [x] T037 searchKnowledgeBase tool implementation (depends: T035, T043, T044)
+- [x] T038 [P] lookupRepoInfo tool implementation (depends: T035, T013)
+- [x] T039 [P] getEdLightInitiatives tool implementation (depends: T035, T013)
+- [x] T040 Tool system unit tests (depends: T035, T036, T037, T038, T039, T002)
 
 ### Task 2.3: Knowledge Retrieval (RAG) Pipeline (F3)
 
-- [ ] T041 [P] Markdown-aware document chunker (depends: nothing)
-- [ ] T042 Embedding generation module (batch wrapper over AIProvider) (depends: T023)
-- [ ] T043 [P] VectorStore interface and InMemoryVectorStore (depends: nothing)
-- [ ] T044 Retrieval module (query → embed → search → rank) (depends: T042, T043)
-- [ ] T045 Knowledge ingestion pipeline (chunk → embed → store) (depends: T041, T042, T043)
-- [ ] T046 RAG pipeline unit tests (depends: T041, T042, T043, T044, T045, T002)
+- [x] T041 [P] Markdown-aware document chunker (depends: nothing)
+- [x] T042 Embedding generation module (batch wrapper over AIProvider) (depends: T023)
+- [x] T043 [P] VectorStore interface and InMemoryVectorStore (depends: nothing)
+- [x] T044 Retrieval module (query → embed → search → rank) (depends: T042, T043)
+- [x] T045 Knowledge ingestion pipeline (chunk → embed → store) (depends: T041, T042, T043)
+- [x] T046 RAG pipeline unit tests (depends: T041, T042, T043, T044, T045, T002)
 
 ---
 

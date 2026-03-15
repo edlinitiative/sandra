@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** 4 (completed)
-- **Tasks completed:** 43 / 86
+- **Phase:** 2 (verified and documented)
+- **Tasks completed:** 39 / 86
 - **Test coverage:** 346 tests passing across 44 test files
 - **Last session:** 2026-03-15
 
@@ -159,3 +159,19 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 346 tests / 44 files (all passing); Phase 5 adds 6 E2E test files
 **Quality:** lint ✓, tsc ✓, vitest ✓ (346/346)
 **Current Status:** Phase 5 complete — all phases 0–5 done
+
+### Session 6 — 2026-03-15
+
+**Goal:** Implement Phase 2 — Core Engine (T030–T046)
+**Completed:** T030, T031, T032, T033, T034, T035, T036, T037, T038, T039, T040, T041, T042, T043, T044, T045, T046
+**Blockers:** None
+**Discoveries:**
+- All Phase 2 code was pre-built across all task areas
+- Session management: `memory/prisma-session-store.ts` (PrismaSessionStore) and `memory/session-store.ts` (InMemorySessionStore) implement full CRUD; `memory/user-memory.ts` handles session-scoped key-value facts; `memory/prisma-user-memory-store.ts` for long-term memory
+- Tool system: `tools/registry.ts` (ToolRegistry with self-registration), `tools/executor.ts` (permission scope enforcement + Zod input validation), all 3 MVP tools: `tools/search-knowledge.ts` (searchKnowledgeBase), `tools/lookup-repo.ts` (lookupRepoInfo), `tools/get-initiatives.ts` (getEdLightInitiatives)
+- RAG pipeline: `knowledge/chunker.ts` (markdown-aware, 1024 char default, heading context), `knowledge/embeddings.ts` (batch embed via AIProvider), `knowledge/vector-store.ts` (InMemoryVectorStore, cosine similarity, dedup by sourceId+contentHash), `knowledge/retrieval.ts` (embed query → search → filter by minScore 0.5), `knowledge/ingest.ts` (chunk → embed → upsert pipeline)
+- All tool tests, memory tests, and knowledge tests already present and passing
+**Changes:** Updated tasks.md to mark T030–T046 complete; updated progress.md current status
+**Coverage:** 346 tests / 44 files (all passing); Phase 2 tests: 8 test files (session-store, user-memory, executor, registry, tools, chunker, vector-store, retrieval, ingest)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (346/346)
+**Next:** All phases complete
