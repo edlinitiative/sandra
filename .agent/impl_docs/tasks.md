@@ -182,3 +182,40 @@
 - [x] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
 - [x] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
 - [x] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
+
+---
+
+## Task: Improve Sandra tool routing for EdLight Academy course questions
+
+### Problem
+Sandra currently routes course questions about EdLight Academy to `getEdLightInitiatives`, which produces generic platform descriptions instead of grounded course answers.
+
+Example:
+- User: "What kind of courses can I find on EdLight Academy?"
+- Current behavior: calls `getEdLightInitiatives`
+- Desired behavior: prefer retrieval / knowledge search
+
+### Required changes
+
+1. Update tool selection guidance so:
+   - broad ecosystem/platform questions -> `getEdLightInitiatives`
+   - course/content/curriculum/module/lesson questions about EdLight Academy -> retrieval or `searchKnowledgeBase`
+
+2. Do not default to `getEdLightInitiatives` for EdLight Academy course questions unless the user is explicitly asking for a platform overview.
+
+3. If retrieval returns no course data, Sandra should say it does not currently have indexed course information instead of inventing course categories.
+
+4. Update prompt/tool guidance in:
+   - `src/lib/agents/prompts.ts`
+
+5. Add tests covering:
+   - "What is EdLight?" -> initiatives tool
+   - "What kind of courses can I find on EdLight Academy?" -> retrieval path
+   - empty retrieval fallback behavior
+
+### Validation
+Run:
+- `npm test`
+- `npx tsc --noEmit`
+- `npm run build`
+
