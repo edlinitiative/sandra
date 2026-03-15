@@ -346,7 +346,28 @@ export async function* runSandraAgentStream(
       }
 
       // Tool calls detected — execute them
-      messages.push({ role: 'assistant', content: fullContent });
+      messages.push({
+        role: 'assistant',
+        content: fullContent,
+        toolCalls: toolCallsFromStream,
+      });
+
+      log.info('Streaming assistant tool calls captured', {
+        sessionId: input.sessionId,
+        toolCallsFromStream,
+        fullContent,
+      });
+
+      log.info('Messages before tool execution', {
+        sessionId: input.sessionId,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          toolCallId: 'toolCallId' in m ? m.toolCallId : undefined,
+          toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+          name: 'name' in m ? m.name : undefined,
+        })),
+      });
 
       for (const toolCall of toolCallsFromStream) {
         yield { type: 'tool_call', data: toolCall.name };
@@ -369,6 +390,12 @@ export async function* runSandraAgentStream(
         }
 
         yield { type: 'tool_result', data: resultStr };
+
+        log.info('Pushing tool result message', {
+          sessionId: input.sessionId,
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+        });
 
         messages.push({
           role: 'tool',

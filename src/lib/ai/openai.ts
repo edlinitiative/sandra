@@ -171,7 +171,11 @@ export class OpenAIProvider implements AIProvider {
           for (const tc of delta.tool_calls) {
             const idx = tc.index;
             if (!toolCallAccumulator[idx]) {
-              toolCallAccumulator[idx] = { id: tc.id ?? '', name: tc.function?.name ?? '', arguments: '' };
+              toolCallAccumulator[idx] = {
+                id: tc.id ?? `toolcall_${idx}`,
+                name: tc.function?.name ?? '',
+                arguments: '',
+              };
             }
             if (tc.function?.arguments) {
               toolCallAccumulator[idx].arguments += tc.function.arguments;
@@ -186,6 +190,11 @@ export class OpenAIProvider implements AIProvider {
         }
 
         if (chunk.choices[0]?.finish_reason) {
+          log.info('OpenAI streaming tool call accumulator', {
+            model,
+            toolCallAccumulator,
+          });
+
           const toolCalls: ToolCall[] = Object.values(toolCallAccumulator).map((tc) => ({
             id: tc.id,
             name: tc.name,
