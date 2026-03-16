@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** V2 Phase 0 complete — V2 Phase 1 next
-- **Tasks completed:** 39 / 86 (V1) + V2-P0 complete
-- **Test coverage:** 376 tests passing across 45 test files
+- **Phase:** V2 Phase 1 complete — V2 Phase 2 next
+- **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 complete
+- **Test coverage:** 401 tests passing across 46 test files
 - **Last session:** 2026-03-16
 
 ## Phase Completion Loop
@@ -181,6 +181,23 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 376 tests / 45 files (all passing)
 **Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
 **Next:** Phase 6 complete
+
+### Session 9 — 2026-03-16
+
+**Goal:** V2 Phase 1 — Tool Routing and Response Accuracy (benchmark prompts + validation)
+**Completed:** V2-P1-A, V2-P1-B, V2-P1-C, V2-P1-D
+**Blockers:** `npm install` required (deps not installed); resolved automatically
+**Discoveries:**
+- V2-P1-A was already complete from Session 7 (getCourseInventory tool + prompts routing rules)
+- V2-P1-B (benchmark prompts) was the remaining work — created routing-benchmark.test.ts with 25 tests across 7 benchmark categories
+- Benchmark categories: A) course listing → getCourseInventory, B) platform overview → getEdLightInitiatives, C) repo queries → lookupRepoInfo, D) documentation → searchKnowledgeBase, E) negative: getEdLightInitiatives must NOT handle course listings, F) platform-specific routing (academy/code), G) grounded response requirements
+- getSandraSystemPrompt also needed "Do NOT use" getEdLightInitiatives restriction — verified it was already present
+**Changes:**
+- `src/lib/agents/__tests__/routing-benchmark.test.ts` — new benchmark test file (25 tests, 7 categories)
+- `.agent/impl_docs/tasks.md` — marked V2-P1-A through V2-P1-D complete
+**Coverage:** 401 tests / 46 files (all passing; +25 benchmark tests)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (401/401), build ✓
+**Next:** V2 Phase 2 — Streaming and Tool Continuity
 
 ### Session 8 — 2026-03-16
 

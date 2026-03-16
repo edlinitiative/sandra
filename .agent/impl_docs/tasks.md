@@ -202,10 +202,10 @@
 
 > Detailed spec: `phase1_tool_routing_and_accuracy.md`
 
-- [ ] V2-P1-A Route Academy/Code course questions to getCourseInventory (not getEdLightInitiatives)
-- [ ] V2-P1-B Add benchmark prompts for tool routing verification
-- [ ] V2-P1-C Add/update tests for routing behavior
-- [ ] V2-P1-D Validate: npm test, tsc --noEmit, npm run build
+- [x] V2-P1-A Route Academy/Code course questions to getCourseInventory (not getEdLightInitiatives)
+- [x] V2-P1-B Add benchmark prompts for tool routing verification
+- [x] V2-P1-C Add/update tests for routing behavior
+- [x] V2-P1-D Validate: npm test, tsc --noEmit, npm run build
 
 ### V2 Phase 2 — Streaming and Tool Continuity
 
