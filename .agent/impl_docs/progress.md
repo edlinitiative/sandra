@@ -2,8 +2,8 @@
 
 ## Current Status
 
-- **Phase:** V2 Phase 3 complete — V2 Phase 4 next
-- **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 + V2-P2 + V2-P3 complete
+- **Phase:** V2 Phase 4 complete — all V2 phases done
+- **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 + V2-P2 + V2-P3 + V2-P4 complete
 - **Test coverage:** 432 tests passing across 47 test files
 - **Last session:** 2026-03-16
 
@@ -181,6 +181,24 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 376 tests / 45 files (all passing)
 **Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
 **Next:** Phase 6 complete
+
+### Session 12 — 2026-03-16
+
+**Goal:** V2 Phase 4 — Evaluation and Release Readiness (V2-P4-A through V2-P4-D)
+**Completed:** V2-P4-A, V2-P4-B, V2-P4-C, V2-P4-D
+**Blockers:** None
+**Discoveries:**
+- Phase 4 is validation-only — all implementation was done in Phases 1-3
+- V2-P4-A: Full benchmark suite (432 tests, 47 files) executed — all pass; 50 dedicated benchmark tests (routing-benchmark.test.ts + grounded-knowledge.test.ts) verified
+- V2-P4-B: System prompts in prompts.ts confirmed to contain explicit course routing keywords (course, learn, lesson, module, Python, SQL, etc.), platform differentiation rules (Academy vs Code, News vs Initiative), and negative constraint (Do NOT use getEdLightInitiatives for course listings)
+- V2-P4-C: All 6 streaming regression tests in sandra.test.ts pass — message ordering, second-iteration token streaming, session persistence after tool flow, multiple tool calls, error recovery, max iterations
+- V2-P4-D: Final gate — npm test 432/432, npx tsc --noEmit zero errors, npm run build succeeds (11 static pages + 6 API routes)
+**Changes:**
+- `.agent/impl_docs/progress.md` — updated current status; added this session entry
+- `.agent/phase_4_result.json` — wrote V2 Phase 4 result (overwrote V1 Phase 4 result)
+**Coverage:** 432 tests / 47 files (all passing — no code changes this session)
+**Quality:** tsc ✓, vitest ✓ (432/432), build ✓
+**Current Status:** All V2 phases complete (V2-P0 through V2-P4)
 
 ### Session 11 — 2026-03-16
 
