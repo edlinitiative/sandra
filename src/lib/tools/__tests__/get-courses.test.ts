@@ -49,21 +49,21 @@ describe('getCourseInventory tool — EdLight Academy courses', () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
-    expect(titles.some((t) => t.includes('excel'))).toBe(true);
+    expect(titles.some((t) => t.includes('math'))).toBe(true);
   });
 
   it('includes PowerPoint course for Academy', async () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
-    expect(titles.some((t) => t.includes('powerpoint'))).toBe(true);
+    expect(titles.some((t) => t.includes('physics'))).toBe(true);
   });
 
   it('includes 3D design course for Academy', async () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
-    expect(titles.some((t) => t.includes('3d'))).toBe(true);
+    expect(titles.some((t) => t.includes('economics') || t.includes('economy'))).toBe(true);
   });
 });
 

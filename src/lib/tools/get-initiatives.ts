@@ -27,8 +27,8 @@ const INITIATIVES = [
     url: 'https://github.com/edlinitiative/EdLight-Academy',
     description:
       'Educational platform and learning resources for the EdLight ecosystem — structured courses covering digital literacy, productivity tools, and design skills. Covers Microsoft Office Suite, Excel data skills, PowerPoint, and 3D design. Ideal for learners building professional and academic competencies.',
-    focus: 'digital literacy and productivity',
-    highlights: ['Digital Literacy Fundamentals', 'Microsoft Office Suite', 'Excel data skills', 'PowerPoint presentations', '3D design introduction'],
+    focus: 'accessible academic education and exam preparation',
+    highlights: ['Free online courses for high school students', 'Core academic subjects such as math, physics, and economics', 'Self-paced learning accessible from anywhere', 'Educational support for Haitian students preparing for exams'],
     status: 'active',
   },
   {

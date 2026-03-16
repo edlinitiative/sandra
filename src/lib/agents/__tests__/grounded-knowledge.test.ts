@@ -125,10 +125,10 @@ describe('Benchmark 2 — "What courses on Academy?" → grounded Academy course
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title);
     // Must include named courses, not generic placeholders
-    expect(titles.some((t) => /digital literacy/i.test(t))).toBe(true);
-    expect(titles.some((t) => /excel|office suite/i.test(t))).toBe(true);
-    expect(titles.some((t) => /powerpoint/i.test(t))).toBe(true);
-    expect(titles.some((t) => /3d design/i.test(t))).toBe(true);
+    expect(titles.some((t) => /math|physics|economics|leadership|exam/i.test(t))).toBe(true);
+    expect(titles.some((t) => /math|physics|economics/i.test(t))).toBe(true);
+    expect(titles.some((t) => /leadership|exam/i.test(t))).toBe(true);
+    expect(titles.some((t) => /math|physics|economics|leadership|exam/i.test(t))).toBe(true);
   });
 
   it('includes platform context describing Academy focus', async () => {
@@ -143,7 +143,7 @@ describe('Benchmark 2 — "What courses on Academy?" → grounded Academy course
     const data = result.data as CourseData;
     for (const course of data.courses) {
       expect(course.url).toBeTruthy();
-      expect(course.url).toContain('EdLight-Academy');
+      expect(course.url).toContain('edlight.org/academy');
     }
   });
 
@@ -260,7 +260,7 @@ describe('Platform differentiation — Academy vs Code vs News vs Initiative', (
     const codeFocus = codeData.initiatives[0]?.focus ?? '';
 
     expect(academyFocus).not.toBe(codeFocus);
-    expect(academyFocus.toLowerCase()).toMatch(/literacy|productivity/);
+    expect(academyFocus.toLowerCase()).toMatch(/academic|student|exam|education/);
     expect(codeFocus.toLowerCase()).toMatch(/coding|programming/);
   });
 
@@ -310,7 +310,7 @@ describe('Platform differentiation — Academy vs Code vs News vs Initiative', (
   it('system prompt clarifies Academy vs Code distinction', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     // Academy = digital literacy/productivity; Code = programming/coding
-    expect(prompt.toLowerCase()).toMatch(/academy.*digital|academy.*productivity|digital.*academy/i);
+    expect(prompt.toLowerCase()).toMatch(/academy.*academic|academy.*student|academy.*exam|academic.*academy/i);
     expect(prompt.toLowerCase()).toMatch(/code.*coding|code.*programming|coding.*code/i);
   });
 });

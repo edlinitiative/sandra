@@ -17,69 +17,58 @@ const inputSchema = z.object({
 /** Static course catalog — sourced from EdLight repos (updated as repos are indexed). */
 const ACADEMY_COURSES = [
   {
-    title: 'Introduction to EdLight Academy',
+    title: 'Mathematics Fundamentals',
     platform: 'academy',
     level: 'beginner',
-    topics: ['orientation', 'platform overview'],
-    path: 'courses/intro',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/intro',
+    topics: ['mathematics', 'problem solving', 'foundations'],
+    path: 'courses/mathematics-fundamentals',
+    url: 'https://www.edlight.org/academy',
     description:
-      'Get started with EdLight Academy. Learn how the platform works, how to navigate courses, and how to track your progress.',
+      'Build core mathematics skills through structured lessons designed for students who want to strengthen their academic foundation.',
     beginner: true,
   },
   {
-    title: 'Digital Literacy Fundamentals',
-    platform: 'academy',
-    level: 'beginner',
-    topics: ['digital skills', 'computers', 'internet'],
-    path: 'courses/digital-literacy',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/digital-literacy',
-    description:
-      'Build foundational digital skills — using computers, navigating the web, creating files, and staying safe online.',
-    beginner: true,
-  },
-  {
-    title: 'Productivity Tools: Microsoft Office Suite',
-    platform: 'academy',
-    level: 'beginner',
-    topics: ['excel', 'word', 'powerpoint', 'office'],
-    path: 'courses/office-suite',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/office-suite',
-    description:
-      'Learn Word, Excel, and PowerPoint for professional and academic use. Covers documents, spreadsheets, and presentations.',
-    beginner: true,
-  },
-  {
-    title: 'Data Skills with Excel',
+    title: 'Physics Foundations',
     platform: 'academy',
     level: 'intermediate',
-    topics: ['excel', 'data', 'spreadsheets', 'formulas'],
-    path: 'courses/excel-data-skills',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/excel-data-skills',
+    topics: ['physics', 'science', 'concepts'],
+    path: 'courses/physics-foundations',
+    url: 'https://www.edlight.org/academy',
     description:
-      'Go deeper with Excel: pivot tables, VLOOKUP, data visualization, and analysis fundamentals.',
+      'Learn essential physics concepts through guided academic content aimed at high school students.',
     beginner: false,
   },
   {
-    title: 'Presentation Skills with PowerPoint',
+    title: 'Economics Essentials',
+    platform: 'academy',
+    level: 'intermediate',
+    topics: ['economics', 'markets', 'analysis'],
+    path: 'courses/economics-essentials',
+    url: 'https://www.edlight.org/academy',
+    description:
+      'Explore core economics concepts to help students better understand markets, incentives, and decision-making.',
+    beginner: false,
+  },
+  {
+    title: 'Leadership and Personal Development',
     platform: 'academy',
     level: 'beginner',
-    topics: ['powerpoint', 'presentations', 'design'],
-    path: 'courses/powerpoint-presentations',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/powerpoint-presentations',
+    topics: ['leadership', 'communication', 'growth'],
+    path: 'courses/leadership-personal-development',
+    url: 'https://www.edlight.org/academy',
     description:
-      'Create compelling presentations using PowerPoint — layout, design principles, and slide storytelling.',
+      'Develop leadership, communication, and personal growth skills through structured learning content.',
     beginner: true,
   },
   {
-    title: 'Introduction to 3D Design',
+    title: 'Exam Preparation Support',
     platform: 'academy',
     level: 'beginner',
-    topics: ['3d', 'design', 'modeling'],
-    path: 'courses/intro-3d-design',
-    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/intro-3d-design',
+    topics: ['exam prep', 'revision', 'study skills'],
+    path: 'courses/exam-preparation-support',
+    url: 'https://www.edlight.org/academy',
     description:
-      'Explore 3D design concepts and tools. No prior experience needed — covers basic modeling, shapes, and rendering.',
+      'Review important academic content and strengthen study habits to prepare effectively for exams.',
     beginner: true,
   },
 ];
@@ -196,9 +185,9 @@ const getCourseInventory: SandraTool = {
       : courses[0] ?? null;
 
     const platformContext: Record<string, string> = {
-      academy: 'EdLight Academy focuses on digital literacy and productivity skills — Microsoft Office Suite, Excel, PowerPoint, and 3D design.',
+      academy: 'EdLight Academy focuses on academic learning for students — especially high school learners — with structured subjects like math, physics, economics, leadership, and exam preparation.',
       code: 'EdLight Code focuses on coding and programming skills — Python, SQL, web development, and software fundamentals.',
-      both: 'EdLight Academy covers digital literacy and productivity; EdLight Code covers coding and programming.',
+      both: 'EdLight Academy covers academic subjects and student learning support; EdLight Code covers coding and programming.',
     };
 
     return {
