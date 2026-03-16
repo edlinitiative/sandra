@@ -182,3 +182,54 @@
 - [ ] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
 - [ ] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
 - [ ] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
+
+---
+
+## V2 — Sandra V2 Scope
+
+> Docs: `docs/releases/v2.md`, `docs/releases/v2_tasks.md`
+> Phase docs: `phase1_tool_routing_and_accuracy.md`, `phase2_streaming_and_tool_continuity.md`, `phase3_grounded_platform_knowledge.md`, `phase4_eval_and_release_readiness.md`
+
+**V2 does NOT include:** WhatsApp, Instagram, Email, Voice, autonomous agent actions, complex auth flows.
+
+### V2 Phase 0 — Scope Alignment
+
+- [x] V2-P0 Review roadmap and confirm V2 priorities
+- [x] V2-P0 Verify V2 phase docs align with v2.md and v2_tasks.md
+- [x] V2-P0 Commit V2 phase docs to .agent/impl_docs/
+
+### V2 Phase 1 — Tool Routing and Response Accuracy
+
+> Detailed spec: `phase1_tool_routing_and_accuracy.md`
+
+- [ ] V2-P1-A Route Academy/Code course questions to getCourseInventory (not getEdLightInitiatives)
+- [ ] V2-P1-B Add benchmark prompts for tool routing verification
+- [ ] V2-P1-C Add/update tests for routing behavior
+- [ ] V2-P1-D Validate: npm test, tsc --noEmit, npm run build
+
+### V2 Phase 2 — Streaming and Tool Continuity
+
+> Detailed spec: `phase2_streaming_and_tool_continuity.md`
+
+- [ ] V2-P2-A Preserve assistant tool_calls message before tool result messages in streaming
+- [ ] V2-P2-B Ensure follow-up model call includes valid assistant tool_calls context
+- [ ] V2-P2-C Add regression tests for streaming tool-call continuity
+- [ ] V2-P2-D Validate: npm test, tsc --noEmit, npm run build
+
+### V2 Phase 3 — Grounded Platform Knowledge
+
+> Detailed spec: `phase3_grounded_platform_knowledge.md`
+
+- [ ] V2-P3-A Improve course inventory coverage (Academy, Code)
+- [ ] V2-P3-B Improve repository-backed answers for News and Initiative
+- [ ] V2-P3-C Ensure Academy/Code/News/Initiative answers are clearly differentiated
+- [ ] V2-P3-D Validate benchmark prompts return grounded answers
+
+### V2 Phase 4 — Evaluation and Release Readiness
+
+> Detailed spec: `phase4_eval_and_release_readiness.md`
+
+- [ ] V2-P4-A Run full benchmark suite against core EdLight prompts
+- [ ] V2-P4-B Verify tool routing correctness across all prompt categories
+- [ ] V2-P4-C Verify streaming stability post-tool-call
+- [ ] V2-P4-D Final gate: npm test, tsc --noEmit, npm run build all pass

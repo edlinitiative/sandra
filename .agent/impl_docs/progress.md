@@ -2,10 +2,10 @@
 
 ## Current Status
 
-- **Phase:** 2 (verified and documented)
-- **Tasks completed:** 39 / 86
-- **Test coverage:** 346 tests passing across 44 test files
-- **Last session:** 2026-03-15
+- **Phase:** V2 Phase 0 complete — V2 Phase 1 next
+- **Tasks completed:** 39 / 86 (V1) + V2-P0 complete
+- **Test coverage:** 376 tests passing across 45 test files
+- **Last session:** 2026-03-16
 
 ## Phase Completion Loop
 
@@ -181,6 +181,29 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 376 tests / 45 files (all passing)
 **Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
 **Next:** Phase 6 complete
+
+### Session 8 — 2026-03-16
+
+**Goal:** Phase 0 V2 — Scope Alignment
+**Completed:** V2-P0 (scope review and alignment)
+**Blockers:** None
+**Discoveries:**
+- V2 scope is clearly defined in `docs/releases/v2.md` and `docs/releases/v2_tasks.md`
+- V2 excludes: WhatsApp, Instagram, Email, Voice, autonomous actions, complex auth
+- V2 phase docs (phase1–phase4) already existed as untracked files and are well-aligned with V2 scope:
+  - phase1_tool_routing_and_accuracy.md → aligns with v2_tasks Priority 2 (tool routing)
+  - phase2_streaming_and_tool_continuity.md → aligns with v2_tasks Priority 4 (streaming stability)
+  - phase3_grounded_platform_knowledge.md → aligns with v2_tasks Priorities 1 and 3 (knowledge accuracy + retrieval)
+  - phase4_eval_and_release_readiness.md → aligns with v2_tasks Priority 5 (evaluation)
+- Phase 6 (Session 7) already completed part of V2 Phase 1: getCourseInventory tool added, routing rules updated in prompts
+- V2 Phase 1 benchmark tests and V2 Phase 2 streaming fixes are the next unstarted work
+**Changes:**
+- Added V2 phase sections to tasks.md with detailed phase breakdown
+- Committed untracked V2 phase docs (phase0_v2_scope.md through phase4)
+- Wrote .agent/phase_0_result.json
+**Coverage:** 376 tests / 45 files (all passing — no code changes this session)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
+**Next:** V2 Phase 1 — Tool Routing and Response Accuracy (benchmark prompts + tests)
 
 ### Session 6 — 2026-03-15
 
