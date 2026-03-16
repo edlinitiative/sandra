@@ -7,14 +7,17 @@ const inputSchema = z.object({
   category: z.string().optional().describe('Filter by category: coding, news, leadership, education'),
 });
 
-// Curated initiative data for V1 — sourced from RepoRegistry + hardcoded descriptions
+// Curated initiative data — sourced from RepoRegistry + grounded platform descriptions
 const INITIATIVES = [
   {
     name: 'EdLight Code',
     category: 'coding',
     repo: 'edlinitiative/code',
     url: 'https://github.com/edlinitiative/code',
-    description: 'The core EdLight coding education platform — hands-on coding curriculum and learning tools for students.',
+    description:
+      'The core EdLight coding education platform — hands-on coding curriculum and learning tools for students. Offers courses in Python, SQL, web development, and programming fundamentals. Designed to take learners from absolute beginner to practical coding skills.',
+    focus: 'coding education',
+    highlights: ['Python programming', 'SQL and databases', 'Web development (HTML/CSS/JS)', 'Beginner-to-intermediate progression'],
     status: 'active',
   },
   {
@@ -22,7 +25,10 @@ const INITIATIVES = [
     category: 'education',
     repo: 'edlinitiative/EdLight-Academy',
     url: 'https://github.com/edlinitiative/EdLight-Academy',
-    description: 'Educational platform and learning resources for the EdLight ecosystem — structured courses and tutorials.',
+    description:
+      'Educational platform and learning resources for the EdLight ecosystem — structured courses covering digital literacy, productivity tools, and design skills. Covers Microsoft Office Suite, Excel data skills, PowerPoint, and 3D design. Ideal for learners building professional and academic competencies.',
+    focus: 'digital literacy and productivity',
+    highlights: ['Digital Literacy Fundamentals', 'Microsoft Office Suite', 'Excel data skills', 'PowerPoint presentations', '3D design introduction'],
     status: 'active',
   },
   {
@@ -30,7 +36,10 @@ const INITIATIVES = [
     category: 'news',
     repo: 'edlinitiative/EdLight-News',
     url: 'https://github.com/edlinitiative/EdLight-News',
-    description: 'News and updates platform for the EdLight community — announcements, events, and community stories.',
+    description:
+      'News and updates platform for the EdLight community — publishes announcements, event coverage, program updates, and community stories from across the EdLight ecosystem. Keeps learners, educators, and community members informed about new courses, initiatives, and milestones.',
+    focus: 'community news and announcements',
+    highlights: ['Program announcements', 'Community event coverage', 'New course launches', 'Ecosystem updates', 'Community member spotlights'],
     status: 'active',
   },
   {
@@ -38,7 +47,10 @@ const INITIATIVES = [
     category: 'leadership',
     repo: 'edlinitiative/EdLight-Initiative',
     url: 'https://github.com/edlinitiative/EdLight-Initiative',
-    description: 'The EdLight Initiative organization and community hub — leadership programs and community building.',
+    description:
+      'The EdLight Initiative is the organizational and community hub for the entire EdLight ecosystem — it runs leadership development programs, coordinates cross-platform community building, and drives the mission of accessible education and technology for underserved communities.',
+    focus: 'leadership and community organization',
+    highlights: ['Leadership development programs', 'Community building and outreach', 'Cross-platform coordination', 'Mission: accessible education for underserved communities'],
     status: 'active',
   },
 ];
@@ -71,7 +83,16 @@ const getEdLightInitiatives: SandraTool = {
     return {
       success: true,
       data: {
-        initiatives: filtered,
+        initiatives: filtered.map((i) => ({
+          name: i.name,
+          category: i.category,
+          repo: i.repo,
+          url: i.url,
+          description: i.description,
+          focus: i.focus,
+          highlights: i.highlights,
+          status: i.status,
+        })),
         totalPlatforms: EDLIGHT_PLATFORMS.length,
       },
     };

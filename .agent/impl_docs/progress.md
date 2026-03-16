@@ -2,9 +2,9 @@
 
 ## Current Status
 
-- **Phase:** V2 Phase 2 complete — V2 Phase 3 next
-- **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 complete
-- **Test coverage:** 401 tests passing across 46 test files
+- **Phase:** V2 Phase 3 complete — V2 Phase 4 next
+- **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 + V2-P2 + V2-P3 complete
+- **Test coverage:** 432 tests passing across 47 test files
 - **Last session:** 2026-03-16
 
 ## Phase Completion Loop
@@ -181,6 +181,26 @@ Each phase follows an implement → review → fix cycle:
 **Coverage:** 376 tests / 45 files (all passing)
 **Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
 **Next:** Phase 6 complete
+
+### Session 11 — 2026-03-16
+
+**Goal:** V2 Phase 3 — Grounded Platform Knowledge (V2-P3-A through V2-P3-D)
+**Completed:** V2-P3-A, V2-P3-B, V2-P3-C, V2-P3-D
+**Blockers:** None
+**Discoveries:**
+- getCourseInventory was missing `url` fields and `platformContext` in response — added both
+- getEdLightInitiatives had generic one-liner descriptions for News and Initiative — expanded with grounded descriptions, `focus` field, and `highlights` arrays
+- System prompts had routing rules for courses but lacked clear platform differentiation guidance for News and Initiative questions
+- "What does EdLight Initiative do?" was not explicitly routed to getEdLightInitiatives with category='leadership' — added to both prompt builders
+- All 4 benchmark prompts now validated with grounded response requirements
+**Changes:**
+- `src/lib/tools/get-initiatives.ts` — expanded all 4 initiative descriptions; added `focus` field (unique per platform) and `highlights` arrays; handler now maps these fields into output
+- `src/lib/tools/get-courses.ts` — added `url` field to all 12 courses (Academy → EdLight-Academy repo, Code → edlinitiative/code repo); added `platformContext` to handler output; added platform context string for academy/code/both
+- `src/lib/agents/prompts.ts` — expanded platform differentiation section in `buildSandraSystemPrompt` identity block (4 platforms with focus areas, Academy vs Code distinction, News vs Initiative distinction); added platform-specific routing examples for "What is EdLight?", "What does Initiative do?", "What is News?"; updated `getSandraSystemPrompt` with same differentiation and routing; both prompts now instruct to include grounded details from platform data
+- `src/lib/agents/__tests__/grounded-knowledge.test.ts` — new file with 25 tests across 5 describe blocks: Benchmark 1 (EdLight overview), Benchmark 2 (Academy courses), Benchmark 3 (Code courses), Benchmark 4 (Initiative), Platform Differentiation
+**Coverage:** 432 tests / 47 files (all passing; +25 grounded knowledge tests)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (432/432), build not run (not required for phase completion)
+**Next:** V2 Phase 4 — Evaluation and Release Readiness
 
 ### Session 10 — 2026-03-16
 

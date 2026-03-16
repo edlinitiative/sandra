@@ -220,10 +220,10 @@
 
 > Detailed spec: `phase3_grounded_platform_knowledge.md`
 
-- [ ] V2-P3-A Improve course inventory coverage (Academy, Code)
-- [ ] V2-P3-B Improve repository-backed answers for News and Initiative
-- [ ] V2-P3-C Ensure Academy/Code/News/Initiative answers are clearly differentiated
-- [ ] V2-P3-D Validate benchmark prompts return grounded answers
+- [x] V2-P3-A Improve course inventory coverage (Academy, Code)
+- [x] V2-P3-B Improve repository-backed answers for News and Initiative
+- [x] V2-P3-C Ensure Academy/Code/News/Initiative answers are clearly differentiated
+- [x] V2-P3-D Validate benchmark prompts return grounded answers
 
 ### V2 Phase 4 — Evaluation and Release Readiness
 

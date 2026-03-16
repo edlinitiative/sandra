@@ -22,6 +22,7 @@ const ACADEMY_COURSES = [
     level: 'beginner',
     topics: ['orientation', 'platform overview'],
     path: 'courses/intro',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/intro',
     description:
       'Get started with EdLight Academy. Learn how the platform works, how to navigate courses, and how to track your progress.',
     beginner: true,
@@ -32,6 +33,7 @@ const ACADEMY_COURSES = [
     level: 'beginner',
     topics: ['digital skills', 'computers', 'internet'],
     path: 'courses/digital-literacy',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/digital-literacy',
     description:
       'Build foundational digital skills — using computers, navigating the web, creating files, and staying safe online.',
     beginner: true,
@@ -42,6 +44,7 @@ const ACADEMY_COURSES = [
     level: 'beginner',
     topics: ['excel', 'word', 'powerpoint', 'office'],
     path: 'courses/office-suite',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/office-suite',
     description:
       'Learn Word, Excel, and PowerPoint for professional and academic use. Covers documents, spreadsheets, and presentations.',
     beginner: true,
@@ -52,6 +55,7 @@ const ACADEMY_COURSES = [
     level: 'intermediate',
     topics: ['excel', 'data', 'spreadsheets', 'formulas'],
     path: 'courses/excel-data-skills',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/excel-data-skills',
     description:
       'Go deeper with Excel: pivot tables, VLOOKUP, data visualization, and analysis fundamentals.',
     beginner: false,
@@ -62,6 +66,7 @@ const ACADEMY_COURSES = [
     level: 'beginner',
     topics: ['powerpoint', 'presentations', 'design'],
     path: 'courses/powerpoint-presentations',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/powerpoint-presentations',
     description:
       'Create compelling presentations using PowerPoint — layout, design principles, and slide storytelling.',
     beginner: true,
@@ -72,6 +77,7 @@ const ACADEMY_COURSES = [
     level: 'beginner',
     topics: ['3d', 'design', 'modeling'],
     path: 'courses/intro-3d-design',
+    url: 'https://github.com/edlinitiative/EdLight-Academy/tree/main/courses/intro-3d-design',
     description:
       'Explore 3D design concepts and tools. No prior experience needed — covers basic modeling, shapes, and rendering.',
     beginner: true,
@@ -85,6 +91,7 @@ const CODE_COURSES = [
     level: 'beginner',
     topics: ['programming basics', 'logic', 'problem solving'],
     path: 'courses/coding-101',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/coding-101',
     description:
       'Your first step into coding. Learn what code is, how computers think, and write your very first programs.',
     beginner: true,
@@ -95,6 +102,7 @@ const CODE_COURSES = [
     level: 'beginner',
     topics: ['python', 'programming', 'syntax'],
     path: 'courses/python-fundamentals',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/python-fundamentals',
     description:
       'Learn Python from scratch — variables, data types, loops, functions, and building simple programs.',
     beginner: true,
@@ -105,6 +113,7 @@ const CODE_COURSES = [
     level: 'intermediate',
     topics: ['python', 'data', 'pandas', 'analysis'],
     path: 'courses/python-data-analysis',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/python-data-analysis',
     description:
       'Use Python to work with data: loading, cleaning, and analyzing datasets with pandas and numpy.',
     beginner: false,
@@ -115,6 +124,7 @@ const CODE_COURSES = [
     level: 'beginner',
     topics: ['sql', 'databases', 'queries', 'data'],
     path: 'courses/sql-databases',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/sql-databases',
     description:
       'Learn SQL to query databases — SELECT, WHERE, JOIN, and GROUP BY. No prior experience required.',
     beginner: true,
@@ -125,6 +135,7 @@ const CODE_COURSES = [
     level: 'intermediate',
     topics: ['sql', 'subqueries', 'optimization', 'analytics'],
     path: 'courses/advanced-sql',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/advanced-sql',
     description:
       'Master advanced SQL: window functions, CTEs, subqueries, and query optimization techniques.',
     beginner: false,
@@ -135,6 +146,7 @@ const CODE_COURSES = [
     level: 'beginner',
     topics: ['html', 'css', 'javascript', 'web'],
     path: 'courses/web-dev-basics',
+    url: 'https://github.com/edlinitiative/code/tree/main/courses/web-dev-basics',
     description:
       'Build your first web pages using HTML, CSS, and JavaScript. Learn how the web works from the ground up.',
     beginner: true,
@@ -183,10 +195,17 @@ const getCourseInventory: SandraTool = {
       ? beginnerCourses[0]
       : courses[0] ?? null;
 
+    const platformContext: Record<string, string> = {
+      academy: 'EdLight Academy focuses on digital literacy and productivity skills — Microsoft Office Suite, Excel, PowerPoint, and 3D design.',
+      code: 'EdLight Code focuses on coding and programming skills — Python, SQL, web development, and software fundamentals.',
+      both: 'EdLight Academy covers digital literacy and productivity; EdLight Code covers coding and programming.',
+    };
+
     return {
       success: true,
       data: {
         platform,
+        platformContext: platformContext[platform] ?? platformContext['both'],
         courses: courses.map((c) => ({
           title: c.title,
           platform: c.platform,
@@ -194,6 +213,7 @@ const getCourseInventory: SandraTool = {
           topics: c.topics,
           description: c.description,
           path: c.path,
+          url: c.url,
           beginner: c.beginner,
         })),
         totalCourses: courses.length,
