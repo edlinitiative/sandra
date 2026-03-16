@@ -160,6 +160,28 @@ Each phase follows an implement → review → fix cycle:
 **Quality:** lint ✓, tsc ✓, vitest ✓ (346/346)
 **Current Status:** Phase 5 complete — all phases 0–5 done
 
+### Session 7 — 2026-03-16
+
+**Goal:** Implement Phase 6 — Tool Routing and Course Accuracy
+**Completed:** Phase 6 (A, B, C, D, E)
+**Blockers:** None
+**Discoveries:**
+- Sandra had no dedicated tool for course inventory — course questions were mis-routed to `getEdLightInitiatives` which only returns platform overviews
+- Both `buildSandraSystemPrompt` and `getSandraSystemPrompt` lacked explicit course routing rules
+- A new `getCourseInventory` tool with static catalog data solves the zero-retrieval problem for course inventory questions without requiring a populated vector store
+- Static catalog covers EdLight Academy (6 courses: Digital Literacy, Office Suite, Excel Data Skills, PowerPoint Presentations, Intro to 3D Design) and EdLight Code (6 courses: Coding 101, Python Fundamentals, Python Data Analysis, SQL and Databases, Advanced SQL, Web Dev Basics)
+- Beginner filtering and platform filtering work independently or in combination
+- Tool description explicitly steers the agent away from `getEdLightInitiatives` for course questions
+**Changes:**
+- `src/lib/tools/get-courses.ts` — new `getCourseInventory` tool (12 courses across 2 platforms, beginner flag, recommendation)
+- `src/lib/tools/index.ts` — registers `get-courses` alongside the 3 MVP tools
+- `src/lib/agents/prompts.ts` — both prompt builders updated with explicit course routing rules and keyword list; distinguishes course inventory from ecosystem overview
+- `src/lib/tools/__tests__/get-courses.test.ts` — 20 tests for the new tool (metadata, Academy courses, Code courses, both platforms, beginner recs, response shape)
+- `src/lib/agents/__tests__/prompts.test.ts` — 9 new Phase 6 tests for routing behavior in both prompt builders
+**Coverage:** 376 tests / 45 files (all passing)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
+**Next:** Phase 6 complete
+
 ### Session 6 — 2026-03-15
 
 **Goal:** Implement Phase 2 — Core Engine (T030–T046)
