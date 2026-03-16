@@ -59,7 +59,7 @@ vi.mock('@/lib/tools', () => ({
 }));
 
 import { runSandraAgent, runSandraAgentStream } from '../sandra';
-import type { AgentInput } from '../types';
+import type { AgentConfig, AgentInput } from '../types';
 
 const baseInput: AgentInput = {
   message: 'Hello!',
@@ -286,9 +286,9 @@ describe('runSandraAgentStream', () => {
     mockAddEntry.mockResolvedValue(undefined);
   });
 
-  async function collectEvents(input: AgentInput) {
+  async function collectEvents(input: AgentInput, config?: Partial<AgentConfig>) {
     const events = [];
-    for await (const event of runSandraAgentStream(input)) {
+    for await (const event of runSandraAgentStream(input, config)) {
       events.push(event);
     }
     return events;
@@ -351,5 +351,195 @@ describe('runSandraAgentStream', () => {
     const errorEvent = events.find((e) => e.type === 'error');
     expect(errorEvent).toBeDefined();
     expect(errorEvent?.data).toContain("I'm temporarily unable to process");
+  });
+
+  // ── Tool continuity regression tests (V2 Phase 2) ────────────────────────────
+
+  it('[regression] assistant message with toolCalls precedes tool results in second LLM call', async () => {
+    async function* firstStream() {
+      yield { content: null, toolCalls: [{ id: 'c1', name: 'searchKnowledgeBase', arguments: '{"query":"x"}' }], done: true };
+    }
+    async function* secondStream() {
+      yield { content: 'Answer here.', toolCalls: null, done: false };
+      yield { content: null, toolCalls: null, done: true };
+    }
+
+    mockStreamChatCompletion
+      .mockReturnValueOnce(firstStream())
+      .mockReturnValueOnce(secondStream());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase']);
+    mockExecuteTool.mockResolvedValue({ success: true, data: { result: 'data' } });
+
+    await collectEvents(baseInput);
+
+    // The second streamChatCompletion call must receive messages with:
+    //   assistant (toolCalls) → then → tool (result)
+    expect(mockStreamChatCompletion).toHaveBeenCalledTimes(2);
+    const secondCallMessages = mockStreamChatCompletion.mock.calls[1]![0].messages as Array<{
+      role: string;
+      toolCalls?: unknown[];
+    }>;
+
+    const assistantIndex = secondCallMessages.findIndex(
+      (m) => m.role === 'assistant' && Array.isArray(m.toolCalls) && m.toolCalls.length > 0,
+    );
+    const toolIndex = secondCallMessages.findIndex((m) => m.role === 'tool');
+
+    expect(assistantIndex).toBeGreaterThanOrEqual(0);
+    expect(toolIndex).toBeGreaterThan(assistantIndex);
+  });
+
+  it('[regression] token events from follow-up stream are yielded after tool execution', async () => {
+    async function* firstStream() {
+      yield { content: null, toolCalls: [{ id: 'c1', name: 'searchKnowledgeBase', arguments: '{}' }], done: true };
+    }
+    async function* secondStream() {
+      yield { content: 'Here is ', toolCalls: null, done: false };
+      yield { content: 'your answer.', toolCalls: null, done: false };
+      yield { content: null, toolCalls: null, done: true };
+    }
+
+    mockStreamChatCompletion
+      .mockReturnValueOnce(firstStream())
+      .mockReturnValueOnce(secondStream());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase']);
+    mockExecuteTool.mockResolvedValue({ success: true, data: {} });
+
+    const events = await collectEvents(baseInput);
+    const tokenData = events.filter((e) => e.type === 'token').map((e) => e.data);
+
+    expect(tokenData).toContain('Here is ');
+    expect(tokenData).toContain('your answer.');
+  });
+
+  it('[regression] session is persisted with final assistant response after tool execution', async () => {
+    async function* firstStream() {
+      yield { content: null, toolCalls: [{ id: 'c1', name: 'searchKnowledgeBase', arguments: '{}' }], done: true };
+    }
+    async function* secondStream() {
+      yield { content: 'Final answer.', toolCalls: null, done: false };
+      yield { content: null, toolCalls: null, done: true };
+    }
+
+    mockStreamChatCompletion
+      .mockReturnValueOnce(firstStream())
+      .mockReturnValueOnce(secondStream());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase']);
+    mockExecuteTool.mockResolvedValue({ success: true, data: {} });
+
+    await collectEvents(baseInput);
+
+    expect(mockAddEntry).toHaveBeenCalledWith(
+      'test-session',
+      expect.objectContaining({ role: 'assistant', content: 'Final answer.' }),
+    );
+  });
+
+  it('[regression] multiple tool calls yield multiple tool_call and tool_result events', async () => {
+    async function* firstStream() {
+      yield {
+        content: null,
+        toolCalls: [
+          { id: 'c1', name: 'searchKnowledgeBase', arguments: '{"query":"foo"}' },
+          { id: 'c2', name: 'lookupRepoInfo', arguments: '{"repoName":"edlight"}' },
+        ],
+        done: true,
+      };
+    }
+    async function* secondStream() {
+      yield { content: 'Done.', toolCalls: null, done: false };
+      yield { content: null, toolCalls: null, done: true };
+    }
+
+    mockStreamChatCompletion
+      .mockReturnValueOnce(firstStream())
+      .mockReturnValueOnce(secondStream());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+      { name: 'lookupRepoInfo', description: 'Lookup', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase', 'lookupRepoInfo']);
+    mockExecuteTool.mockResolvedValue({ success: true, data: {} });
+
+    const events = await collectEvents(baseInput);
+
+    const toolCallEvents = events.filter((e) => e.type === 'tool_call');
+    const toolResultEvents = events.filter((e) => e.type === 'tool_result');
+
+    expect(toolCallEvents).toHaveLength(2);
+    expect(toolCallEvents[0]?.data).toBe('searchKnowledgeBase');
+    expect(toolCallEvents[1]?.data).toBe('lookupRepoInfo');
+    expect(toolResultEvents).toHaveLength(2);
+    expect(mockExecuteTool).toHaveBeenCalledTimes(2);
+  });
+
+  it('[regression] tool execution failure feeds error to LLM and stream completes', async () => {
+    async function* firstStream() {
+      yield { content: null, toolCalls: [{ id: 'c1', name: 'searchKnowledgeBase', arguments: '{}' }], done: true };
+    }
+    async function* secondStream() {
+      yield { content: 'I could not find that.', toolCalls: null, done: false };
+      yield { content: null, toolCalls: null, done: true };
+    }
+
+    mockStreamChatCompletion
+      .mockReturnValueOnce(firstStream())
+      .mockReturnValueOnce(secondStream());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase']);
+    mockExecuteTool.mockResolvedValue({ success: false, error: 'KB unavailable' });
+
+    const events = await collectEvents(baseInput);
+
+    // Tool result should contain the error
+    const toolResultEvent = events.find((e) => e.type === 'tool_result');
+    expect(toolResultEvent?.data).toContain('Tool call failed');
+
+    // Stream should still complete with done
+    expect(events.find((e) => e.type === 'done')).toBeDefined();
+
+    // LLM was called twice (once for tool call, once with error result)
+    expect(mockStreamChatCompletion).toHaveBeenCalledTimes(2);
+  });
+
+  it('[regression] streaming agent reaches max iterations and yields fallback', async () => {
+    async function* alwaysTools() {
+      yield { content: null, toolCalls: [{ id: 'cx', name: 'searchKnowledgeBase', arguments: '{}' }], done: true };
+    }
+
+    // Every stream call triggers another tool call → loops until maxIterations
+    mockStreamChatCompletion.mockImplementation(() => alwaysTools());
+
+    mockGetToolDefinitions.mockReturnValue([
+      { name: 'searchKnowledgeBase', description: 'Search', parameters: {} },
+    ]);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase']);
+    mockExecuteTool.mockResolvedValue({ success: true, data: {} });
+
+    const events = await collectEvents({ ...baseInput }, { maxIterations: 3 });
+
+    // Should yield the fallback token and a done event
+    const tokenEvents = events.filter((e) => e.type === 'token');
+    const doneEvent = events.find((e) => e.type === 'done');
+
+    expect(tokenEvents.some((e) => e.data.includes("I'm having trouble"))).toBe(true);
+    expect(doneEvent).toBeDefined();
+    expect(mockStreamChatCompletion).toHaveBeenCalledTimes(3);
   });
 });

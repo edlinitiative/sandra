@@ -2,7 +2,7 @@
 
 ## Current Status
 
-- **Phase:** V2 Phase 1 complete — V2 Phase 2 next
+- **Phase:** V2 Phase 2 complete — V2 Phase 3 next
 - **Tasks completed:** 39 / 86 (V1) + V2-P0 + V2-P1 complete
 - **Test coverage:** 401 tests passing across 46 test files
 - **Last session:** 2026-03-16
@@ -182,6 +182,25 @@ Each phase follows an implement → review → fix cycle:
 **Quality:** lint ✓, tsc ✓, vitest ✓ (376/376)
 **Next:** Phase 6 complete
 
+### Session 10 — 2026-03-16
+
+**Goal:** V2 Phase 2 — Streaming and Tool Continuity (regression tests)
+**Completed:** V2-P2 (all priorities)
+**Blockers:** None
+**Discoveries:**
+- Streaming agent loop in `sandra.ts` and OpenAI provider in `openai.ts` were already structurally correct:
+  - Assistant message with `toolCalls` is pushed before tool result messages ✓
+  - Follow-up LLM call receives the correct message ordering ✓
+  - Tokens from second iteration (after tool execution) are correctly yielded ✓
+  - Session persistence saves the final assistant text after tool flows ✓
+- Phase 2 work was adding regression tests to prove and guard this behavior
+- 6 regression tests added covering: message ordering, second-iteration tokens, session persistence, multiple tool calls, tool failure handling, and max iterations in streaming
+**Changes:**
+- `src/lib/agents/__tests__/sandra.test.ts` — 6 regression tests added (tool continuity, second-iteration streaming, session persistence, multiple tools, error handling, max iterations); `collectEvents` helper updated to accept optional config
+**Coverage:** 407 tests / 46 files (all passing; +6 regression tests)
+**Quality:** lint ✓, tsc ✓, vitest ✓ (407/407), build ✓
+**Next:** V2 Phase 3 — Grounded Platform Knowledge
+
 ### Session 9 — 2026-03-16
 
 **Goal:** V2 Phase 1 — Tool Routing and Response Accuracy (benchmark prompts + validation)
@@ -197,7 +216,7 @@ Each phase follows an implement → review → fix cycle:
 - `.agent/impl_docs/tasks.md` — marked V2-P1-A through V2-P1-D complete
 **Coverage:** 401 tests / 46 files (all passing; +25 benchmark tests)
 **Quality:** lint ✓, tsc ✓, vitest ✓ (401/401), build ✓
-**Next:** V2 Phase 2 — Streaming and Tool Continuity
+**Next:** V2 Phase 2 complete — V2 Phase 3 — Grounded Platform Knowledge
 
 ### Session 8 — 2026-03-16
 
