@@ -57,6 +57,18 @@ export function ChatContainer() {
     if (!storedSessionId) return;
     getConversation(storedSessionId)
       .then((data) => {
+        if (data.language && (['en', 'fr', 'ht'] as string[]).includes(data.language)) {
+          try {
+            const storedLanguage = localStorage.getItem(LANG_KEY);
+            if (!storedLanguage) {
+              localStorage.setItem(LANG_KEY, data.language);
+              setLanguageState(data.language as Language);
+            }
+          } catch {
+            setLanguageState(data.language as Language);
+          }
+        }
+
         const restored: Message[] = data.messages.map((m) => ({
           id: crypto.randomUUID(),
           role: m.role,

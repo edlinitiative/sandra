@@ -76,12 +76,14 @@ export function setSessionStore(store: SessionMemoryStore): void {
  */
 export class PrismaSessionStore implements ISessionStore {
   async createSession(params: {
+    id?: string;
     channel?: string;
     language?: string;
     userId?: string;
     title?: string;
   }): Promise<Session> {
     const session = await dbCreateSession(db, {
+      id: params.id,
       channel: params.channel ?? 'web',
       language: params.language ?? 'en',
       userId: params.userId,
@@ -113,6 +115,8 @@ export class PrismaSessionStore implements ISessionStore {
     toolCallId?: string;
     metadata?: Record<string, unknown>;
   }): Promise<Message> {
+    await this.ensureSessionExists(params.sessionId, params.language);
+
     const message = await dbCreateMessage(db, {
       sessionId: params.sessionId,
       role: params.role as MessageRole,
@@ -161,6 +165,20 @@ export class PrismaSessionStore implements ISessionStore {
         role: msg.role as ChatMessage['role'],
         content: msg.content,
       };
+    });
+  }
+
+  private async ensureSessionExists(sessionId: string, language?: string): Promise<void> {
+    await db.session.upsert({
+      where: { id: sessionId },
+      update: {
+        ...(language ? { language } : {}),
+      },
+      create: {
+        id: sessionId,
+        channel: 'web',
+        language: language ?? 'en',
+      },
     });
   }
 }

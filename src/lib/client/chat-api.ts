@@ -160,6 +160,7 @@ export async function streamMessage(
  */
 export async function getConversation(sessionId: string): Promise<{
   sessionId: string;
+  language?: string | null;
   messages: ChatMessage[];
 }> {
   const response = await fetch(`/api/conversations/${encodeURIComponent(sessionId)}`);
@@ -170,5 +171,5 @@ export async function getConversation(sessionId: string): Promise<{
     throw new Error(message);
   }
 
-  return json.data as { sessionId: string; messages: ChatMessage[] };
+  return json.data as { sessionId: string; language?: string | null; messages: ChatMessage[] };
 }

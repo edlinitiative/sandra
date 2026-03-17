@@ -6,13 +6,29 @@ const { mockRunSandraAgent } = vi.hoisted(() => ({
   mockRunSandraAgent: vi.fn(),
 }));
 
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
 vi.mock('@/lib/agents', () => ({
   runSandraAgent: mockRunSandraAgent,
   runSandraAgentStream: vi.fn(),
 }));
 
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
+}));
+
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -37,6 +53,8 @@ function makeRequest(body: unknown): Request {
 describe('POST /api/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
   });
 
   it('returns 200 with success envelope for valid message', async () => {
@@ -114,6 +132,30 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(200);
     expect(body.data.sessionId).toBe(sessionId);
+  });
+
+  it('falls back to persisted session language when no explicit language is provided', async () => {
+    const sessionId = crypto.randomUUID();
+    mockGetSessionLanguage.mockResolvedValue('fr');
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Bonjour!',
+      language: 'fr',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const request = makeRequest({ message: 'Hello', sessionId });
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, language: 'fr' }),
+    );
+    expect(mockEnsureSessionContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, language: 'fr', channel: 'web' }),
+    );
   });
 
   it('returns 500 when agent throws an unexpected error', async () => {

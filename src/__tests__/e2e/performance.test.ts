@@ -31,6 +31,11 @@ const {
   mockGetToolNames: vi.fn(),
 }));
 
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 vi.mock('@/lib/agents', () => ({
@@ -45,7 +50,18 @@ vi.mock('@/lib/config', () => ({
 }));
 
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
+}));
+
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -83,6 +99,8 @@ function randomVector(seed: number): number[] {
 describe('T128: Performance Baseline', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
     mockRepoRegistryCount
       .mockResolvedValueOnce(4)
       .mockResolvedValueOnce(4)

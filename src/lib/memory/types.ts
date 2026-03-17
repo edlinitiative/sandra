@@ -48,6 +48,7 @@ export interface SessionMemoryStore {
 /** Interface for DB-backed session and message persistence */
 export interface ISessionStore {
   createSession(params: {
+    id?: string;
     channel?: string;
     language?: string;
     userId?: string;

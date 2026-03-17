@@ -8,6 +8,8 @@ const {
   mockStreamChatCompletion,
   mockGetContextMessages,
   mockAddEntry,
+  mockLoadContext,
+  mockPrismaAddMessage,
   mockGetMemorySummary,
   mockRetrieveContext,
   mockFormatRetrievalContext,
@@ -20,6 +22,8 @@ const {
   mockStreamChatCompletion: vi.fn(),
   mockGetContextMessages: vi.fn(),
   mockAddEntry: vi.fn(),
+  mockLoadContext: vi.fn(),
+  mockPrismaAddMessage: vi.fn(),
   mockGetMemorySummary: vi.fn(),
   mockRetrieveContext: vi.fn(),
   mockFormatRetrievalContext: vi.fn(),
@@ -40,6 +44,10 @@ vi.mock('@/lib/memory/session-store', () => ({
   getSessionStore: () => ({
     getContextMessages: mockGetContextMessages,
     addEntry: mockAddEntry,
+  }),
+  getPrismaSessionStore: () => ({
+    addMessage: mockPrismaAddMessage,
+    loadContext: mockLoadContext,
   }),
 }));
 
@@ -87,6 +95,8 @@ describe('runSandraAgent', () => {
     vi.clearAllMocks();
     mockGetContextMessages.mockResolvedValue([]);
     mockGetMemorySummary.mockResolvedValue('');
+    mockLoadContext.mockResolvedValue([]);
+    mockPrismaAddMessage.mockResolvedValue(undefined);
     mockRetrieveContext.mockResolvedValue([]);
     mockFormatRetrievalContext.mockReturnValue('');
     mockInferKnowledgeQueryContext.mockReturnValue({ minScore: 0.2 });
@@ -114,6 +124,11 @@ describe('runSandraAgent', () => {
       role: 'user',
       content: 'Hello!',
     }));
+    expect(mockPrismaAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: 'test-session',
+      role: 'user',
+      content: 'Hello!',
+    }));
   });
 
   it('saves assistant response to session', async () => {
@@ -125,6 +140,34 @@ describe('runSandraAgent', () => {
       role: 'assistant',
       content: 'I am Sandra.',
     }));
+    expect(mockPrismaAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: 'test-session',
+      role: 'assistant',
+      content: 'I am Sandra.',
+    }));
+  });
+
+  it('falls back to persisted context when the live session store is cold', async () => {
+    mockGetContextMessages.mockResolvedValue([]);
+    mockLoadContext.mockResolvedValue([
+      { role: 'user', content: 'Earlier question' },
+      { role: 'assistant', content: 'Earlier answer' },
+    ]);
+    mockChatCompletion.mockResolvedValue(makeCompletionResponse({ content: 'Follow-up answer' }));
+
+    await runSandraAgent({
+      ...baseInput,
+      message: 'And what next?',
+    });
+
+    expect(mockChatCompletion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({ role: 'user', content: 'Earlier question' }),
+          expect.objectContaining({ role: 'assistant', content: 'Earlier answer' }),
+        ]),
+      }),
+    );
   });
 
   it('executes tool call and loops back to LLM', async () => {

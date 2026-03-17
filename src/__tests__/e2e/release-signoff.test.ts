@@ -40,6 +40,11 @@ const {
   mockRequireAdminAuth: vi.fn(),
 }));
 
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
 vi.mock('@/lib/agents', () => ({
   runSandraAgent: mockRunSandraAgent,
   runSandraAgentStream: mockRunSandraAgentStream,
@@ -79,8 +84,19 @@ vi.mock('@/lib/utils/auth', () => ({
   requireAdminAuth: mockRequireAdminAuth,
 }));
 
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -137,6 +153,8 @@ async function readSseEvents(response: Response): Promise<Array<Record<string, u
 describe('Sandra V2 release-signoff contracts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
     mockRequireAdminAuth.mockReturnValue(undefined);
     mockGetConfiguredRepos.mockReturnValue([
       {

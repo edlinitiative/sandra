@@ -1,6 +1,7 @@
 import type { PrismaClient, Session, Message, Prisma } from '@prisma/client';
 
 export type CreateSessionInput = {
+  id?: string;
   userId?: string;
   channel?: string;
   language?: string;
@@ -21,6 +22,7 @@ export async function createSession(
 ): Promise<Session> {
   return prisma.session.create({
     data: {
+      id: input.id,
       userId: input.userId,
       channel: input.channel ?? 'web',
       language: input.language ?? 'en',

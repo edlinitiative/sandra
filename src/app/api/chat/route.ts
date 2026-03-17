@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
+import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
@@ -65,7 +66,14 @@ export async function POST(request: Request) {
     const { sessionId: rawSessionId, language: rawLanguage } = parsed.data;
     const message = sanitizeInput(parsed.data.message);
     const sessionId = rawSessionId ?? crypto.randomUUID();
-    const language = resolveLanguage({ explicit: rawLanguage });
+    const sessionLanguage = await getSessionLanguage(rawSessionId);
+    const language = resolveLanguage({ explicit: rawLanguage, sessionLanguage });
+
+    await ensureSessionContinuity({
+      sessionId,
+      channel: 'web',
+      language,
+    });
 
     // Demo mode: return canned response when API key is not configured
     if (isApiKeyMissing()) {

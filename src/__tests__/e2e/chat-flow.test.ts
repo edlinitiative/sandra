@@ -16,10 +16,16 @@ const { mockRunSandraAgent, mockRunSandraAgentStream } = vi.hoisted(() => ({
   mockRunSandraAgentStream: vi.fn(),
 }));
 
-const { mockGetHistory, mockAddEntry, mockGetContextMessages } = vi.hoisted(() => ({
+const { mockGetHistory, mockAddEntry, mockGetContextMessages, mockGetSession } = vi.hoisted(() => ({
   mockGetHistory: vi.fn(),
   mockAddEntry: vi.fn(),
   mockGetContextMessages: vi.fn(),
+  mockGetSession: vi.fn(),
+}));
+
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -35,6 +41,15 @@ vi.mock('@/lib/memory/session-store', () => ({
     addEntry: mockAddEntry,
     getContextMessages: mockGetContextMessages,
   }),
+  getPrismaSessionStore: () => ({
+    getMessages: mockGetHistory,
+    getSession: mockGetSession,
+  }),
+}));
+
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -42,7 +57,13 @@ vi.mock('@/lib/config', () => ({
 }));
 
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,6 +100,9 @@ describe('T120: End-to-End Chat Flow', () => {
     mockGetHistory.mockResolvedValue([]);
     mockGetContextMessages.mockResolvedValue([]);
     mockAddEntry.mockResolvedValue(undefined);
+    mockGetSession.mockResolvedValue(null);
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
   });
 
   it('POST /api/chat returns a valid sessionId and assistant response', async () => {
@@ -183,8 +207,8 @@ describe('T120: End-to-End Chat Flow', () => {
   it('GET /api/conversations/[sessionId] returns messages in order', async () => {
     const sessionId = crypto.randomUUID();
     mockGetHistory.mockResolvedValue([
-      { role: 'user', content: 'Hello Sandra', timestamp: new Date('2024-01-01T00:00:00Z'), metadata: null },
-      { role: 'assistant', content: 'Hi there!', timestamp: new Date('2024-01-01T00:00:01Z'), metadata: null },
+      { role: 'user', content: 'Hello Sandra', createdAt: new Date('2024-01-01T00:00:00Z'), metadata: null },
+      { role: 'assistant', content: 'Hi there!', createdAt: new Date('2024-01-01T00:00:01Z'), metadata: null },
     ]);
 
     const { GET } = await import('../../app/api/conversations/[sessionId]/route');

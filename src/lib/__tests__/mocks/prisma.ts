@@ -21,6 +21,7 @@ export const mockPrismaClient = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     delete: vi.fn(),
     count: vi.fn(),
   },

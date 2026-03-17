@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { runSandraAgentStream } from '@/lib/agents';
 import { generateFollowUps } from '@/lib/agents/follow-ups';
 import { resolveLanguage } from '@/lib/i18n';
+import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { env } from '@/lib/config';
 
 const chatRequestSchema = z.object({
@@ -47,7 +48,15 @@ export async function POST(request: Request) {
 
     const { message, userId, channel } = parsed.data;
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
-    const language = resolveLanguage({ explicit: parsed.data.language });
+    const sessionLanguage = await getSessionLanguage(parsed.data.sessionId);
+    const language = resolveLanguage({ explicit: parsed.data.language, sessionLanguage });
+
+    await ensureSessionContinuity({
+      sessionId,
+      channel,
+      language,
+      userId,
+    });
 
     const encoder = new TextEncoder();
 
