@@ -48,6 +48,15 @@ describe('buildSandraSystemPrompt', () => {
     expect(prompt).toContain('From EdLight Academy:');
   });
 
+  it('includes conversation summary when provided', () => {
+    const prompt = buildSandraSystemPrompt({
+      language: 'en',
+      conversationSummary: 'Earlier conversation summary:\n- Earlier user questions/goals: Learn Python',
+    });
+    expect(prompt).toContain('Earlier conversation summary');
+    expect(prompt).toContain('Learn Python');
+  });
+
   it('includes behavioral guidelines', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Guidelines');

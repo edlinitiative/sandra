@@ -99,7 +99,7 @@ export class PrismaSessionStore implements ISessionStore {
 
   async updateSession(
     sessionId: string,
-    updates: { title?: string; language?: string; isActive?: boolean },
+    updates: { title?: string; language?: string; isActive?: boolean; metadata?: Record<string, unknown> },
   ): Promise<Session> {
     const session = await dbUpdateSession(db, sessionId, updates);
     log.info(`Updated session: ${sessionId}`, updates);

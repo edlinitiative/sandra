@@ -11,6 +11,9 @@ const {
   mockLoadContext,
   mockPrismaAddMessage,
   mockGetMemorySummary,
+  mockGetSessionContinuityContext,
+  mockRememberConversationInsights,
+  mockRefreshConversationSummary,
   mockRetrieveContext,
   mockFormatRetrievalContext,
   mockInferKnowledgeQueryContext,
@@ -25,6 +28,9 @@ const {
   mockLoadContext: vi.fn(),
   mockPrismaAddMessage: vi.fn(),
   mockGetMemorySummary: vi.fn(),
+  mockGetSessionContinuityContext: vi.fn(),
+  mockRememberConversationInsights: vi.fn(),
+  mockRefreshConversationSummary: vi.fn(),
   mockRetrieveContext: vi.fn(),
   mockFormatRetrievalContext: vi.fn(),
   mockInferKnowledgeQueryContext: vi.fn(),
@@ -53,6 +59,12 @@ vi.mock('@/lib/memory/session-store', () => ({
 
 vi.mock('@/lib/memory/user-memory', () => ({
   getUserMemoryStore: () => ({ getMemorySummary: mockGetMemorySummary }),
+}));
+
+vi.mock('@/lib/memory/session-insights', () => ({
+  getSessionContinuityContext: mockGetSessionContinuityContext,
+  rememberConversationInsights: mockRememberConversationInsights,
+  refreshConversationSummary: mockRefreshConversationSummary,
 }));
 
 vi.mock('@/lib/knowledge', () => ({
@@ -95,6 +107,12 @@ describe('runSandraAgent', () => {
     vi.clearAllMocks();
     mockGetContextMessages.mockResolvedValue([]);
     mockGetMemorySummary.mockResolvedValue('');
+    mockGetSessionContinuityContext.mockResolvedValue({
+      memorySummary: '',
+      conversationSummary: '',
+    });
+    mockRememberConversationInsights.mockResolvedValue(undefined);
+    mockRefreshConversationSummary.mockResolvedValue(undefined);
     mockLoadContext.mockResolvedValue([]);
     mockPrismaAddMessage.mockResolvedValue(undefined);
     mockRetrieveContext.mockResolvedValue([]);
@@ -115,6 +133,29 @@ describe('runSandraAgent', () => {
     expect(output.language).toBe('en');
   });
 
+  it('includes continuity context in the system prompt when available', async () => {
+    mockGetSessionContinuityContext.mockResolvedValue({
+      memorySummary: 'Known facts from this session:\n- Learning goals: learn Python',
+      conversationSummary: 'Earlier conversation summary:\n- Earlier user questions/goals: Start coding',
+    });
+    mockChatCompletion.mockResolvedValue(makeCompletionResponse({ content: 'Hello back!' }));
+
+    await runSandraAgent(baseInput);
+
+    expect(mockChatCompletion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'system',
+            content: expect.stringContaining('Known facts from this session'),
+          }),
+        ]),
+      }),
+    );
+    const systemMessage = mockChatCompletion.mock.calls[0]![0].messages[0];
+    expect(systemMessage.content).toContain('Earlier conversation summary');
+  });
+
   it('saves user message to session', async () => {
     mockChatCompletion.mockResolvedValue(makeCompletionResponse());
 
@@ -129,6 +170,12 @@ describe('runSandraAgent', () => {
       role: 'user',
       content: 'Hello!',
     }));
+    expect(mockRememberConversationInsights).toHaveBeenCalledWith({
+      sessionId: 'test-session',
+      userId: undefined,
+      language: 'en',
+      message: 'Hello!',
+    });
   });
 
   it('saves assistant response to session', async () => {
@@ -145,6 +192,7 @@ describe('runSandraAgent', () => {
       role: 'assistant',
       content: 'I am Sandra.',
     }));
+    expect(mockRefreshConversationSummary).toHaveBeenCalledWith('test-session');
   });
 
   it('falls back to persisted context when the live session store is cold', async () => {

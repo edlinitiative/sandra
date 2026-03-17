@@ -42,6 +42,15 @@ vi.mock('@/lib/memory/user-memory', () => ({
   getUserMemoryStore: () => ({ getMemorySummary: vi.fn().mockResolvedValue('') }),
 }));
 
+vi.mock('@/lib/memory/session-insights', () => ({
+  getSessionContinuityContext: vi.fn().mockResolvedValue({
+    memorySummary: '',
+    conversationSummary: '',
+  }),
+  rememberConversationInsights: vi.fn().mockResolvedValue(undefined),
+  refreshConversationSummary: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/knowledge', () => ({
   retrieveContext: vi.fn().mockResolvedValue([]),
   formatRetrievalContext: vi.fn().mockReturnValue(''),

@@ -6,7 +6,11 @@ import { getAIProvider } from '@/lib/ai';
 import type { ChatMessage } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
 import { getSessionStore, getPrismaSessionStore } from '@/lib/memory/session-store';
-import { getUserMemoryStore } from '@/lib/memory/user-memory';
+import {
+  getSessionContinuityContext,
+  rememberConversationInsights,
+  refreshConversationSummary,
+} from '@/lib/memory/session-insights';
 import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
 
@@ -64,7 +68,6 @@ export async function runSandraAgent(
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
   const prismaStore = getPrismaSessionStore();
-  const userMemoryStore = getUserMemoryStore();
 
   log.info(`Agent invoked`, {
     sessionId: input.sessionId,
@@ -79,8 +82,19 @@ export async function runSandraAgent(
 
     // 2. Load user memory
     let userMemorySummary = '';
-    if (input.userId) {
-      userMemorySummary = await userMemoryStore.getMemorySummary(input.userId);
+    let conversationSummary = '';
+    try {
+      const continuity = await getSessionContinuityContext({
+        sessionId: input.sessionId,
+        userId: input.userId,
+      });
+      userMemorySummary = continuity.memorySummary;
+      conversationSummary = continuity.conversationSummary;
+    } catch (error) {
+      log.warn('Failed to load continuity context', {
+        sessionId: input.sessionId,
+        error: error instanceof Error ? error.message : 'unknown',
+      });
     }
 
     // 3. Retrieval: search knowledge base for context
@@ -114,6 +128,7 @@ export async function runSandraAgent(
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
       userMemorySummary,
+      conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
     });
@@ -139,6 +154,13 @@ export async function runSandraAgent(
       content: input.message,
       language: input.language,
     }).catch(() => { /* best-effort — DB may not be available in all envs */ });
+
+    await rememberConversationInsights({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
+    }).catch(() => { /* best-effort */ });
 
     // 6. Agent loop (handles tool calls)
     const state: AgentState = {
@@ -189,6 +211,8 @@ export async function runSandraAgent(
           content,
           language: input.language,
         }).catch(() => { /* best-effort */ });
+
+        await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
         log.info(`Agent turn complete`, {
           sessionId: input.sessionId,
@@ -270,6 +294,8 @@ export async function runSandraAgent(
       language: input.language,
     }).catch(() => { /* best-effort */ });
 
+    await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
+
     return {
       response: fallback,
       language: input.language,
@@ -331,7 +357,6 @@ export async function* runSandraAgentStream(
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
   const prismaStore = getPrismaSessionStore();
-  const userMemoryStore = getUserMemoryStore();
 
   log.info('Streaming agent invoked', { sessionId: input.sessionId });
 
@@ -341,8 +366,16 @@ export async function* runSandraAgentStream(
 
     // Load user memory
     let userMemorySummary = '';
-    if (input.userId) {
-      userMemorySummary = await userMemoryStore.getMemorySummary(input.userId);
+    let conversationSummary = '';
+    try {
+      const continuity = await getSessionContinuityContext({
+        sessionId: input.sessionId,
+        userId: input.userId,
+      });
+      userMemorySummary = continuity.memorySummary;
+      conversationSummary = continuity.conversationSummary;
+    } catch {
+      // Continue without continuity context
     }
 
     // Retrieval
@@ -374,6 +407,7 @@ export async function* runSandraAgentStream(
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
       userMemorySummary,
+      conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
     });
@@ -397,6 +431,13 @@ export async function* runSandraAgentStream(
       role: 'user',
       content: input.message,
       language: input.language,
+    }).catch(() => { /* best-effort */ });
+
+    await rememberConversationInsights({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
     }).catch(() => { /* best-effort */ });
 
     let iterations = 0;
@@ -443,6 +484,8 @@ export async function* runSandraAgentStream(
           content: response,
           language: input.language,
         }).catch(() => { /* best-effort */ });
+
+        await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
         yield {
           type: 'done',
@@ -533,6 +576,8 @@ export async function* runSandraAgentStream(
       content: fallback,
       language: input.language,
     }).catch(() => { /* best-effort */ });
+
+    await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
     yield { type: 'token', data: fallback };
     yield {
