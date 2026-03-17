@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getVectorStore } from '@/lib/knowledge';
+import { APP_NAME, APP_VERSION } from '@/lib/config';
+import { toolRegistry } from '@/lib/tools';
 
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   const timeout = new Promise<never>((_, reject) =>
@@ -12,11 +14,40 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export async function GET() {
   const timestamp = new Date().toISOString();
   const checks: Record<string, string> = {};
+  let totalRepos: number | null = null;
+  let activeRepos: number | null = null;
+  let indexedRepos: number | null = null;
+  let indexingRepos: number | null = null;
+  let errorRepos: number | null = null;
+  let indexedSources: number | null = null;
+  let indexedDocuments: number | null = null;
+  let vectorStoreChunks: number | null = null;
 
   // Database check
   try {
     await withTimeout(db.$queryRaw`SELECT 1`, 5000);
     checks.database = 'ok';
+
+    [
+      totalRepos,
+      activeRepos,
+      indexedRepos,
+      indexingRepos,
+      errorRepos,
+      indexedSources,
+      indexedDocuments,
+    ] = await withTimeout(
+      Promise.all([
+        db.repoRegistry.count(),
+        db.repoRegistry.count({ where: { isActive: true } }),
+        db.repoRegistry.count({ where: { syncStatus: 'indexed' } }),
+        db.repoRegistry.count({ where: { syncStatus: 'indexing' } }),
+        db.repoRegistry.count({ where: { syncStatus: 'error' } }),
+        db.indexedSource.count(),
+        db.indexedDocument.count(),
+      ]),
+      5000,
+    );
   } catch (err) {
     checks.database = `error: ${err instanceof Error ? err.message : 'unknown'}`;
   }
@@ -24,7 +55,7 @@ export async function GET() {
   // Vector store check
   try {
     const vectorStore = getVectorStore();
-    await withTimeout(vectorStore.count(), 5000);
+    vectorStoreChunks = await withTimeout(vectorStore.count(), 5000);
     checks.vectorStore = 'ok';
   } catch (err) {
     checks.vectorStore = `error: ${err instanceof Error ? err.message : 'unknown'}`;
@@ -34,7 +65,31 @@ export async function GET() {
   const status = allOk ? 'ok' : 'degraded';
 
   return NextResponse.json(
-    { status, timestamp, checks },
+    {
+      name: APP_NAME,
+      version: APP_VERSION,
+      status,
+      timestamp,
+      checks,
+      summary: {
+        repos: {
+          total: totalRepos,
+          active: activeRepos,
+          indexed: indexedRepos,
+          indexing: indexingRepos,
+          error: errorRepos,
+        },
+        tools: {
+          count: toolRegistry.getToolNames().length,
+          registered: toolRegistry.getToolNames(),
+        },
+        knowledge: {
+          indexedSources,
+          indexedDocuments,
+          vectorStoreChunks,
+        },
+      },
+    },
     { status: allOk ? 200 : 503 },
   );
 }

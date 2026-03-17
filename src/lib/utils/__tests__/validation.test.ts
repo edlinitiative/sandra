@@ -64,8 +64,9 @@ describe('indexInputSchema', () => {
     expect(result.repoId).toBe('repo_123');
   });
 
-  it('rejects missing repoId', () => {
-    expect(() => indexInputSchema.parse({})).toThrow();
+  it('accepts missing repoId for index-all requests', () => {
+    const result = indexInputSchema.parse({});
+    expect(result.repoId).toBeUndefined();
   });
 
   it('rejects empty repoId', () => {

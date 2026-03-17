@@ -5,28 +5,46 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { Input } from '@/components/ui/input';
+
+const ADMIN_KEY_STORAGE = 'sandra_admin_api_key';
 
 interface Repo {
   owner: string;
   name: string;
   displayName: string;
-  description: string;
+  description: string | null;
   url: string;
   branch: string;
-  docsPath?: string;
+  docsPath: string | null;
   isActive: boolean;
-  indexed: boolean;
-  chunkCount: number;
+  syncStatus: 'not_indexed' | 'indexing' | 'indexed' | 'error';
+  lastIndexedAt: string | null;
+  indexedDocumentCount: number;
 }
 
 interface HealthData {
   name: string;
   version: string;
   status: string;
-  components: {
-    vectorStore: { ready: boolean; totalChunks: number };
-    repos: { total: number; active: number };
-    tools: { registered: string[]; count: number };
+  checks: Record<string, string>;
+  summary: {
+    repos: {
+      total: number | null;
+      active: number | null;
+      indexed: number | null;
+      indexing: number | null;
+      error: number | null;
+    };
+    tools: {
+      registered: string[];
+      count: number;
+    };
+    knowledge: {
+      indexedSources: number | null;
+      indexedDocuments: number | null;
+      vectorStoreChunks: number | null;
+    };
   };
 }
 
@@ -44,6 +62,9 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState<string | null>(null);
   const [indexResult, setIndexResult] = useState<string | null>(null);
+  const [adminKey, setAdminKey] = useState('');
+  const [adminKeyDraft, setAdminKeyDraft] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Test chat state
   const [testMessage, setTestMessage] = useState('');
@@ -52,23 +73,126 @@ export function AdminDashboard() {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
 
+  // Initial admin bootstrap should run once on mount; follow-up refreshes are explicit.
   useEffect(() => {
-    loadData();
-  }, []);
+    let storedKey = '';
 
-  async function loadData() {
-    setLoading(true);
     try {
-      const [reposRes, healthRes] = await Promise.all([
-        fetch('/api/repos').then((r) => r.json()),
-        fetch('/api/health').then((r) => r.json()),
-      ]);
-      setRepos(reposRes.data?.repos ?? []);
-      setHealth(healthRes.data ?? null);
+      storedKey = sessionStorage.getItem(ADMIN_KEY_STORAGE) ?? '';
     } catch {
-      // Silently handle — data will just be empty
+      storedKey = '';
+    }
+
+    if (storedKey) {
+      setAdminKey(storedKey);
+      setAdminKeyDraft(storedKey);
+      void loadData(storedKey);
+      return;
+    }
+
+    void loadHealth();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadHealth() {
+    try {
+      const res = await fetch('/api/health');
+      const data = await res.json();
+      setHealth(data as HealthData);
+    } catch {
+      setHealth(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchAdminJson(path: string, init: RequestInit = {}, key = adminKey) {
+    const headers = new Headers(init.headers);
+    headers.set('Content-Type', 'application/json');
+    if (key) {
+      headers.set('x-api-key', key);
+    }
+
+    const response = await fetch(path, {
+      ...init,
+      headers,
+    });
+
+    const json = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message =
+        (json as { error?: { message?: string } })?.error?.message ??
+        'Admin request failed';
+      throw new Error(message);
+    }
+
+    return json as { data?: unknown };
+  }
+
+  async function loadRepos(key = adminKey) {
+    if (!key) {
+      setRepos([]);
+      return;
+    }
+
+    const reposRes = await fetchAdminJson('/api/repos', undefined, key);
+    const data = reposRes.data as { repos?: Repo[] } | undefined;
+    setRepos(data?.repos ?? []);
+  }
+
+  async function loadData(key = adminKey) {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      await Promise.all([loadHealth(), loadRepos(key)]);
+    } catch (err) {
+      setRepos([]);
+      setAuthError(err instanceof Error ? err.message : 'Failed to load admin data');
+      setLoading(false);
+    }
+  }
+
+  async function saveAdminKey() {
+    if (!adminKeyDraft.trim()) {
+      setAuthError('Enter an admin API key to access repository controls.');
+      return;
+    }
+
+    setLoading(true);
+    setAuthError(null);
+
+    try {
+      const normalizedKey = adminKeyDraft.trim();
+      await loadRepos(normalizedKey);
+      setAdminKey(normalizedKey);
+      try {
+        sessionStorage.setItem(ADMIN_KEY_STORAGE, normalizedKey);
+      } catch {
+        // Ignore storage errors
+      }
+      await loadHealth();
+    } catch (err) {
+      setAdminKey('');
+      setRepos([]);
+      setAuthError(err instanceof Error ? err.message : 'Invalid admin API key');
+      try {
+        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+      } catch {
+        // Ignore storage errors
+      }
+      setLoading(false);
+    }
+  }
+
+  function clearAdminKey() {
+    setAdminKey('');
+    setAdminKeyDraft('');
+    setRepos([]);
+    setAuthError(null);
+    try {
+      sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+    } catch {
+      // Ignore storage errors
     }
   }
 
@@ -102,31 +226,62 @@ export function AdminDashboard() {
   }
 
   async function triggerIndex(owner?: string, name?: string) {
+    if (!adminKey) {
+      setAuthError('Enter an admin API key before indexing repositories.');
+      return;
+    }
+
     const key = owner && name ? `${owner}/${name}` : 'all';
     setIndexing(key);
     setIndexResult(null);
 
     try {
-      const body = owner && name ? { owner, repo: name } : {};
-      const res = await fetch('/api/index', {
+      const body = owner && name ? { repoId: `${owner}/${name}` } : {};
+      const data = await fetchAdminJson(
+        '/api/index',
+        {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      });
-      const data = await res.json();
+        },
+        adminKey,
+      );
 
-      if (res.ok) {
-        const results = data.data?.results ?? [];
-        const totalChunks = results.reduce((s: number, r: { chunksCreated: number }) => s + r.chunksCreated, 0);
-        setIndexResult(`✅ Indexed ${results.length} repo(s), ${totalChunks} chunks created`);
-        loadData();
-      } else {
-        setIndexResult(`❌ Error: ${data.error?.message ?? 'Unknown error'}`);
-      }
+      const payload = data.data as {
+        results?: Array<{ chunksCreated: number }>;
+        summary?: { total: number; completed: number; failed: number; status: string };
+      } | undefined;
+      const results = payload?.results ?? [];
+      const summary = payload?.summary;
+      const totalChunks = results.reduce((sum, result) => sum + result.chunksCreated, 0);
+      const failureSuffix = summary && summary.failed > 0
+        ? `, ${summary.failed} failed`
+        : '';
+
+      setIndexResult(
+        `Indexed ${summary?.completed ?? results.length}/${summary?.total ?? results.length} repo(s), ${totalChunks} chunks created${failureSuffix}.`,
+      );
+      await loadData(adminKey);
     } catch (err) {
-      setIndexResult(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setIndexResult(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIndexing(null);
+    }
+  }
+
+  function formatMetric(value: number | null): string {
+    return value === null ? '—' : String(value);
+  }
+
+  function syncStatusVariant(syncStatus: Repo['syncStatus']): 'default' | 'success' | 'warning' | 'error' | 'info' {
+    switch (syncStatus) {
+      case 'indexed':
+        return 'success';
+      case 'indexing':
+        return 'warning';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
     }
   }
 
@@ -145,6 +300,38 @@ export function AdminDashboard() {
         <p className="mt-1 text-gray-500">Manage repositories, indexing, and system status.</p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin Access</CardTitle>
+          <CardDescription>
+            Enter the admin API key to unlock repository status and indexing controls.
+          </CardDescription>
+        </CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Input
+            type="password"
+            value={adminKeyDraft}
+            onChange={(e) => setAdminKeyDraft(e.target.value)}
+            placeholder="Enter ADMIN_API_KEY"
+            error={authError ?? undefined}
+          />
+          <Button onClick={saveAdminKey} className="sm:w-auto">
+            Save Key
+          </Button>
+          {adminKey && (
+            <Button variant="secondary" onClick={clearAdminKey} className="sm:w-auto">
+              Clear Key
+            </Button>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+          <Badge variant={adminKey ? 'success' : 'warning'}>
+            {adminKey ? 'Authenticated' : 'Read-only'}
+          </Badge>
+          {authError && <span>{authError}</span>}
+        </div>
+      </Card>
+
       {/* Health Status */}
       {health && (
         <Card>
@@ -154,27 +341,42 @@ export function AdminDashboard() {
           </CardHeader>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg bg-gray-50 p-4">
-              <p className="text-sm font-medium text-gray-500">Vector Store</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{health.components.vectorStore.totalChunks}</p>
-              <p className="text-xs text-gray-500">chunks indexed</p>
+              <p className="text-sm font-medium text-gray-500">Knowledge</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {formatMetric(health.summary.knowledge.indexedDocuments)}
+              </p>
+              <p className="text-xs text-gray-500">
+                documents · {formatMetric(health.summary.knowledge.vectorStoreChunks)} vector chunks
+              </p>
             </div>
             <div className="rounded-lg bg-gray-50 p-4">
               <p className="text-sm font-medium text-gray-500">Repositories</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{health.components.repos.active}/{health.components.repos.total}</p>
-              <p className="text-xs text-gray-500">active</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {formatMetric(health.summary.repos.active)}/{formatMetric(health.summary.repos.total)}
+              </p>
+              <p className="text-xs text-gray-500">
+                indexed {formatMetric(health.summary.repos.indexed)} · errors {formatMetric(health.summary.repos.error)}
+              </p>
             </div>
             <div className="rounded-lg bg-gray-50 p-4">
               <p className="text-sm font-medium text-gray-500">Tools</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{health.components.tools.count}</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{health.summary.tools.count}</p>
               <p className="text-xs text-gray-500">registered</p>
             </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.entries(health.checks).map(([name, value]) => (
+              <Badge key={name} variant={value === 'ok' ? 'success' : 'warning'}>
+                {name}: {value}
+              </Badge>
+            ))}
           </div>
         </Card>
       )}
 
       {/* Index All Button */}
       <div className="flex items-center gap-4">
-        <Button onClick={() => triggerIndex()} isLoading={indexing === 'all'}>
+        <Button onClick={() => triggerIndex()} isLoading={indexing === 'all'} disabled={!adminKey}>
           Index All Repositories
         </Button>
         {indexResult && (
@@ -243,7 +445,14 @@ export function AdminDashboard() {
       {/* Repository List */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Registered Repositories</h2>
-        <div className="grid gap-4">
+        {!adminKey ? (
+          <Card>
+            <p className="text-sm text-gray-600">
+              Repository status and indexing controls unlock after you enter a valid admin key.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
           {repos.map((repo) => (
             <Card key={`${repo.owner}/${repo.name}`} className="flex items-center justify-between">
               <div className="flex-1">
@@ -252,14 +461,18 @@ export function AdminDashboard() {
                   <Badge variant={repo.isActive ? 'success' : 'default'}>
                     {repo.isActive ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Badge variant={repo.indexed ? 'info' : 'warning'}>
-                    {repo.indexed ? `${repo.chunkCount} chunks` : 'Not indexed'}
+                  <Badge variant={syncStatusVariant(repo.syncStatus)}>
+                    {repo.syncStatus}
+                  </Badge>
+                  <Badge variant={repo.indexedDocumentCount > 0 ? 'info' : 'default'}>
+                    {repo.indexedDocumentCount} docs
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">{repo.description}</p>
+                <p className="mt-1 text-sm text-gray-500">{repo.description ?? 'No description available.'}</p>
                 <p className="mt-1 text-xs text-gray-400">
                   {repo.owner}/{repo.name} · {repo.branch}
-                  {repo.docsPath ? ` · docs: ${repo.docsPath}` : ''}
+                  {repo.docsPath ? ` · docs: ${repo.docsPath}` : ' · no docs path'}
+                  {repo.lastIndexedAt ? ` · indexed ${new Date(repo.lastIndexedAt).toLocaleString()}` : ' · never indexed'}
                 </p>
               </div>
               <div className="ml-4 shrink-0">
@@ -268,13 +481,15 @@ export function AdminDashboard() {
                   size="sm"
                   onClick={() => triggerIndex(repo.owner, repo.name)}
                   isLoading={indexing === `${repo.owner}/${repo.name}`}
+                  disabled={!adminKey}
                 >
                   Index
                 </Button>
               </div>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -207,7 +207,7 @@ export class OpenAIProvider implements AIProvider {
       if (error instanceof ProviderError) throw error;
       const msg = error instanceof Error ? error.message : 'Unknown OpenAI error';
       log.error('Stream chat completion failed', { error: msg, model });
-      yield { content: `Error: ${msg}`, toolCalls: null, done: true };
+      throw new ProviderError('openai', msg);
     }
   }
 

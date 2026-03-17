@@ -11,6 +11,7 @@ const {
   mockGetMemorySummary,
   mockRetrieveContext,
   mockFormatRetrievalContext,
+  mockInferKnowledgeQueryContext,
   mockGetToolDefinitions,
   mockGetToolNames,
   mockExecuteTool,
@@ -22,6 +23,7 @@ const {
   mockGetMemorySummary: vi.fn(),
   mockRetrieveContext: vi.fn(),
   mockFormatRetrievalContext: vi.fn(),
+  mockInferKnowledgeQueryContext: vi.fn(),
   mockGetToolDefinitions: vi.fn(),
   mockGetToolNames: vi.fn(),
   mockExecuteTool: vi.fn(),
@@ -48,6 +50,7 @@ vi.mock('@/lib/memory/user-memory', () => ({
 vi.mock('@/lib/knowledge', () => ({
   retrieveContext: mockRetrieveContext,
   formatRetrievalContext: mockFormatRetrievalContext,
+  inferKnowledgeQueryContext: mockInferKnowledgeQueryContext,
 }));
 
 vi.mock('@/lib/tools', () => ({
@@ -86,6 +89,7 @@ describe('runSandraAgent', () => {
     mockGetMemorySummary.mockResolvedValue('');
     mockRetrieveContext.mockResolvedValue([]);
     mockFormatRetrievalContext.mockReturnValue('');
+    mockInferKnowledgeQueryContext.mockReturnValue({ minScore: 0.2 });
     mockGetToolDefinitions.mockReturnValue([]);
     mockGetToolNames.mockReturnValue([]);
     mockAddEntry.mockResolvedValue(undefined);
@@ -281,6 +285,7 @@ describe('runSandraAgentStream', () => {
     mockGetMemorySummary.mockResolvedValue('');
     mockRetrieveContext.mockResolvedValue([]);
     mockFormatRetrievalContext.mockReturnValue('');
+    mockInferKnowledgeQueryContext.mockReturnValue({ minScore: 0.2 });
     mockGetToolDefinitions.mockReturnValue([]);
     mockGetToolNames.mockReturnValue([]);
     mockAddEntry.mockResolvedValue(undefined);
@@ -311,7 +316,12 @@ describe('runSandraAgentStream', () => {
     expect(tokenEvents[0]?.data).toBe('Hello ');
     expect(tokenEvents[1]?.data).toBe('world!');
     expect(doneEvent).toBeDefined();
-    expect(doneEvent?.data).toBe('test-session');
+    expect(doneEvent?.data).toMatchObject({
+      sessionId: 'test-session',
+      response: 'Hello world!',
+      toolsUsed: [],
+      retrievalUsed: false,
+    });
   });
 
   it('yields tool_call and tool_result events during tool execution', async () => {
@@ -540,6 +550,10 @@ describe('runSandraAgentStream', () => {
 
     expect(tokenEvents.some((e) => e.data.includes("I'm having trouble"))).toBe(true);
     expect(doneEvent).toBeDefined();
+    expect(doneEvent?.data).toMatchObject({
+      sessionId: 'test-session',
+      response: "I'm having trouble completing this request. Let me try to help differently.",
+    });
     expect(mockStreamChatCompletion).toHaveBeenCalledTimes(3);
   });
 });

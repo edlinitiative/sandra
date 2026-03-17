@@ -45,7 +45,13 @@ describe('ChatContainer', () => {
       onToken('Hello ');
       onToken('from ');
       onToken('Sandra!');
-      return { sessionId: 'session-123', toolsUsed: [], retrievalUsed: false };
+      return {
+        sessionId: 'session-123',
+        response: 'Hello from Sandra!',
+        toolsUsed: [],
+        retrievalUsed: false,
+        suggestedFollowUps: [],
+      };
     });
     mockGetConversation.mockResolvedValue({ sessionId: '', messages: [] });
   });

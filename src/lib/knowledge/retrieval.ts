@@ -1,6 +1,6 @@
 import { getVectorStore } from './vector-store';
 import { embedQuery } from './embeddings';
-import type { SearchResult } from './types';
+import type { RetrieveContextOptions, SearchResult } from './types';
 import { DEFAULT_TOP_K } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
 
@@ -12,21 +12,15 @@ const log = createLogger('knowledge:retrieval');
  */
 export async function retrieveContext(
   query: string,
-  options?: {
-    topK?: number;
-    sourceId?: string;
-    minScore?: number;
-  },
+  options?: RetrieveContextOptions,
 ): Promise<SearchResult[]> {
   const topK = options?.topK ?? DEFAULT_TOP_K;
-  const minScore = options?.minScore ?? 0.5;
+  const minScore = options?.minScore ?? 0.2;
 
   try {
     const queryEmbedding = await embedQuery(query);
     const store = getVectorStore();
-
-    const filter = options?.sourceId ? { sourceId: options.sourceId } : undefined;
-    const results = await store.search(queryEmbedding, topK, filter);
+    const results = await store.search(queryEmbedding, topK, options?.filter);
 
     // Filter by minimum score
     const filtered = results.filter((r) => r.score >= minScore);
@@ -57,7 +51,12 @@ export function formatRetrievalContext(results: SearchResult[]): string {
   const sections = results.map((r, i) => {
     const header = r.chunk.title ? `[${r.chunk.title}]` : `[Document ${i + 1}]`;
     const source = r.chunk.path ? ` (${r.chunk.path})` : '';
-    return `${header}${source}\n${r.chunk.content}`;
+    const metadataBits = [
+      typeof r.chunk.metadata?.platform === 'string' ? r.chunk.metadata.platform : null,
+      typeof r.chunk.metadata?.contentType === 'string' ? r.chunk.metadata.contentType : null,
+    ].filter((value): value is string => Boolean(value));
+    const metadataSuffix = metadataBits.length > 0 ? ` {${metadataBits.join(', ')}}` : '';
+    return `${header}${source}${metadataSuffix}\n${r.chunk.content}`;
   });
 
   return `Relevant context from EdLight knowledge base:\n\n${sections.join('\n\n---\n\n')}`;

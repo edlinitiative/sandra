@@ -128,7 +128,16 @@ describe('T120: End-to-End Chat Flow', () => {
     mockRunSandraAgentStream.mockImplementation(async function* () {
       yield { type: 'token', data: 'Hello ' };
       yield { type: 'token', data: 'from Sandra!' };
-      yield { type: 'done', data: 'test-session' };
+      yield {
+        type: 'done',
+        data: {
+          sessionId: 'test-session',
+          response: 'Hello from Sandra!',
+          toolsUsed: [],
+          retrievalUsed: false,
+          suggestedFollowUps: ['What can you help with next?'],
+        },
+      };
     });
 
     const { POST } = await import('../../app/api/chat/stream/route');
@@ -160,6 +169,15 @@ describe('T120: End-to-End Chat Flow', () => {
     expect(types).toContain('token');
     expect(types).toContain('done');
     expect(types.filter((t) => t === 'token')).toHaveLength(2);
+
+    const doneEvent = (events as Array<Record<string, unknown>>).find((event) => event.type === 'done');
+    expect(doneEvent).toMatchObject({
+      sessionId: 'test-session',
+      response: 'Hello from Sandra!',
+      toolsUsed: [],
+      retrievalUsed: false,
+      suggestedFollowUps: ['What can you help with next?'],
+    });
   });
 
   it('GET /api/conversations/[sessionId] returns messages in order', async () => {

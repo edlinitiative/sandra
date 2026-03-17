@@ -3,7 +3,15 @@ export { createSession, getSessionById, getSessionMessages, updateSession } from
 export type { CreateSessionInput, UpdateSessionInput } from './sessions';
 export { createMessage, getMessagesBySessionId } from './messages';
 export type { CreateMessageInput } from './messages';
-export { getActiveRepos, getRepoByOwnerAndName, getRepoById, updateRepoSyncStatus } from './repos';
+export {
+  getActiveRepos,
+  getActiveRepoSummaries,
+  getRepoByOwnerAndName,
+  getRepoById,
+  getRepoByRepoId,
+  updateRepoSyncStatus,
+} from './repos';
+export type { RepoSummary } from './repos';
 export {
   createIndexedDocument,
   getDocumentsBySourceId,

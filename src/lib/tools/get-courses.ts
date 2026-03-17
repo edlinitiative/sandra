@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
+import {
+  extractCourseMatches,
+  listGroundingSources,
+  searchPlatformKnowledge,
+} from '@/lib/knowledge';
 
 const inputSchema = z.object({
   platform: z
@@ -14,8 +19,20 @@ const inputSchema = z.object({
     .describe('When true, return only beginner-friendly courses'),
 });
 
-/** Static course catalog — sourced from EdLight repos (updated as repos are indexed). */
-const ACADEMY_COURSES = [
+type CourseLevel = 'beginner' | 'intermediate' | 'advanced' | 'general';
+type PlatformCourse = 'academy' | 'code';
+type CourseCatalogEntry = {
+  title: string;
+  platform: PlatformCourse;
+  level: CourseLevel;
+  topics: string[];
+  path: string;
+  url: string;
+  description: string;
+  beginner: boolean;
+};
+
+const ACADEMY_COURSES: CourseCatalogEntry[] = [
   {
     title: 'Mathematics Fundamentals',
     platform: 'academy',
@@ -73,7 +90,7 @@ const ACADEMY_COURSES = [
   },
 ];
 
-const CODE_COURSES = [
+const CODE_COURSES: CourseCatalogEntry[] = [
   {
     title: 'Coding for Absolute Beginners',
     platform: 'code',
@@ -144,6 +161,33 @@ const CODE_COURSES = [
 
 const ALL_COURSES = [...ACADEMY_COURSES, ...CODE_COURSES];
 
+const PLATFORM_CONTEXT: Record<'academy' | 'code' | 'both', string> = {
+  academy:
+    'EdLight Academy focuses on academic learning for students, with structured subjects such as math, physics, economics, leadership, and exam preparation.',
+  code:
+    'EdLight Code focuses on coding and programming skills, including Python, SQL, web development, and software fundamentals.',
+  both:
+    'EdLight Academy covers academic subjects and student learning support, while EdLight Code covers coding and programming.',
+};
+
+const PLATFORM_REPO_URLS = {
+  academy: 'https://github.com/edlinitiative/EdLight-Academy',
+  code: 'https://github.com/edlinitiative/code',
+} as const;
+
+type PlatformSelection = 'academy' | 'code' | 'both';
+type GroundedCourse = {
+  title: string;
+  platform: PlatformCourse;
+  level: CourseLevel;
+  topics: string[];
+  path?: string;
+  url: string;
+  description: string;
+  beginner: boolean;
+  grounding: 'indexed' | 'fallback';
+};
+
 const getCourseInventory: SandraTool = {
   name: 'getCourseInventory',
   description:
@@ -169,41 +213,84 @@ const getCourseInventory: SandraTool = {
 
   async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
-    const platform = params.platform ?? 'both';
+    const platform = (params.platform ?? 'both') as PlatformSelection;
+    const selectedPlatforms: PlatformCourse[] =
+      platform === 'both' ? ['academy', 'code'] : [platform];
 
-    let courses = platform === 'both'
-      ? ALL_COURSES
-      : ALL_COURSES.filter((c) => c.platform === platform);
+    const groundedCatalogs: Array<{
+      courses: GroundedCourse[];
+      grounding: 'indexed' | 'fallback';
+      sources: string[];
+    }> = await Promise.all(
+      selectedPlatforms.map(async (selectedPlatform) => {
+        const groundedResults = await searchPlatformKnowledge(
+          `${selectedPlatform} courses curriculum lessons modules`,
+          {
+            platform: selectedPlatform,
+            contentType: 'course',
+            preferPaths: ['courses/', 'docs/', 'curriculum', 'README.md'],
+            topK: 8,
+          },
+        );
+
+        const extractedCourses: GroundedCourse[] = extractCourseMatches(groundedResults, selectedPlatform).map((course) => ({
+          title: course.title,
+          platform: selectedPlatform,
+          level: course.level,
+          topics: inferTopics(course.title, course.description),
+          path: course.path,
+          url: course.path
+            ? `${PLATFORM_REPO_URLS[selectedPlatform]}/blob/main/${course.path}`
+            : PLATFORM_REPO_URLS[selectedPlatform],
+          description: course.description,
+          beginner: course.beginner,
+          grounding: 'indexed' as const,
+        }));
+
+        const fallbackCourses: GroundedCourse[] = ALL_COURSES.filter((course) => course.platform === selectedPlatform)
+          .map((course) => ({
+            ...course,
+            grounding: 'fallback' as const,
+          }));
+
+        return {
+          courses: extractedCourses.length > 0 ? extractedCourses : fallbackCourses,
+          grounding: extractedCourses.length > 0 ? 'indexed' : 'fallback',
+          sources: listGroundingSources(groundedResults),
+        };
+      }),
+    );
+
+    let courses = groundedCatalogs.flatMap((catalog) => catalog.courses);
 
     if (params.beginner === true) {
-      courses = courses.filter((c) => c.beginner);
+      courses = courses.filter((course) => course.beginner);
     }
 
-    const beginnerCourses = courses.filter((c) => c.beginner);
-    const recommendation = beginnerCourses.length > 0
-      ? beginnerCourses[0]
-      : courses[0] ?? null;
-
-    const platformContext: Record<string, string> = {
-      academy: 'EdLight Academy focuses on academic learning for students — especially high school learners — with structured subjects like math, physics, economics, leadership, and exam preparation.',
-      code: 'EdLight Code focuses on coding and programming skills — Python, SQL, web development, and software fundamentals.',
-      both: 'EdLight Academy covers academic subjects and student learning support; EdLight Code covers coding and programming.',
-    };
+    const beginnerCourses = courses.filter((course) => course.beginner);
+    const recommendation = beginnerCourses[0] ?? courses[0] ?? null;
+    const grounding = groundedCatalogs.every((catalog) => catalog.grounding === 'indexed')
+      ? 'indexed'
+      : groundedCatalogs.some((catalog) => catalog.grounding === 'indexed')
+        ? 'mixed'
+        : 'fallback';
+    const groundingSources = groundedCatalogs.flatMap((catalog) => catalog.sources);
 
     return {
       success: true,
       data: {
         platform,
-        platformContext: platformContext[platform] ?? platformContext['both'],
-        courses: courses.map((c) => ({
-          title: c.title,
-          platform: c.platform,
-          level: c.level,
-          topics: c.topics,
-          description: c.description,
-          path: c.path,
-          url: c.url,
-          beginner: c.beginner,
+        platformContext: PLATFORM_CONTEXT[platform] ?? PLATFORM_CONTEXT['both'],
+        courses: courses.map((course) => ({
+          title: course.title,
+          platform: course.platform,
+          level: course.level,
+          topics: course.topics,
+          description: course.description,
+          path: course.path,
+          url: course.url,
+          beginner: course.beginner,
+          grounding: course.grounding,
         })),
         totalCourses: courses.length,
         beginnerRecommendation: recommendation
@@ -213,7 +300,14 @@ const getCourseInventory: SandraTool = {
               description: recommendation.description,
             }
           : null,
-        note: 'Course catalog reflects EdLight repository content. Use searchKnowledgeBase for detailed course documentation.',
+        grounding,
+        groundingSources: Array.from(new Set(groundingSources)),
+        note:
+          grounding === 'indexed'
+            ? 'Course inventory was grounded from indexed EdLight repository content.'
+            : grounding === 'mixed'
+              ? 'Course inventory combines indexed EdLight content with curated fallback entries where indexed course data is still thin.'
+              : 'Indexed course data was unavailable, so Sandra used the curated fallback course catalog.',
       },
     };
   },
@@ -222,3 +316,29 @@ const getCourseInventory: SandraTool = {
 toolRegistry.register(getCourseInventory);
 
 export { getCourseInventory };
+
+function inferTopics(title: string, description: string): string[] {
+  const haystack = `${title} ${description}`.toLowerCase();
+  const knownTopics = [
+    'python',
+    'sql',
+    'web',
+    'math',
+    'physics',
+    'economics',
+    'leadership',
+    'exam prep',
+    'communication',
+    'problem solving',
+  ].filter((topic) => haystack.includes(topic));
+
+  if (knownTopics.length > 0) {
+    return knownTopics;
+  }
+
+  return title
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((part) => part.length > 3)
+    .slice(0, 3);
+}

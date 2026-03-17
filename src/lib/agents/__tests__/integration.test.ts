@@ -41,6 +41,7 @@ vi.mock('@/lib/memory/user-memory', () => ({
 vi.mock('@/lib/knowledge', () => ({
   retrieveContext: vi.fn().mockResolvedValue([]),
   formatRetrievalContext: vi.fn().mockReturnValue(''),
+  inferKnowledgeQueryContext: vi.fn().mockReturnValue({ minScore: 0.2 }),
 }));
 
 vi.mock('@/lib/tools', () => ({

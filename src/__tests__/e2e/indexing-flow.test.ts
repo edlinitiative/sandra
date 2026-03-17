@@ -19,8 +19,8 @@ const { mockEmbedChunks, mockEmbedQuery } = vi.hoisted(() => ({
   mockEmbedQuery: vi.fn(),
 }));
 
-const { mockGetActiveRepos } = vi.hoisted(() => ({
-  mockGetActiveRepos: vi.fn(),
+const { mockGetActiveRepoSummaries } = vi.hoisted(() => ({
+  mockGetActiveRepoSummaries: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ vi.mock('@/lib/knowledge/embeddings', () => ({
 
 vi.mock('@/lib/db', () => ({
   db: {},
-  getActiveRepos: mockGetActiveRepos,
+  getActiveRepoSummaries: mockGetActiveRepoSummaries,
 }));
 
 vi.mock('@/lib/utils/auth', () => ({
@@ -148,24 +148,34 @@ describe('T121: End-to-End Indexing Pipeline', () => {
   });
 
   it('GET /api/repos returns repository list with syncStatus', async () => {
-    mockGetActiveRepos.mockResolvedValue([
+    mockGetActiveRepoSummaries.mockResolvedValue([
       {
+        id: 'repo-1',
         name: 'edlight-code',
         displayName: 'EdLight Code',
+        description: 'Coding courses',
         url: 'https://github.com/edlight/code',
         syncStatus: 'indexed',
-        lastSyncAt: new Date('2024-01-01T12:00:00Z'),
         owner: 'edlight',
         branch: 'main',
+        docsPath: 'docs',
+        isActive: true,
+        indexedDocumentCount: 12,
+        lastIndexedAt: new Date('2024-01-01T12:00:00Z'),
       },
       {
+        id: 'repo-2',
         name: 'edlight-academy',
         displayName: 'EdLight Academy',
+        description: 'Academic learning',
         url: 'https://github.com/edlight/academy',
         syncStatus: 'pending',
-        lastSyncAt: null,
         owner: 'edlight',
         branch: 'main',
+        docsPath: 'docs',
+        isActive: true,
+        indexedDocumentCount: 0,
+        lastIndexedAt: null,
       },
     ]);
 
@@ -184,6 +194,7 @@ describe('T121: End-to-End Indexing Pipeline', () => {
     expect(indexed).toBeDefined();
     expect(indexed.syncStatus).toBe('indexed');
     expect(indexed.lastIndexedAt).toBeDefined();
+    expect(indexed.indexedDocumentCount).toBe(12);
   });
 
   it('indexed content is retrievable via search after ingestion', async () => {

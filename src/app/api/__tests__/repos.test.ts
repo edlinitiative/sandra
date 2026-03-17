@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const { mockGetActiveRepos, mockEnv } = vi.hoisted(() => ({
-  mockGetActiveRepos: vi.fn(),
+const { mockGetActiveRepoSummaries, mockEnv } = vi.hoisted(() => ({
+  mockGetActiveRepoSummaries: vi.fn(),
   mockEnv: { ADMIN_API_KEY: 'test-key-for-repos' as string | undefined },
 }));
 
 vi.mock('@/lib/db', () => ({
   db: {},
-  getActiveRepos: mockGetActiveRepos,
+  getActiveRepoSummaries: mockGetActiveRepoSummaries,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -25,12 +25,17 @@ function makeRequest(apiKey?: string): Request {
 }
 
 function makeRepo(overrides: Partial<{
+  id: string;
   owner: string;
   name: string;
   displayName: string;
+  description: string | null;
+  branch: string;
+  docsPath: string | null;
+  indexedDocumentCount: number;
   url: string;
   syncStatus: string;
-  lastSyncAt: Date | null;
+  lastIndexedAt: Date | null;
   isActive: boolean;
 }> = {}) {
   return {
@@ -44,10 +49,8 @@ function makeRepo(overrides: Partial<{
     docsPath: 'docs',
     isActive: true,
     syncStatus: 'not_indexed',
-    lastSyncAt: null,
-    metadata: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    lastIndexedAt: null,
+    indexedDocumentCount: 12,
     ...overrides,
   };
 }
@@ -58,7 +61,7 @@ describe('GET /api/repos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEnv.ADMIN_API_KEY = 'test-key-for-repos';
-    mockGetActiveRepos.mockResolvedValue([makeRepo()]);
+    mockGetActiveRepoSummaries.mockResolvedValue([makeRepo()]);
   });
 
   it('returns 200 with repo list for valid API key', async () => {
@@ -69,7 +72,11 @@ describe('GET /api/repos', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.repos).toHaveLength(1);
+    expect(body.data.repos[0].owner).toBe('edlinitiative');
     expect(body.data.repos[0].name).toBe('edlight-code');
+    expect(body.data.repos[0].branch).toBe('main');
+    expect(body.data.repos[0].docsPath).toBe('docs');
+    expect(body.data.repos[0].indexedDocumentCount).toBe(12);
     expect(body.data.repos[0].syncStatus).toBe('not_indexed');
     expect(body.data.repos[0].lastIndexedAt).toBeNull();
     expect(body.meta.requestId).toBeDefined();
@@ -95,7 +102,7 @@ describe('GET /api/repos', () => {
   });
 
   it('repos are sorted alphabetically by name', async () => {
-    mockGetActiveRepos.mockResolvedValue([
+    mockGetActiveRepoSummaries.mockResolvedValue([
       makeRepo({ name: 'z-repo', displayName: 'Z Repo' }),
       makeRepo({ name: 'a-repo', displayName: 'A Repo' }),
     ]);
@@ -108,9 +115,9 @@ describe('GET /api/repos', () => {
     expect(body.data.repos[1].name).toBe('z-repo');
   });
 
-  it('returns lastIndexedAt as ISO string when lastSyncAt is set', async () => {
-    const lastSyncAt = new Date('2026-01-15T10:00:00.000Z');
-    mockGetActiveRepos.mockResolvedValue([makeRepo({ syncStatus: 'indexed', lastSyncAt })]);
+  it('returns lastIndexedAt as ISO string when the repo has been indexed', async () => {
+    const lastIndexedAt = new Date('2026-01-15T10:00:00.000Z');
+    mockGetActiveRepoSummaries.mockResolvedValue([makeRepo({ syncStatus: 'indexed', lastIndexedAt })]);
 
     const { GET } = await import('../repos/route');
     const response = await GET(makeRequest('test-key-for-repos'));

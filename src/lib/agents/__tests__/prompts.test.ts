@@ -108,7 +108,7 @@ describe('Phase 6 — course routing in buildSandraSystemPrompt', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt.toLowerCase()).toContain('python');
     expect(prompt.toLowerCase()).toContain('sql');
-    expect(prompt.toLowerCase()).toContain('excel');
+    expect(prompt.toLowerCase()).toContain('math');
   });
 
   it('instructs Sandra to name concrete courses instead of generic summaries', () => {

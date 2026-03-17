@@ -15,9 +15,20 @@ const { mockRunSandraAgent } = vi.hoisted(() => ({
   mockRunSandraAgent: vi.fn(),
 }));
 
-const { mockQueryRaw, mockVectorStoreCount } = vi.hoisted(() => ({
+const {
+  mockQueryRaw,
+  mockRepoRegistryCount,
+  mockIndexedSourceCount,
+  mockIndexedDocumentCount,
+  mockVectorStoreCount,
+  mockGetToolNames,
+} = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
+  mockRepoRegistryCount: vi.fn(),
+  mockIndexedSourceCount: vi.fn(),
+  mockIndexedDocumentCount: vi.fn(),
   mockVectorStoreCount: vi.fn(),
+  mockGetToolNames: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -29,6 +40,8 @@ vi.mock('@/lib/agents', () => ({
 
 vi.mock('@/lib/config', () => ({
   env: { OPENAI_API_KEY: 'sk-test-validkeyfortesting' },
+  APP_NAME: 'Sandra',
+  APP_VERSION: '1.0.0',
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -36,11 +49,22 @@ vi.mock('@/lib/i18n', () => ({
 }));
 
 vi.mock('@/lib/db', () => ({
-  db: { $queryRaw: mockQueryRaw },
+  db: {
+    $queryRaw: mockQueryRaw,
+    repoRegistry: { count: mockRepoRegistryCount },
+    indexedSource: { count: mockIndexedSourceCount },
+    indexedDocument: { count: mockIndexedDocumentCount },
+  },
 }));
 
 vi.mock('@/lib/knowledge', () => ({
   getVectorStore: () => ({ count: mockVectorStoreCount }),
+}));
+
+vi.mock('@/lib/tools', () => ({
+  toolRegistry: {
+    getToolNames: mockGetToolNames,
+  },
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -59,6 +83,15 @@ function randomVector(seed: number): number[] {
 describe('T128: Performance Baseline', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRepoRegistryCount
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
+    mockIndexedSourceCount.mockResolvedValue(4);
+    mockIndexedDocumentCount.mockResolvedValue(24);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase', 'getCourseInventory']);
   });
 
   it('health endpoint responds in < 500ms', async () => {

@@ -19,6 +19,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  followUps?: string[];
 }
 
 export function ChatContainer() {
@@ -109,8 +110,9 @@ export function ChatContainer() {
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: finalContent || result.sessionId ? finalContent : 'No response received.',
+        content: finalContent || result.response || 'No response received.',
         timestamp: new Date().toISOString(),
+        followUps: result.suggestedFollowUps ?? [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -157,6 +159,8 @@ export function ChatContainer() {
                 role={msg.role}
                 content={msg.content}
                 timestamp={msg.timestamp}
+                followUps={msg.followUps}
+                onFollowUp={handleSend}
               />
             ))}
             {isLoading && streamingContent === null && <TypingIndicator />}

@@ -1,12 +1,13 @@
 import type { AgentInput, AgentOutput, AgentConfig, AgentState, AgentStreamEvent } from './types';
 import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
+import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
 import type { ChatMessage } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
 import { getSessionStore } from '@/lib/memory/session-store';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
-import { retrieveContext, formatRetrievalContext } from '@/lib/knowledge';
+import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
 
 const log = createLogger('agents:sandra');
@@ -53,7 +54,16 @@ export async function runSandraAgent(
     let retrievalContextStr = '';
     if (cfg.enableRetrieval) {
       try {
-        const results = await retrieveContext(input.message, { topK: 3, minScore: 0.5 });
+        const inferredContext = inferKnowledgeQueryContext(input.message);
+        const results = await retrieveContext(input.message, {
+          topK: 4,
+          minScore: inferredContext.minScore,
+          filter: {
+            platform: inferredContext.platform,
+            contentType: inferredContext.contentType,
+            preferPaths: inferredContext.preferPaths,
+          },
+        });
         if (results.length > 0) {
           retrievalContextStr = formatRetrievalContext(results);
         }
@@ -143,6 +153,7 @@ export async function runSandraAgent(
           language: input.language,
           toolsUsed,
           retrievalUsed: retrievalContextStr.length > 0,
+          suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
           tokenUsage: totalUsage,
         };
       }
@@ -208,6 +219,7 @@ export async function runSandraAgent(
       language: input.language,
       toolsUsed,
       retrievalUsed: retrievalContextStr.length > 0,
+      suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
       tokenUsage: totalUsage,
     };
   } catch (err) {
@@ -273,7 +285,16 @@ export async function* runSandraAgentStream(
     let retrievalContextStr = '';
     if (cfg.enableRetrieval) {
       try {
-        const results = await retrieveContext(input.message, { topK: 3, minScore: 0.5 });
+        const inferredContext = inferKnowledgeQueryContext(input.message);
+        const results = await retrieveContext(input.message, {
+          topK: 4,
+          minScore: inferredContext.minScore,
+          filter: {
+            platform: inferredContext.platform,
+            contentType: inferredContext.contentType,
+            preferPaths: inferredContext.preferPaths,
+          },
+        });
         if (results.length > 0) {
           retrievalContextStr = formatRetrievalContext(results);
         }
@@ -308,6 +329,7 @@ export async function* runSandraAgentStream(
     });
 
     let iterations = 0;
+    const toolsUsed: string[] = [];
 
     while (iterations < cfg.maxIterations) {
       iterations++;
@@ -335,13 +357,25 @@ export async function* runSandraAgentStream(
 
       // If no tool calls, streaming is done
       if (!toolCallsFromStream || toolCallsFromStream.length === 0) {
+        const response =
+          fullContent || 'I apologize, but I was unable to generate a response. Please try again.';
+
         await sessionStore.addEntry(input.sessionId, {
           role: 'assistant',
-          content: fullContent,
+          content: response,
           timestamp: new Date(),
         });
 
-        yield { type: 'done', data: input.sessionId };
+        yield {
+          type: 'done',
+          data: {
+            sessionId: input.sessionId,
+            response,
+            toolsUsed,
+            retrievalUsed: retrievalContextStr.length > 0,
+            suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
+          },
+        };
         return;
       }
 
@@ -370,6 +404,7 @@ export async function* runSandraAgentStream(
       });
 
       for (const toolCall of toolCallsFromStream) {
+        toolsUsed.push(toolCall.name);
         yield { type: 'tool_call', data: toolCall.name };
 
         let resultStr: string;
@@ -415,7 +450,16 @@ export async function* runSandraAgentStream(
     });
 
     yield { type: 'token', data: fallback };
-    yield { type: 'done', data: input.sessionId };
+    yield {
+      type: 'done',
+      data: {
+        sessionId: input.sessionId,
+        response: fallback,
+        toolsUsed,
+        retrievalUsed: retrievalContextStr.length > 0,
+        suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
+      },
+    };
   } catch (err) {
     log.error('Streaming agent failed', {
       sessionId: input.sessionId,

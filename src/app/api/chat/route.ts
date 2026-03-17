@@ -100,6 +100,7 @@ export async function POST(request: Request) {
           language: result.language,
           toolsUsed: result.toolsUsed,
           retrievalUsed: result.retrievalUsed,
+          suggestedFollowUps: result.suggestedFollowUps ?? [],
           usage: result.tokenUsage,
         },
         { requestId },

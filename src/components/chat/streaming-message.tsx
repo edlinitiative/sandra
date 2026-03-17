@@ -1,3 +1,5 @@
+'use client';
+
 interface StreamingMessageProps {
   content: string;
 }

@@ -2,12 +2,18 @@ import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
 import { EDLIGHT_PLATFORMS } from '@/lib/config/constants';
+import {
+  buildGroundedDescription,
+  extractHighlights,
+  listGroundingSources,
+  searchPlatformKnowledge,
+} from '@/lib/knowledge';
+import type { KnowledgePlatform } from '@/lib/knowledge';
 
 const inputSchema = z.object({
   category: z.string().optional().describe('Filter by category: coding, news, leadership, education'),
 });
 
-// Curated initiative data — sourced from RepoRegistry + grounded platform descriptions
 const INITIATIVES = [
   {
     name: 'EdLight Code',
@@ -77,21 +83,58 @@ const getEdLightInitiatives: SandraTool = {
     const params = inputSchema.parse(input);
 
     const filtered = params.category
-      ? INITIATIVES.filter((i) => i.category === params.category)
+      ? INITIATIVES.filter((initiative) => initiative.category === params.category)
       : INITIATIVES;
+
+    const groundedInitiatives = await Promise.all(
+      filtered.map(async (initiative) => {
+        const platform = categoryToPlatform(initiative.category);
+        const results = await searchPlatformKnowledge(
+          `${initiative.name} overview mission highlights`,
+          {
+            platform,
+            contentType:
+              platform === 'news'
+                ? 'news'
+                : platform === 'initiative'
+                  ? 'program'
+                  : ['documentation', 'repo_readme', 'course'],
+            preferPaths:
+              platform === 'initiative'
+                ? ['README.md', 'docs/', 'program', 'leadership']
+                : platform === 'news'
+                  ? ['README.md', 'docs/', 'news', 'announcement']
+                  : ['README.md', 'docs/', 'courses/'],
+            topK: 4,
+          },
+        );
+
+        const groundedHighlights = extractHighlights(results, 4);
+
+        return {
+          ...initiative,
+          description: buildGroundedDescription(results, initiative.description),
+          highlights: groundedHighlights.length > 0 ? groundedHighlights : initiative.highlights,
+          grounding: results.length > 0 ? 'indexed' : 'fallback',
+          groundingSources: listGroundingSources(results),
+        };
+      }),
+    );
 
     return {
       success: true,
       data: {
-        initiatives: filtered.map((i) => ({
-          name: i.name,
-          category: i.category,
-          repo: i.repo,
-          url: i.url,
-          description: i.description,
-          focus: i.focus,
-          highlights: i.highlights,
-          status: i.status,
+        initiatives: groundedInitiatives.map((initiative) => ({
+          name: initiative.name,
+          category: initiative.category,
+          repo: initiative.repo,
+          url: initiative.url,
+          description: initiative.description,
+          focus: initiative.focus,
+          highlights: initiative.highlights,
+          status: initiative.status,
+          grounding: initiative.grounding,
+          groundingSources: initiative.groundingSources,
         })),
         totalPlatforms: EDLIGHT_PLATFORMS.length,
       },
@@ -102,3 +145,16 @@ const getEdLightInitiatives: SandraTool = {
 toolRegistry.register(getEdLightInitiatives);
 
 export { getEdLightInitiatives };
+
+function categoryToPlatform(category: string): KnowledgePlatform {
+  switch (category) {
+    case 'education':
+      return 'academy';
+    case 'coding':
+      return 'code';
+    case 'news':
+      return 'news';
+    default:
+      return 'initiative';
+  }
+}

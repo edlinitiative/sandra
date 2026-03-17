@@ -30,7 +30,11 @@ export type ChatInput = z.infer<typeof chatInputSchema>;
 
 /** Schema for index trigger input (POST /api/index) */
 export const indexInputSchema = z.object({
-  repoId: z.string().min(1, 'Repository ID is required').describe('ID of the repository to index'),
+  repoId: z
+    .string()
+    .min(1, 'Repository ID must not be empty')
+    .optional()
+    .describe('Optional ID of the repository to index; omit to index all active repositories'),
 });
 
 export type IndexInput = z.infer<typeof indexInputSchema>;
