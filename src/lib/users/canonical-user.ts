@@ -1,6 +1,7 @@
 import type { ChannelType } from '@/lib/channels/types';
 import type { SupportedLanguage } from '@/lib/i18n/types';
-import { db, resolveUserByExternalId } from '@/lib/db';
+import { isValidLanguage } from '@/lib/i18n';
+import { db, getUserByExternalId, resolveUserByExternalId } from '@/lib/db';
 import { promoteSessionInsightsToUserMemory } from '@/lib/memory/session-insights';
 import { getPrismaSessionStore } from '@/lib/memory/session-store';
 import { createLogger } from '@/lib/utils';
@@ -66,5 +67,28 @@ export async function resolveCanonicalUser(
       userId: existingSession?.userId ?? undefined,
       externalUserId: normalizedExternalId,
     };
+  }
+}
+
+export async function getCanonicalUserLanguage(
+  externalUserId?: string,
+): Promise<SupportedLanguage | undefined> {
+  const normalizedExternalId = externalUserId?.trim() || undefined;
+
+  if (!normalizedExternalId) {
+    return undefined;
+  }
+
+  try {
+    const user = await getUserByExternalId(db, normalizedExternalId);
+    return user?.language && isValidLanguage(user.language)
+      ? user.language
+      : undefined;
+  } catch (error) {
+    log.warn('Failed to load canonical user language', {
+      externalUserId: normalizedExternalId,
+      error: error instanceof Error ? error.message : 'unknown',
+    });
+    return undefined;
   }
 }

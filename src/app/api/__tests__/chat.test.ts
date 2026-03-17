@@ -11,8 +11,9 @@ const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() =>
   mockEnsureSessionContinuity: vi.fn(),
 }));
 
-const { mockResolveCanonicalUser } = vi.hoisted(() => ({
+const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(() => ({
   mockResolveCanonicalUser: vi.fn(),
+  mockGetCanonicalUserLanguage: vi.fn(),
 }));
 
 vi.mock('@/lib/agents', () => ({
@@ -36,6 +37,7 @@ vi.mock('@/lib/memory/session-continuity', () => ({
 }));
 
 vi.mock('@/lib/users/canonical-user', () => ({
+  getCanonicalUserLanguage: mockGetCanonicalUserLanguage,
   resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
@@ -64,6 +66,7 @@ describe('POST /api/chat', () => {
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
     mockResolveCanonicalUser.mockResolvedValue({});
+    mockGetCanonicalUserLanguage.mockResolvedValue(undefined);
   });
 
   it('returns 200 with success envelope for valid message', async () => {
@@ -193,6 +196,26 @@ describe('POST /api/chat', () => {
     );
     expect(mockRunSandraAgent).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId, userId: 'user_123' }),
+    );
+  });
+
+  it('uses the stored canonical user language for a brand-new session', async () => {
+    mockGetCanonicalUserLanguage.mockResolvedValue('ht');
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Bonjou!',
+      language: 'ht',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const response = await POST(makeRequest({ message: 'Hello', userId: 'web:anon-123' }));
+
+    expect(response.status).toBe(200);
+    expect(mockGetCanonicalUserLanguage).toHaveBeenCalledWith('web:anon-123');
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'ht' }),
     );
   });
 

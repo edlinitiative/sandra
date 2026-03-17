@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockResolveUserByExternalId } = vi.hoisted(() => ({
+const { mockResolveUserByExternalId, mockGetUserByExternalId } = vi.hoisted(() => ({
   mockResolveUserByExternalId: vi.fn(),
+  mockGetUserByExternalId: vi.fn(),
 }));
 
 const { mockGetSession } = vi.hoisted(() => ({
@@ -14,6 +15,7 @@ const { mockPromoteSessionInsightsToUserMemory } = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({
   db: {},
+  getUserByExternalId: mockGetUserByExternalId,
   resolveUserByExternalId: mockResolveUserByExternalId,
 }));
 
@@ -31,6 +33,7 @@ describe('resolveCanonicalUser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue(null);
+    mockGetUserByExternalId.mockResolvedValue(null);
   });
 
   it('returns the existing session user when no external user id is provided', async () => {
@@ -85,5 +88,15 @@ describe('resolveCanonicalUser', () => {
     });
 
     expect(mockPromoteSessionInsightsToUserMemory).toHaveBeenCalledWith('session_3', 'user_123');
+  });
+
+  it('returns the stored canonical user language when available', async () => {
+    mockGetUserByExternalId.mockResolvedValue({ language: 'ht' });
+    const { getCanonicalUserLanguage } = await import('../canonical-user');
+
+    const result = await getCanonicalUserLanguage('web:test');
+
+    expect(mockGetUserByExternalId).toHaveBeenCalledWith({}, 'web:test');
+    expect(result).toBe('ht');
   });
 });

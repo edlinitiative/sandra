@@ -28,8 +28,9 @@ const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() =>
   mockEnsureSessionContinuity: vi.fn(),
 }));
 
-const { mockResolveCanonicalUser } = vi.hoisted(() => ({
+const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(() => ({
   mockResolveCanonicalUser: vi.fn(),
+  mockGetCanonicalUserLanguage: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ vi.mock('@/lib/memory/session-continuity', () => ({
 }));
 
 vi.mock('@/lib/users/canonical-user', () => ({
+  getCanonicalUserLanguage: mockGetCanonicalUserLanguage,
   resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
@@ -112,6 +114,7 @@ describe('T120: End-to-End Chat Flow', () => {
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
     mockResolveCanonicalUser.mockResolvedValue({});
+    mockGetCanonicalUserLanguage.mockResolvedValue(undefined);
   });
 
   it('POST /api/chat returns a valid sessionId and assistant response', async () => {

@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
-import { resolveCanonicalUser } from '@/lib/users/canonical-user';
+import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
@@ -72,7 +72,11 @@ export async function POST(request: Request) {
     const message = sanitizeInput(parsed.data.message);
     const sessionId = rawSessionId ?? crypto.randomUUID();
     const sessionLanguage = await getSessionLanguage(rawSessionId);
-    const language = resolveLanguage({ explicit: rawLanguage, sessionLanguage });
+    const userLanguage = await getCanonicalUserLanguage(rawUserId);
+    const language = resolveLanguage({
+      explicit: rawLanguage,
+      sessionLanguage: sessionLanguage ?? userLanguage,
+    });
     const canonicalUser = await resolveCanonicalUser({
       sessionId,
       externalUserId: rawUserId,

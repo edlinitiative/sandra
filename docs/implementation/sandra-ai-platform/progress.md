@@ -65,6 +65,7 @@
 - Linked existing and new sessions to canonical users during both standard and streaming chat requests
 - Promoted session continuity insights into durable user memory when a session becomes associated with a canonical user
 - Added a browser-level anonymous identity hook so cross-session memory works on the web client before real auth ships
+- Added server-side language fallback from canonical user preferences so new sessions can reuse the stored language before any new session metadata exists
 - Expanded unit, API, chat UI, and end-to-end coverage for canonical user resolution and identity-aware chat routing
 **Discoveries:**
 - The app already had enough `User`, `Session`, and `Memory` primitives to support identity-linked continuity without a schema migration
