@@ -12,6 +12,7 @@ export interface ChatMessage {
 export interface SendMessageParams {
   message: string;
   sessionId?: string;
+  userId?: string;
   language?: 'en' | 'fr' | 'ht';
 }
 
@@ -26,6 +27,7 @@ export interface SendMessageResult {
 export interface StreamMessageParams {
   message: string;
   sessionId?: string;
+  userId?: string;
   language?: 'en' | 'fr' | 'ht';
 }
 

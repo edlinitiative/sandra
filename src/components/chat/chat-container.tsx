@@ -8,6 +8,7 @@ import { TypingIndicator } from './typing-indicator';
 import { StreamingMessage } from './streaming-message';
 import { LanguageSelector } from './language-selector';
 import { useSession } from '@/hooks/useSession';
+import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { streamMessage, getConversation } from '@/lib/client';
 
 type Language = 'en' | 'fr' | 'ht';
@@ -29,6 +30,7 @@ export function ChatContainer() {
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const streamBufferRef = useRef('');
   const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
+  const { userId } = useUserIdentity();
   const [newSessionId] = useState(() => crypto.randomUUID());
   const sessionId = storedSessionId ?? newSessionId;
   const [language, setLanguageState] = useState<Language>('en');
@@ -108,7 +110,7 @@ export function ChatContainer() {
 
     try {
       const result = await streamMessage(
-        { message: content, sessionId, language },
+        { message: content, sessionId, userId: userId ?? undefined, language },
         (token) => {
           streamBufferRef.current += token;
           setStreamingContent(streamBufferRef.current);

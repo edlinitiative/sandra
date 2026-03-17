@@ -128,6 +128,25 @@ export async function refreshConversationSummary(sessionId: string): Promise<voi
   });
 }
 
+export async function promoteSessionInsightsToUserMemory(
+  sessionId: string,
+  userId: string,
+): Promise<void> {
+  const store = getPrismaSessionStore();
+  const session = await store.getSession(sessionId).catch(() => null);
+
+  if (!session) {
+    return;
+  }
+
+  const continuity = readSessionContinuity(session.metadata);
+  if (!continuity.profile) {
+    return;
+  }
+
+  await persistUserInsights(userId, continuity.profile);
+}
+
 export function extractSessionProfile(
   message: string,
   language: SupportedLanguage,

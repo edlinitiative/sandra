@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
+import { resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
@@ -63,16 +64,27 @@ export async function POST(request: Request) {
       return NextResponse.json(envelope, { status });
     }
 
-    const { sessionId: rawSessionId, language: rawLanguage } = parsed.data;
+    const {
+      sessionId: rawSessionId,
+      userId: rawUserId,
+      language: rawLanguage,
+    } = parsed.data;
     const message = sanitizeInput(parsed.data.message);
     const sessionId = rawSessionId ?? crypto.randomUUID();
     const sessionLanguage = await getSessionLanguage(rawSessionId);
     const language = resolveLanguage({ explicit: rawLanguage, sessionLanguage });
+    const canonicalUser = await resolveCanonicalUser({
+      sessionId,
+      externalUserId: rawUserId,
+      language,
+      channel: 'web',
+    });
 
     await ensureSessionContinuity({
       sessionId,
       channel: 'web',
       language,
+      userId: canonicalUser.userId,
     });
 
     // Demo mode: return canned response when API key is not configured
@@ -96,6 +108,7 @@ export async function POST(request: Request) {
     const result = await runSandraAgent({
       message,
       sessionId,
+      userId: canonicalUser.userId,
       language,
       channel: 'web',
     });

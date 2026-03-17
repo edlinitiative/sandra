@@ -17,6 +17,7 @@
 - Knowledge retrieval is platform-aware, path-aware, and grounded in indexed repository content before using curated fallbacks.
 - Sandra tool handlers for courses, initiatives, and programs now prefer indexed repo knowledge.
 - Streaming chat now preserves assistant tool-call state, emits stable terminal metadata, and persists the final assistant response for refresh/session continuity.
+- Stable browser identities now resolve to canonical `User` records, link sessions across reloads, and promote session insights into durable cross-session user memory.
 - Typecheck regressions caused by stale stream contract expectations have been fixed.
 
 ### Release Gate Result
@@ -55,3 +56,21 @@
 - `npm test`: passing
 - `npm run build`: passing
 **Next:** Execute `docs/releases/v2_signoff.md`, complete product/operator signoff, then begin memory/auth foundation planning
+
+### Session 2 — 2026-03-17
+
+**Goal:** Turn session-scoped continuity into durable cross-session user memory
+**Completed:**
+- Added canonical user resolution from stable browser `userId` values via `User.externalId`
+- Linked existing and new sessions to canonical users during both standard and streaming chat requests
+- Promoted session continuity insights into durable user memory when a session becomes associated with a canonical user
+- Added a browser-level anonymous identity hook so cross-session memory works on the web client before real auth ships
+- Expanded unit, API, chat UI, and end-to-end coverage for canonical user resolution and identity-aware chat routing
+**Discoveries:**
+- The app already had enough `User`, `Session`, and `Memory` primitives to support identity-linked continuity without a schema migration
+- Cross-session memory only becomes real in practice once the browser sends a stable identity on every chat request
+**Quality:**
+- `npm run typecheck`: passing
+- `npm test`: passing
+- `npm run build`: passing
+**Next:** Add authenticated identity mapping and permission-aware session ownership on top of the new canonical user foundation

@@ -4,6 +4,12 @@ export type { CreateSessionInput, UpdateSessionInput } from './sessions';
 export { createMessage, getMessagesBySessionId } from './messages';
 export type { CreateMessageInput } from './messages';
 export {
+  getUserById,
+  getUserByExternalId,
+  resolveUserByExternalId,
+} from './users';
+export type { ResolveUserInput } from './users';
+export {
   getActiveRepos,
   getActiveRepoSummaries,
   getRepoByOwnerAndName,

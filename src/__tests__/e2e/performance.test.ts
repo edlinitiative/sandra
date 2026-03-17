@@ -36,6 +36,10 @@ const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() =>
   mockEnsureSessionContinuity: vi.fn(),
 }));
 
+const { mockResolveCanonicalUser } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+}));
+
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 vi.mock('@/lib/agents', () => ({
@@ -62,6 +66,10 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('@/lib/memory/session-continuity', () => ({
   getSessionLanguage: mockGetSessionLanguage,
   ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -101,6 +109,7 @@ describe('T128: Performance Baseline', () => {
     vi.clearAllMocks();
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
     mockRepoRegistryCount
       .mockResolvedValueOnce(4)
       .mockResolvedValueOnce(4)

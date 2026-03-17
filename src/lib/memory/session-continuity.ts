@@ -44,10 +44,21 @@ export async function ensureSessionContinuity(params: {
       return;
     }
 
+    const updates: {
+      language?: SupportedLanguage;
+      userId?: string;
+    } = {};
+
     if (existing.language !== params.language) {
-      await store.updateSession(params.sessionId, {
-        language: params.language,
-      });
+      updates.language = params.language;
+    }
+
+    if (params.userId && existing.userId !== params.userId) {
+      updates.userId = params.userId;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await store.updateSession(params.sessionId, updates);
     }
   } catch (error) {
     log.warn('Failed to ensure session continuity metadata', {

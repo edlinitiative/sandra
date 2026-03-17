@@ -3,6 +3,7 @@ import { runSandraAgentStream } from '@/lib/agents';
 import { generateFollowUps } from '@/lib/agents/follow-ups';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
+import { resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { env } from '@/lib/config';
 
 const chatRequestSchema = z.object({
@@ -46,16 +47,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { message, userId, channel } = parsed.data;
+    const { message, userId: rawUserId, channel } = parsed.data;
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
     const sessionLanguage = await getSessionLanguage(parsed.data.sessionId);
     const language = resolveLanguage({ explicit: parsed.data.language, sessionLanguage });
+    const canonicalUser = await resolveCanonicalUser({
+      sessionId,
+      externalUserId: rawUserId,
+      language,
+      channel,
+    });
 
     await ensureSessionContinuity({
       sessionId,
       channel,
       language,
-      userId,
+      userId: canonicalUser.userId,
     });
 
     const encoder = new TextEncoder();
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
           for await (const event of runSandraAgentStream({
             message,
             sessionId,
-            userId,
+            userId: canonicalUser.userId,
             language,
             channel,
           })) {

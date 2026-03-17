@@ -11,6 +11,10 @@ const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() =>
   mockEnsureSessionContinuity: vi.fn(),
 }));
 
+const { mockResolveCanonicalUser } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+}));
+
 vi.mock('@/lib/agents', () => ({
   runSandraAgent: mockRunSandraAgent,
   runSandraAgentStream: vi.fn(),
@@ -29,6 +33,10 @@ vi.mock('@/lib/i18n', () => ({
 vi.mock('@/lib/memory/session-continuity', () => ({
   getSessionLanguage: mockGetSessionLanguage,
   ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -55,6 +63,7 @@ describe('POST /api/chat', () => {
     vi.clearAllMocks();
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
   });
 
   it('returns 200 with success envelope for valid message', async () => {
@@ -155,6 +164,35 @@ describe('POST /api/chat', () => {
     );
     expect(mockEnsureSessionContinuity).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId, language: 'fr', channel: 'web' }),
+    );
+  });
+
+  it('passes the canonical userId through continuity and agent execution', async () => {
+    const sessionId = crypto.randomUUID();
+    mockResolveCanonicalUser.mockResolvedValue({ userId: 'user_123' });
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Reply',
+      language: 'en',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const response = await POST(makeRequest({ message: 'Hello', sessionId, userId: 'web:anon-123' }));
+
+    expect(response.status).toBe(200);
+    expect(mockResolveCanonicalUser).toHaveBeenCalledWith({
+      sessionId,
+      externalUserId: 'web:anon-123',
+      language: 'en',
+      channel: 'web',
+    });
+    expect(mockEnsureSessionContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, userId: 'user_123' }),
+    );
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, userId: 'user_123' }),
     );
   });
 

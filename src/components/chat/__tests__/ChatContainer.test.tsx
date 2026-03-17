@@ -33,6 +33,12 @@ vi.mock('@/hooks/useSession', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useUserIdentity', () => ({
+  useUserIdentity: () => ({
+    userId: 'web:test-user-123',
+  }),
+}));
+
 import { streamMessage, getConversation } from '@/lib/client';
 
 const mockStreamMessage = vi.mocked(streamMessage);
@@ -104,6 +110,22 @@ describe('ChatContainer', () => {
 
     await waitFor(() => {
       expect(textarea.value).toBe('');
+    });
+  });
+
+  it('sends the stable browser userId with stream requests', async () => {
+    const { ChatContainer } = await import('../chat-container');
+    render(<ChatContainer />);
+
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'Remember me' } });
+    fireEvent.submit(textarea.closest('form')!);
+
+    await waitFor(() => {
+      expect(mockStreamMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'web:test-user-123' }),
+        expect.any(Function),
+      );
     });
   });
 });

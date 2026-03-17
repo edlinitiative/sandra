@@ -20,6 +20,11 @@ export const chatInputSchema = z.object({
     .uuid('Invalid session ID format')
     .optional()
     .describe('Optional existing session ID'),
+  userId: z
+    .string()
+    .min(1, 'User ID cannot be empty')
+    .optional()
+    .describe('Optional stable external user identifier'),
   language: z
     .enum(['en', 'fr', 'ht'])
     .optional()

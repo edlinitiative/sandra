@@ -29,10 +29,12 @@ describe('chatInputSchema', () => {
     const result = chatInputSchema.parse({
       message: 'hello',
       sessionId: '123e4567-e89b-12d3-a456-426614174000',
+      userId: 'web:test-user-123',
       language: 'fr',
     });
     expect(result.language).toBe('fr');
     expect(result.sessionId).toBe('123e4567-e89b-12d3-a456-426614174000');
+    expect(result.userId).toBe('web:test-user-123');
   });
 
   it('rejects empty message', () => {

@@ -28,6 +28,10 @@ const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() =>
   mockEnsureSessionContinuity: vi.fn(),
 }));
 
+const { mockResolveCanonicalUser } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+}));
+
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 vi.mock('@/lib/agents', () => ({
@@ -54,6 +58,10 @@ vi.mock('@/lib/config', () => ({
 vi.mock('@/lib/memory/session-continuity', () => ({
   getSessionLanguage: mockGetSessionLanguage,
   ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -85,6 +93,7 @@ describe('T123: Error Handling Verification', () => {
     mockGetSession.mockResolvedValue(null);
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
   });
 
   describe('POST /api/chat error cases', () => {

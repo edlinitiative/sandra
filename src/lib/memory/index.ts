@@ -13,6 +13,7 @@ export {
   getSessionContinuityContext,
   rememberConversationInsights,
   refreshConversationSummary,
+  promoteSessionInsightsToUserMemory,
   extractSessionProfile,
   buildConversationSummary,
 } from './session-insights';

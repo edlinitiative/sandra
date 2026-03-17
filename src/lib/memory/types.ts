@@ -59,7 +59,13 @@ export interface ISessionStore {
 
   updateSession(
     sessionId: string,
-    updates: { title?: string; language?: string; isActive?: boolean; metadata?: Record<string, unknown> },
+    updates: {
+      title?: string;
+      language?: string;
+      isActive?: boolean;
+      userId?: string;
+      metadata?: Record<string, unknown>;
+    },
   ): Promise<Session>;
 
   addMessage(params: {
