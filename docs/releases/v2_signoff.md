@@ -8,6 +8,16 @@ Use this document when deciding whether the stable web/admin product is ready to
 When older planning docs disagree with this checklist, update the older docs rather than
 changing the release truth here.
 
+## Current Signoff State
+
+- Automated contract, routing, grounding, admin, and continuity checks are passing.
+- Validation gates are green: `npm test`, `npx tsc --noEmit`, and `npm run build`.
+- V2 is ready for final human signoff.
+- Remaining work is human verification, not known engineering rework:
+  - review benchmark answers in the live chat UI
+  - perform operator QA in the admin dashboard
+  - confirm the empty-state starter prompts feel right for the launch
+
 ## V2 Contract Freeze
 
 ### Public Chat

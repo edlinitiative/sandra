@@ -3,7 +3,7 @@
 ## Current Status
 
 - **Release focus:** Stable V1 hardening plus V2 delivery for grounded answers, retrieval quality, admin reliability, and streaming continuity.
-- **Status:** Release candidate validated
+- **Status:** Ready for final human signoff
 - **Last updated:** 2026-03-17
 - **Quality gates:** `npm run typecheck`, `npm test`, and `npm run build` passing.
 
@@ -18,6 +18,7 @@
 - Sandra tool handlers for courses, initiatives, and programs now prefer indexed repo knowledge.
 - Streaming chat now preserves assistant tool-call state, emits stable terminal metadata, and persists the final assistant response for refresh/session continuity.
 - Stable browser identities now resolve to canonical `User` records, link sessions across reloads, and promote session insights into durable cross-session user memory.
+- Chat empty-state prompts now reflect the actual V2 benchmark journeys for courses, programs, leadership, and beginner onboarding.
 - Typecheck regressions caused by stale stream contract expectations have been fixed.
 
 ### Release Gate Result
