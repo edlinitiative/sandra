@@ -1,6 +1,19 @@
-import type { VectorStore, EmbeddedChunk, SearchResult, DocumentChunk } from './types';
+import type {
+  VectorStore,
+  EmbeddedChunk,
+  SearchResult,
+  DocumentChunk,
+  KnowledgeSearchFilter,
+} from './types';
 import { DEFAULT_TOP_K } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
+import {
+  computePathPriority,
+  inferContentTypeFromChunk,
+  inferPlatformFromChunk,
+  metadataNumber,
+  metadataString,
+} from './platform-metadata';
 
 const log = createLogger('knowledge:vectorstore');
 
@@ -27,17 +40,15 @@ export class InMemoryVectorStore implements VectorStore {
     log.info(`Upserted ${chunks.length} chunks, total=${this.entries.length}`);
   }
 
-  async search(query: number[], topK?: number, filter?: Record<string, unknown>): Promise<SearchResult[]> {
+  async search(query: number[], topK?: number, filter?: KnowledgeSearchFilter): Promise<SearchResult[]> {
     const k = topK ?? DEFAULT_TOP_K;
 
     let candidates = this.entries;
-    if (filter?.sourceId) {
-      candidates = candidates.filter((e) => e.sourceId === filter.sourceId);
-    }
+    candidates = candidates.filter((entry) => matchesFilter(entry, filter));
 
     const scored = candidates.map((entry) => ({
       chunk: stripEmbedding(entry),
-      score: cosineSimilarity(query, entry.embedding),
+      score: boostedSimilarity(query, entry, filter),
     }));
 
     scored.sort((a, b) => b.score - a.score);
@@ -65,6 +76,80 @@ export class InMemoryVectorStore implements VectorStore {
 function stripEmbedding(chunk: EmbeddedChunk): DocumentChunk {
   const { embedding: _embedding, ...rest } = chunk;
   return rest;
+}
+
+function matchesFilter(entry: EmbeddedChunk, filter?: KnowledgeSearchFilter): boolean {
+  if (!filter) return true;
+
+  if (filter.sourceId && entry.sourceId !== filter.sourceId) {
+    return false;
+  }
+
+  const metadata = entry.metadata;
+  const repo = metadataString(metadata, 'repo') ?? entry.sourceId;
+  if (filter.repo && repo.toLowerCase() !== filter.repo.toLowerCase()) {
+    return false;
+  }
+
+  const platform = inferPlatformFromChunk({
+    sourceId: entry.sourceId,
+    title: entry.title,
+    path: entry.path,
+    metadata,
+  });
+  if (filter.platform && platform !== filter.platform) {
+    return false;
+  }
+
+  const contentType = inferContentTypeFromChunk({
+    path: entry.path,
+    content: entry.content,
+    metadata,
+    platform,
+  });
+
+  if (filter.contentType) {
+    const expected = Array.isArray(filter.contentType)
+      ? filter.contentType
+      : [filter.contentType];
+    if (!expected.includes(contentType)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function boostedSimilarity(
+  query: number[],
+  entry: EmbeddedChunk,
+  filter?: KnowledgeSearchFilter,
+): number {
+  const similarity = cosineSimilarity(query, entry.embedding);
+  const metadata = entry.metadata;
+  const preferredPaths = filter?.preferPaths ?? [];
+  const path = (entry.path ?? '').toLowerCase();
+  const preferPathBoost = preferredPaths.some((preferredPath) =>
+    path.includes(preferredPath.toLowerCase()),
+  )
+    ? 0.18
+    : 0;
+  const pathPriority =
+    metadataNumber(metadata, 'pathPriority') ??
+    computePathPriority(entry.path, inferContentTypeFromChunk({
+      path: entry.path,
+      content: entry.content,
+      metadata,
+      platform: inferPlatformFromChunk({
+        sourceId: entry.sourceId,
+        title: entry.title,
+        path: entry.path,
+        metadata,
+      }),
+    }));
+  const pathPriorityBoost = pathPriority * 0.025;
+
+  return similarity + preferPathBoost + pathPriorityBoost;
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {

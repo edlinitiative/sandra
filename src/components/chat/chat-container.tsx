@@ -4,43 +4,73 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './chat-message';
 import { ChatInput } from './chat-input';
 import { ChatEmptyState } from './chat-empty-state';
+import { TypingIndicator } from './typing-indicator';
+import { StreamingMessage } from './streaming-message';
+import { LanguageSelector } from './language-selector';
 import { useSession } from '@/hooks/useSession';
-import { getConversation } from '@/lib/client';
+import { useUserIdentity } from '@/hooks/useUserIdentity';
+import { streamMessage, getConversation } from '@/lib/client';
 
-const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'ht', label: 'Kreyòl Ayisyen', flag: '🇭🇹' },
-] as const;
+type Language = 'en' | 'fr' | 'ht';
+
+const LANG_KEY = 'sandra_language';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  followUps?: string[];
 }
 
 export function ChatContainer() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const streamBufferRef = useRef('');
   const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
+  const { userId } = useUserIdentity();
   const [newSessionId] = useState(() => crypto.randomUUID());
   const sessionId = storedSessionId ?? newSessionId;
-  const [language, setLanguage] = useState<string>(() => {
-    if (typeof navigator !== 'undefined') {
-      const browserLang = navigator.language?.slice(0, 2);
-      if (['en', 'fr', 'ht'].includes(browserLang)) return browserLang;
-    }
-    return 'en';
-  });
+  const [language, setLanguageState] = useState<Language>('en');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Read language preference from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LANG_KEY) as Language | null;
+      if (stored && (['en', 'fr', 'ht'] as string[]).includes(stored)) {
+        setLanguageState(stored);
+      } else if (typeof navigator !== 'undefined') {
+        const browserLang = navigator.language?.slice(0, 2) as Language;
+        if ((['en', 'fr', 'ht'] as string[]).includes(browserLang)) {
+          setLanguageState(browserLang);
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restore conversation history on mount when a persisted session exists
   useEffect(() => {
     if (!storedSessionId) return;
     getConversation(storedSessionId)
       .then((data) => {
+        if (data.language && (['en', 'fr', 'ht'] as string[]).includes(data.language)) {
+          try {
+            const storedLanguage = localStorage.getItem(LANG_KEY);
+            if (!storedLanguage) {
+              localStorage.setItem(LANG_KEY, data.language);
+              setLanguageState(data.language as Language);
+            }
+          } catch {
+            setLanguageState(data.language as Language);
+          }
+        }
+
         const restored: Message[] = data.messages.map((m) => ({
           id: crypto.randomUUID(),
           role: m.role,
@@ -50,11 +80,10 @@ export function ChatContainer() {
         setMessages(restored);
       })
       .catch(() => {
-        // Session expired or not found — clear stale ID so a new one is generated
         clearSession();
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,7 +91,7 @@ export function ChatContainer() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, streamingContent, scrollToBottom]);
 
   const handleSend = async (content: string) => {
     setError(null);
@@ -76,43 +105,41 @@ export function ChatContainer() {
 
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    streamBufferRef.current = '';
+    setStreamingContent(null);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: content,
-          sessionId,
-          language,
-          channel: 'web',
-        }),
-      });
+      const result = await streamMessage(
+        { message: content, sessionId, userId: userId ?? undefined, language },
+        (token) => {
+          streamBufferRef.current += token;
+          setStreamingContent(streamBufferRef.current);
+        },
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message ?? 'Failed to get response');
-      }
+      const finalContent = streamBufferRef.current;
+      setStreamingContent(null);
+      streamBufferRef.current = '';
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.data.response,
+        content: finalContent || result.response || 'No response received.',
         timestamp: new Date().toISOString(),
+        followUps: result.suggestedFollowUps ?? [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Persist session ID after first successful exchange
-      if (!storedSessionId) {
-        setSessionId(newSessionId);
+      if (!storedSessionId && result.sessionId) {
+        setSessionId(result.sessionId);
       }
     } catch (err) {
+      setStreamingContent(null);
+      streamBufferRef.current = '';
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
 
-      // Add error message as assistant response
       setMessages((prev) => [
         ...prev,
         {
@@ -131,28 +158,12 @@ export function ChatContainer() {
     <div className="flex h-full flex-col">
       {/* Language selector bar */}
       <div className="flex items-center justify-end border-b border-gray-100 bg-white/80 px-4 py-2 backdrop-blur">
-        <div className="flex items-center gap-1.5">
-          {LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => setLanguage(lang.code)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                language === lang.code
-                  ? 'bg-sandra-100 text-sandra-800 shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-              }`}
-              title={lang.label}
-            >
-              <span className="mr-1">{lang.flag}</span>
-              {lang.code.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <LanguageSelector language={language} onChange={setLanguageState} />
       </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} />
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
@@ -162,11 +173,12 @@ export function ChatContainer() {
                 role={msg.role}
                 content={msg.content}
                 timestamp={msg.timestamp}
+                followUps={msg.followUps}
+                onFollowUp={handleSend}
               />
             ))}
-            {isLoading && (
-              <ChatMessage role="assistant" content="" isLoading />
-            )}
+            {isLoading && streamingContent === null && <TypingIndicator />}
+            {streamingContent !== null && <StreamingMessage content={streamingContent} />}
             <div ref={messagesEndRef} />
           </div>
         )}

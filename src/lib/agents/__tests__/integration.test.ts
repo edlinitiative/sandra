@@ -32,15 +32,29 @@ vi.mock('@/lib/ai', () => ({
 
 vi.mock('@/lib/memory/session-store', () => ({
   getSessionStore: () => mockSessionStore,
+  getPrismaSessionStore: () => ({
+    addMessage: vi.fn().mockResolvedValue(undefined),
+    loadContext: vi.fn().mockResolvedValue([]),
+  }),
 }));
 
 vi.mock('@/lib/memory/user-memory', () => ({
   getUserMemoryStore: () => ({ getMemorySummary: vi.fn().mockResolvedValue('') }),
 }));
 
+vi.mock('@/lib/memory/session-insights', () => ({
+  getSessionContinuityContext: vi.fn().mockResolvedValue({
+    memorySummary: '',
+    conversationSummary: '',
+  }),
+  rememberConversationInsights: vi.fn().mockResolvedValue(undefined),
+  refreshConversationSummary: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/knowledge', () => ({
   retrieveContext: vi.fn().mockResolvedValue([]),
   formatRetrievalContext: vi.fn().mockReturnValue(''),
+  inferKnowledgeQueryContext: vi.fn().mockReturnValue({ minScore: 0.2 }),
 }));
 
 vi.mock('@/lib/tools', () => ({

@@ -6,13 +6,39 @@ const { mockRunSandraAgent } = vi.hoisted(() => ({
   mockRunSandraAgent: vi.fn(),
 }));
 
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
+const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+  mockGetCanonicalUserLanguage: vi.fn(),
+}));
+
 vi.mock('@/lib/agents', () => ({
   runSandraAgent: mockRunSandraAgent,
   runSandraAgentStream: vi.fn(),
 }));
 
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
+}));
+
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  getCanonicalUserLanguage: mockGetCanonicalUserLanguage,
+  resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -37,6 +63,10 @@ function makeRequest(body: unknown): Request {
 describe('POST /api/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
+    mockGetCanonicalUserLanguage.mockResolvedValue(undefined);
   });
 
   it('returns 200 with success envelope for valid message', async () => {
@@ -114,6 +144,79 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(200);
     expect(body.data.sessionId).toBe(sessionId);
+  });
+
+  it('falls back to persisted session language when no explicit language is provided', async () => {
+    const sessionId = crypto.randomUUID();
+    mockGetSessionLanguage.mockResolvedValue('fr');
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Bonjour!',
+      language: 'fr',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const request = makeRequest({ message: 'Hello', sessionId });
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, language: 'fr' }),
+    );
+    expect(mockEnsureSessionContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, language: 'fr', channel: 'web' }),
+    );
+  });
+
+  it('passes the canonical userId through continuity and agent execution', async () => {
+    const sessionId = crypto.randomUUID();
+    mockResolveCanonicalUser.mockResolvedValue({ userId: 'user_123' });
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Reply',
+      language: 'en',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const response = await POST(makeRequest({ message: 'Hello', sessionId, userId: 'web:anon-123' }));
+
+    expect(response.status).toBe(200);
+    expect(mockResolveCanonicalUser).toHaveBeenCalledWith({
+      sessionId,
+      externalUserId: 'web:anon-123',
+      language: 'en',
+      channel: 'web',
+    });
+    expect(mockEnsureSessionContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, userId: 'user_123' }),
+    );
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId, userId: 'user_123' }),
+    );
+  });
+
+  it('uses the stored canonical user language for a brand-new session', async () => {
+    mockGetCanonicalUserLanguage.mockResolvedValue('ht');
+    mockRunSandraAgent.mockResolvedValue({
+      response: 'Bonjou!',
+      language: 'ht',
+      toolsUsed: [],
+      retrievalUsed: false,
+      tokenUsage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+    });
+
+    const { POST } = await import('../chat/route');
+    const response = await POST(makeRequest({ message: 'Hello', userId: 'web:anon-123' }));
+
+    expect(response.status).toBe(200);
+    expect(mockGetCanonicalUserLanguage).toHaveBeenCalledWith('web:anon-123');
+    expect(mockRunSandraAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'ht' }),
+    );
   });
 
   it('returns 500 when agent throws an unexpected error', async () => {

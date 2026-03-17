@@ -38,6 +38,31 @@ export interface SearchResult {
   embedding?: number[];
 }
 
+export type KnowledgePlatform = 'academy' | 'code' | 'news' | 'initiative';
+
+export type KnowledgeContentType =
+  | 'course'
+  | 'program'
+  | 'news'
+  | 'documentation'
+  | 'repo_readme'
+  | 'code'
+  | 'general';
+
+export interface KnowledgeSearchFilter {
+  sourceId?: string;
+  platform?: KnowledgePlatform | string;
+  repo?: string;
+  contentType?: KnowledgeContentType | KnowledgeContentType[] | string;
+  preferPaths?: string[];
+}
+
+export interface RetrieveContextOptions {
+  topK?: number;
+  minScore?: number;
+  filter?: KnowledgeSearchFilter;
+}
+
 /** Source types for indexed content */
 export type DocumentSourceType = 'github_repo' | 'website' | 'document' | 'manual';
 
@@ -58,7 +83,7 @@ export interface VectorStore {
   upsert(chunks: EmbeddedChunk[]): Promise<void>;
 
   /** Search for similar chunks */
-  search(query: number[], topK?: number, filter?: Record<string, unknown>): Promise<SearchResult[]>;
+  search(query: number[], topK?: number, filter?: KnowledgeSearchFilter): Promise<SearchResult[]>;
 
   /** Delete chunks by source ID */
   deleteBySource(sourceId: string): Promise<void>;

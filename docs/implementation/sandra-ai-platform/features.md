@@ -1,5 +1,9 @@
 # Sandra AI Platform Feature Registry
 
+> Historical planning note: this registry is useful for dependency tracing, but the
+> feature status fields below are not the current release truth. For current state,
+> use `progress.md` and `docs/releases/v2.md`.
+
 ## Overview
 
 12 features organized in 4 phases. Features must be built in dependency order.

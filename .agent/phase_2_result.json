@@ -1,32 +1,9 @@
 {
   "status": "completed",
-  "tasks_completed": ["T030", "T031", "T032", "T033", "T034", "T035", "T036", "T037", "T038", "T039", "T040", "T041", "T042", "T043", "T044", "T045", "T046"],
+  "tasks_completed": ["V2-P2"],
   "tests_passed": true,
   "files_changed": [
-    "src/lib/memory/session-store.ts",
-    "src/lib/memory/user-memory.ts",
-    "src/lib/memory/types.ts",
-    "src/lib/memory/__tests__/session-store.test.ts",
-    "src/lib/memory/__tests__/user-memory.test.ts",
-    "src/lib/tools/types.ts",
-    "src/lib/tools/registry.ts",
-    "src/lib/tools/executor.ts",
-    "src/lib/tools/search-knowledge.ts",
-    "src/lib/tools/lookup-repo.ts",
-    "src/lib/tools/get-initiatives.ts",
-    "src/lib/tools/__tests__/registry.test.ts",
-    "src/lib/tools/__tests__/executor.test.ts",
-    "src/lib/tools/__tests__/tools.test.ts",
-    "src/lib/knowledge/types.ts",
-    "src/lib/knowledge/chunker.ts",
-    "src/lib/knowledge/embeddings.ts",
-    "src/lib/knowledge/vector-store.ts",
-    "src/lib/knowledge/retrieval.ts",
-    "src/lib/knowledge/ingest.ts",
-    "src/lib/knowledge/__tests__/chunker.test.ts",
-    "src/lib/knowledge/__tests__/vector-store.test.ts",
-    "src/lib/knowledge/__tests__/retrieval.test.ts",
-    "src/lib/knowledge/__tests__/ingest.test.ts"
+    "src/lib/agents/__tests__/sandra.test.ts"
   ],
-  "notes": "All 17 Phase 2 tasks were pre-implemented. Verified: 309 tests passing (37 files), zero TypeScript errors, zero ESLint warnings. Session management (PrismaSessionStore + user memory), tool system (registry, executor, 3 MVP tools), and RAG pipeline (chunker, embeddings, InMemoryVectorStore, retrieval, ingest) all fully functional."
+  "notes": "Streaming agent and OpenAI provider were structurally correct. Phase 2 delivered 6 regression tests covering: (1) assistant toolCalls message precedes tool result messages in the second LLM call context, (2) token events from follow-up streams are yielded after tool execution, (3) session is persisted with final assistant response after tool flows, (4) multiple tool calls produce multiple tool_call and tool_result events, (5) tool execution failures feed error back to LLM without crashing the stream, (6) max iterations yields fallback message and done event. All 407 tests pass; tsc --noEmit and npm run build are clean."
 }

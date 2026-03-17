@@ -1,35 +1,12 @@
 {
   "status": "completed",
-  "tasks_completed": ["T090", "T091", "T092", "T093", "T094", "T096", "T097", "T098", "T099", "T100", "T101", "T102", "T103", "T104", "T105", "T106", "T107", "T108", "T109", "T111"],
+  "tasks_completed": ["V2-P4-A", "V2-P4-B", "V2-P4-C", "V2-P4-D"],
   "tests_passed": true,
+  "test_count": 432,
+  "test_files": 47,
   "files_changed": [
-    "src/lib/utils/api-helpers.ts",
-    "src/lib/utils/auth.ts",
-    "src/lib/utils/index.ts",
-    "src/lib/client/chat-api.ts",
-    "src/lib/client/index.ts",
-    "src/app/api/chat/route.ts",
-    "src/app/api/chat/stream/route.ts",
-    "src/app/api/conversations/[sessionId]/route.ts",
-    "src/app/api/health/route.ts",
-    "src/app/api/repos/route.ts",
-    "src/app/api/index/route.ts",
-    "src/app/api/__tests__/chat.test.ts",
-    "src/app/api/__tests__/health.test.ts",
-    "src/app/api/__tests__/conversations.test.ts",
-    "src/app/api/__tests__/repos.test.ts",
-    "src/app/api/__tests__/index.test.ts",
-    "src/components/chat/chat-container.tsx",
-    "src/components/chat/chat-input.tsx",
-    "src/components/chat/chat-message.tsx",
-    "src/components/chat/chat-empty-state.tsx",
-    "src/components/chat/index.ts",
-    "src/components/chat/__tests__/ChatContainer.test.tsx",
-    "src/components/chat/__tests__/MessageInput.test.tsx",
-    "src/components/chat/__tests__/EmptyState.test.tsx",
-    "src/hooks/useSession.ts",
-    "src/lib/agents/index.ts",
-    "src/lib/github/index.ts"
+    ".agent/impl_docs/progress.md",
+    ".agent/phase_4_result.json"
   ],
-  "notes": "All 20 Phase 4 tasks were pre-implemented. API layer (chat, stream, conversations, health, repos, index endpoints) with standard JSON envelopes and requestId tracking. Web chat UI (ChatContainer, ChatInput, ChatMessage with typing indicator, ChatEmptyState with localized suggestions, useSession hook for persistence). Admin endpoints with timing-safe API key auth. 309 tests passing across 37 test files. TypeScript and lint clean."
+  "notes": "Phase 4 is a validation-only phase — all implementation was completed in Phases 1-3. V2-P4-A: Full benchmark suite executed — 50 benchmark tests (25 routing-benchmark + 25 grounded-knowledge) all pass. V2-P4-B: Tool routing correctness verified — system prompts contain explicit course routing keywords, platform differentiation rules, and negative constraint (Do NOT use getEdLightInitiatives for course listings). V2-P4-C: Streaming stability confirmed — all 6 regression tests in sandra.test.ts pass covering message ordering, second-iteration tokens, session persistence, multiple tools, error handling, max iterations. V2-P4-D: Final gate — npm test 432/432 passing (47 files), npx tsc --noEmit zero errors, npm run build succeeds (11 static pages + 6 API routes)."
 }

@@ -62,12 +62,26 @@ describe('searchKnowledgeBase tool', () => {
     expect(data.results[0]?.score).toBe(0.92);
   });
 
-  it('calls retrieveContext with query and topK', async () => {
+  it('passes retrieval filters through to retrieveContext', async () => {
     mockRetrieve.mockResolvedValue([]);
 
-    await searchKnowledgeBase.handler({ query: 'hello', topK: 3 }, baseContext);
+    await searchKnowledgeBase.handler({
+      query: 'hello',
+      topK: 3,
+      platform: 'academy',
+      contentType: 'course',
+      preferPaths: ['docs/', 'courses/'],
+    }, baseContext);
 
-    expect(mockRetrieve).toHaveBeenCalledWith('hello', { topK: 3 });
+    expect(mockRetrieve).toHaveBeenCalledWith('hello', {
+      topK: 3,
+      filter: {
+        platform: 'academy',
+        repo: undefined,
+        contentType: 'course',
+        preferPaths: ['docs/', 'courses/'],
+      },
+    });
   });
 });
 

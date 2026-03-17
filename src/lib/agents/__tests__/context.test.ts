@@ -1,18 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Hoist mock functions so they're available in vi.mock factory
-const { mockGetContextMessages, mockGetMemorySummary, mockGetToolDefinitions } = vi.hoisted(() => ({
+const {
+  mockGetContextMessages,
+  mockGetToolDefinitions,
+  mockGetSessionContinuityContext,
+} = vi.hoisted(() => ({
   mockGetContextMessages: vi.fn(),
-  mockGetMemorySummary: vi.fn(),
   mockGetToolDefinitions: vi.fn(),
+  mockGetSessionContinuityContext: vi.fn(),
 }));
 
 vi.mock('@/lib/memory/session-store', () => ({
   getSessionStore: () => ({ getContextMessages: mockGetContextMessages }),
 }));
 
-vi.mock('@/lib/memory/user-memory', () => ({
-  getUserMemoryStore: () => ({ getMemorySummary: mockGetMemorySummary }),
+vi.mock('@/lib/memory/session-insights', () => ({
+  getSessionContinuityContext: mockGetSessionContinuityContext,
 }));
 
 vi.mock('@/lib/tools', () => ({
@@ -25,8 +29,11 @@ describe('assembleContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetContextMessages.mockResolvedValue([]);
-    mockGetMemorySummary.mockResolvedValue('');
     mockGetToolDefinitions.mockReturnValue([]);
+    mockGetSessionContinuityContext.mockResolvedValue({
+      memorySummary: '',
+      conversationSummary: '',
+    });
   });
 
   it('returns AgentContext with all three fields', async () => {
@@ -58,15 +65,21 @@ describe('assembleContext', () => {
   });
 
   it('includes memory summary in system prompt when userId provided', async () => {
-    mockGetMemorySummary.mockResolvedValue('User prefers French.');
+    mockGetSessionContinuityContext.mockResolvedValue({
+      memorySummary: 'User prefers French.',
+      conversationSummary: '',
+    });
 
     const ctx = await assembleContext({ sessionId: 's1', language: 'en', userId: 'u1' });
     expect(ctx.systemPrompt).toContain('User prefers French.');
   });
 
-  it('does not call user memory store when no userId', async () => {
+  it('loads session continuity context even when no userId is provided', async () => {
     await assembleContext({ sessionId: 's1', language: 'en' });
-    expect(mockGetMemorySummary).not.toHaveBeenCalled();
+    expect(mockGetSessionContinuityContext).toHaveBeenCalledWith({
+      sessionId: 's1',
+      userId: undefined,
+    });
   });
 
   it('returns empty history for unknown session', async () => {
@@ -79,5 +92,16 @@ describe('assembleContext', () => {
   it('includes language instruction in system prompt', async () => {
     const ctxFr = await assembleContext({ sessionId: 's1', language: 'fr' });
     expect(ctxFr.systemPrompt).toContain('French');
+  });
+
+  it('includes conversation summary in the system prompt when available', async () => {
+    mockGetSessionContinuityContext.mockResolvedValue({
+      memorySummary: '',
+      conversationSummary: 'Earlier conversation summary:\n- Earlier user questions/goals: Learn Python',
+    });
+
+    const ctx = await assembleContext({ sessionId: 's1', language: 'en' });
+    expect(ctx.systemPrompt).toContain('Earlier conversation summary');
+    expect(ctx.systemPrompt).toContain('Learn Python');
   });
 });
