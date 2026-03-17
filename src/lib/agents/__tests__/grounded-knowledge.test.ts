@@ -19,6 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import { getCourseInventory } from '@/lib/tools/get-courses';
 import { getEdLightInitiatives } from '@/lib/tools/get-initiatives';
+import { getProgramsAndScholarships } from '@/lib/tools/get-programs';
 import { buildSandraSystemPrompt, getSandraSystemPrompt } from '../prompts';
 import type { ToolContext } from '@/lib/tools/types';
 
@@ -57,6 +58,26 @@ type CourseData = {
   platformContext: string;
   courses: Course[];
   totalCourses: number;
+  grounding?: string;
+  note?: string;
+};
+
+type Program = {
+  name: string;
+  type: string;
+  description: string;
+  applicationUrl: string;
+  status: string;
+  sourcePath?: string;
+};
+
+type ProgramData = {
+  programs: Program[];
+  total: number;
+  types: string[];
+  grounding: string;
+  groundingSources: string[];
+  highlights: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -240,6 +261,98 @@ describe('Benchmark 4 — "What does EdLight Initiative do?" → grounded Initia
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getEdLightInitiatives');
     expect(prompt.toLowerCase()).toMatch(/initiative|leadership/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Benchmark 5: "What is EdLight News?" → grounded News answer
+// ---------------------------------------------------------------------------
+
+describe('Benchmark 5 — "What is EdLight News?" → grounded News answer', () => {
+  it('returns News data with category=news filter', async () => {
+    const result = await getEdLightInitiatives.handler({ category: 'news' }, ctx);
+    expect(result.success).toBe(true);
+    const data = result.data as InitiativeData;
+    expect(data.initiatives).toHaveLength(1);
+    expect(data.initiatives[0]?.name).toBe('EdLight News');
+  });
+
+  it('News description focuses on updates and announcements, not courses', async () => {
+    const result = await getEdLightInitiatives.handler({ category: 'news' }, ctx);
+    const data = result.data as InitiativeData;
+    const desc = data.initiatives[0]?.description ?? '';
+
+    expect(desc.toLowerCase()).toMatch(/news|announcement|update|community/);
+    expect(desc.toLowerCase()).not.toMatch(/leadership program/);
+  });
+
+  it('system prompt routes News questions to getEdLightInitiatives', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getEdLightInitiatives');
+    expect(prompt.toLowerCase()).toMatch(/what is edlight news|category='news'|news platform description/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Benchmark 6: "What scholarships or programs are available?" → programs tool
+// ---------------------------------------------------------------------------
+
+describe('Benchmark 6 — "What scholarships or programs are available?" → programs tool', () => {
+  it('returns leadership, scholarship, and internship program types', async () => {
+    const result = await getProgramsAndScholarships.handler({}, ctx);
+    expect(result.success).toBe(true);
+    const data = result.data as ProgramData;
+
+    expect(data.total).toBeGreaterThan(0);
+    expect(data.types).toContain('leadership');
+    expect(data.types).toContain('scholarship');
+    expect(data.types).toContain('internship');
+  });
+
+  it('includes named programs such as ESLP and scholarships', async () => {
+    const result = await getProgramsAndScholarships.handler({}, ctx);
+    const data = result.data as ProgramData;
+    const names = data.programs.map((program) => program.name);
+
+    expect(names.some((name) => /ESLP|Summer Leadership/i.test(name))).toBe(true);
+    expect(names.some((name) => /Scholarship|Award/i.test(name))).toBe(true);
+  });
+
+  it('returns application URLs and a grounding state for transparency', async () => {
+    const result = await getProgramsAndScholarships.handler({ type: 'leadership' }, ctx);
+    const data = result.data as ProgramData;
+
+    expect(data.grounding).toBeTruthy();
+    expect(data.programs.length).toBeGreaterThan(0);
+    expect(data.programs.every((program) => Boolean(program.applicationUrl))).toBe(true);
+  });
+
+  it('system prompt routes scholarship and ESLP questions to getProgramsAndScholarships', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getProgramsAndScholarships');
+    expect(prompt.toLowerCase()).toMatch(/scholarships|leadership programs|internships|eslp/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Benchmark 7: Grounding transparency when indexed data is thin or unavailable
+// ---------------------------------------------------------------------------
+
+describe('Benchmark 7 — grounding transparency', () => {
+  it('course inventory exposes grounding metadata and a note about answer provenance', async () => {
+    const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
+    const data = result.data as CourseData;
+
+    expect(data.grounding).toBeTruthy();
+    expect(data.note).toBeTruthy();
+  });
+
+  it('program inventory exposes grounding metadata for downstream honest answers', async () => {
+    const result = await getProgramsAndScholarships.handler({ type: 'scholarship' }, ctx);
+    const data = result.data as ProgramData;
+
+    expect(data.grounding).toBeTruthy();
+    expect(Array.isArray(data.groundingSources)).toBe(true);
   });
 });
 
