@@ -54,4 +54,4 @@
 - `npm run typecheck`: passing
 - `npm test`: passing
 - `npm run build`: passing
-**Next:** Product review, operator QA, and any final UX polish before release
+**Next:** Execute `docs/releases/v2_signoff.md`, complete product/operator signoff, then begin memory/auth foundation planning

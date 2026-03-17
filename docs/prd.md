@@ -1,5 +1,10 @@
 # Sandra — Product Requirements Document (PRD)
 
+> Planning note: this file is the long-range product vision. It is not the best source
+> for current delivery status or current API/runtime behavior. For the active release,
+> use `docs/releases/v2.md` and
+> `docs/implementation/sandra-ai-platform/progress.md`.
+
 Product: Sandra  
 Organization: EdLight Initiative  
 Type: AI Agent Platform  
