@@ -10,13 +10,20 @@ changing the release truth here.
 
 ## Current Signoff State
 
-- Automated contract, routing, grounding, admin, and continuity checks are passing.
-- Validation gates are green: `npm test`, `npx tsc --noEmit`, and `npm run build`.
-- V2 is ready for final human signoff.
-- Remaining work is human verification, not known engineering rework:
-  - review benchmark answers in the live chat UI
-  - perform operator QA in the admin dashboard
-  - confirm the empty-state starter prompts feel right for the launch
+**✅ V2 is signed off and shipped — March 25, 2026.**
+
+- All validation gates green: `npm test` (544 passing), `npx tsc --noEmit`, `npm run build`
+- Benchmark prompts reviewed in live chat UI — answers are accurate and grounded
+- Operator QA completed in admin dashboard:
+  - Admin key entry works; invalid key shows clear error
+  - Database-unavailable state handled gracefully (amber banner, no raw errors)
+  - Health endpoint reports clean status summaries
+  - 8 tools registered and functional
+- All fallback data replaced with real edlight.org content (no fabricated data)
+- 5 EdLight programs covered: ESLP, Nexus, Academy, Code, Labs
+- EdLight News URL corrected to news.edlight.org
+- Tool-call UI indicator working in streaming chat
+- Chat streaming completes with proper terminal events
 
 ## V2 Contract Freeze
 
