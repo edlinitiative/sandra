@@ -44,7 +44,7 @@ const INITIATIVES = [
     name: 'EdLight News',
     category: 'news',
     repo: 'edlinitiative/edlight-news',
-    url: 'https://www.edlightnews.com',
+    url: 'https://news.edlight.org',
     description:
       'News and updates platform for the EdLight community — publishes announcements, event coverage, program updates, external scholarship listings, and community stories from across the EdLight ecosystem.',
     focus: 'community news, announcements, and external scholarship curation',

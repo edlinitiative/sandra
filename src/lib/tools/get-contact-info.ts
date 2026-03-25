@@ -97,7 +97,7 @@ const PLATFORM_INFO: PlatformInfo[] = [
     name: 'EdLight News',
     platform: 'news',
     role: 'Community news hub — announcements, event coverage, program updates, external scholarship listings, and community stories',
-    website: 'https://www.edlightnews.com',
+    website: 'https://news.edlight.org',
     github: 'https://github.com/edlinitiative/edlight-news',
     applicationLink: null,
     contact: 'info@edlight.org',

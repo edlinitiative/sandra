@@ -58,7 +58,7 @@ const NEWS_ITEMS: NewsItem[] = [
     summary:
       'EdLight News has published its latest curated list of external scholarships and educational opportunities available to learners in Haiti and the Caribbean. EdLight does not offer its own scholarships, but EdLight News curates external opportunities. Visit EdLight News for details.',
     date: '2026-01-10',
-    url: 'https://www.edlightnews.com',
+    url: 'https://news.edlight.org/bourses',
     tags: ['scholarships', 'external opportunities', 'EdLight News'],
   },
   {
@@ -74,7 +74,7 @@ const NEWS_ITEMS: NewsItem[] = [
     title: 'EdLight Labs Surpasses 25 Digital Builds',
     category: 'community',
     summary:
-      'EdLight Labs has launched 25+ digital builds for schools, nonprofits, and startups across Haiti and the diaspora. With an average 8-week go-live timeline and 92% client retention, Labs continues to pair student developers with real-world client projects through its mentorship pipeline.',
+      'EdLight Labs has launched 25+ digital builds for schools, nonprofits, and startups across Haiti and the diaspora. Labs pairs student developers with real-world client projects through its mentorship pipeline.',
     date: '2025-12-10',
     url: 'https://www.edlight.org/labs',
     tags: ['Labs', 'digital products', 'innovation', 'mentorship'],
