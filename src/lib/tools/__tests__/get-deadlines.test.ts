@@ -110,13 +110,13 @@ describe('getProgramDeadlines tool — type filter', () => {
     expect(types.has('scholarship')).toBe(false);
   });
 
-  it('returns only internship deadlines when type=internship', async () => {
-    const result = await getProgramDeadlines.handler({ type: 'internship' }, ctx);
+  it('has no internship type — EdLight has no internship programs', async () => {
+    // EdLight only has ESLP (leadership); no internships exist
+    const result = await getProgramDeadlines.handler({ type: 'all' }, ctx);
     const data = result.data as DeadlineData;
-    expect(data.total).toBeGreaterThan(0);
-    for (const d of data.deadlines) {
-      expect(d.type).toBe('internship');
-    }
+    const types = new Set(data.deadlines.map((d) => d.type));
+    expect(types.has('internship')).toBe(false);
+    expect(types.has('leadership')).toBe(true);
   });
 });
 

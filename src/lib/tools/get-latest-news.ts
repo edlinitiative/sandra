@@ -89,15 +89,6 @@ const NEWS_ITEMS: NewsItem[] = [
     tags: ['ESLP', 'alumni', 'community impact', 'spotlight'],
   },
   {
-    title: 'EdLight Tech Internship — Accepting Applications for 2026',
-    category: 'program',
-    summary:
-      'EdLight is now accepting applications for its 2026 Tech Internship cohort. University students and recent graduates with programming or design skills can apply for a remote 2–4 month internship.',
-    date: '2025-11-15',
-    url: 'https://www.edlight.org/initiative',
-    tags: ['internship', 'Tech Internship', 'developers', 'applications'],
-  },
-  {
     title: 'EdLight Code Reaches 1,000 Enrolled Learners',
     category: 'community',
     summary:

@@ -4,10 +4,10 @@ import { toolRegistry } from './registry';
 
 const inputSchema = z.object({
   type: z
-    .enum(['leadership', 'internship', 'all'])
+    .enum(['leadership', 'all'])
     .optional()
     .default('all')
-    .describe("Filter by program type: 'leadership', 'internship', or 'all'"),
+    .describe("Filter by program type: 'leadership' or 'all'. Currently only ESLP (leadership) is available."),
   openOnly: z
     .boolean()
     .optional()
@@ -15,7 +15,7 @@ const inputSchema = z.object({
     .describe('When true (default), return only currently open or rolling programs'),
 });
 
-type ProgramType = 'leadership' | 'internship';
+type ProgramType = 'leadership';
 type DeadlineStatus = 'open' | 'closing-soon' | 'closed';
 type DeadlineUrgency = 'rolling' | 'seasonal' | 'imminent';
 
@@ -47,38 +47,6 @@ const DEADLINES: DeadlineEntry[] = [
     applicationUrl: 'https://www.edlight.org/initiative',
     urgency: 'seasonal',
   },
-  {
-    program: 'EdLight Community Builder Program',
-    type: 'leadership',
-    status: 'open',
-    deadline: 'Rolling admissions — apply any time',
-    deadlineDate: null,
-    cost: 'Free',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'rolling',
-  },
-
-  // ── Internships / Volunteering ───────────────────────────────────────────────
-  {
-    program: 'EdLight Tech Internship',
-    type: 'internship',
-    status: 'open',
-    deadline: 'Rolling applications — reviewed continuously',
-    deadlineDate: null,
-    cost: 'Free (unpaid internship)',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'rolling',
-  },
-  {
-    program: 'EdLight Content Volunteer Program',
-    type: 'internship',
-    status: 'open',
-    deadline: 'Rolling applications — start any time',
-    deadlineDate: null,
-    cost: 'Free (volunteer)',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'rolling',
-  },
 ];
 
 const getProgramDeadlines: SandraTool = {
@@ -90,8 +58,8 @@ const getProgramDeadlines: SandraTool = {
     properties: {
       type: {
         type: 'string',
-        description: "Filter by type: 'leadership', 'internship', or 'all'",
-        enum: ['leadership', 'internship', 'all'],
+        description: "Filter by type: 'leadership' or 'all'. Currently only ESLP (leadership) is available.",
+        enum: ['leadership', 'all'],
       },
       openOnly: {
         type: 'boolean',

@@ -298,15 +298,15 @@ describe('Benchmark 5 — "What is EdLight News?" → grounded News answer', () 
 // ---------------------------------------------------------------------------
 
 describe('Benchmark 6 — "What scholarships or programs are available?" → programs tool', () => {
-  it('returns leadership and internship program types (no scholarship — EdLight has none)', async () => {
+  it('returns only leadership programs — ESLP is the only real EdLight program', async () => {
     const result = await getProgramsAndScholarships.handler({}, ctx);
     expect(result.success).toBe(true);
     const data = result.data as ProgramData;
 
-    expect(data.total).toBeGreaterThan(0);
-    expect(data.types).toContain('leadership');
+    expect(data.total).toBe(1);
+    expect(data.types).toEqual(['leadership']);
     expect(data.types).not.toContain('scholarship');
-    expect(data.types).toContain('internship');
+    expect(data.types).not.toContain('internship');
   });
 
   it('includes named programs such as ESLP but no internal scholarships', async () => {
@@ -330,7 +330,7 @@ describe('Benchmark 6 — "What scholarships or programs are available?" → pro
   it('system prompt routes scholarship and ESLP questions to getProgramsAndScholarships', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getProgramsAndScholarships');
-    expect(prompt.toLowerCase()).toMatch(/scholarships|leadership programs|internships|eslp/i);
+    expect(prompt.toLowerCase()).toMatch(/leadership programs|eslp/i);
   });
 });
 

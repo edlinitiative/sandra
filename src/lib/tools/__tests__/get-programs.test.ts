@@ -67,13 +67,14 @@ describe('getProgramsAndScholarships tool', () => {
     expect(data.programs.some((program) => /Scholarship|Award/i.test(program.name))).toBe(false);
   });
 
-  it('filters fallback programs by type', async () => {
+  it('filters fallback programs by type — only leadership exists', async () => {
     const result = await getProgramsAndScholarships.handler({ type: 'leadership' }, ctx);
     const data = result.data as ProgramData;
 
-    expect(data.total).toBeGreaterThan(0);
+    expect(data.total).toBe(1);
     expect(data.types).toEqual(['leadership']);
     expect(data.programs.every((program) => program.type === 'leadership')).toBe(true);
+    expect(data.programs[0]?.name).toMatch(/ESLP|Summer Leadership/i);
   });
 
   it('surfaces indexed grounding data when a known program is found in repo knowledge', async () => {
