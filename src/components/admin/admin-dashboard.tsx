@@ -65,6 +65,7 @@ export function AdminDashboard() {
   const [adminKey, setAdminKey] = useState('');
   const [adminKeyDraft, setAdminKeyDraft] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [dbUnavailable, setDbUnavailable] = useState(false);
 
   // Test chat state
   const [testMessage, setTestMessage] = useState('');
@@ -120,9 +121,17 @@ export function AdminDashboard() {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message =
-        (json as { error?: { message?: string } })?.error?.message ??
-        'Admin request failed';
+      const errorBody = json as { error?: { code?: string; message?: string } };
+      const code = errorBody?.error?.code ?? '';
+      const message = errorBody?.error?.message ?? 'Admin request failed';
+
+      // Distinguish database connectivity errors from auth/other errors
+      if (response.status === 503 || code === 'DATABASE_UNAVAILABLE') {
+        const err = new Error(message);
+        (err as Error & { isDbError: boolean }).isDbError = true;
+        throw err;
+      }
+
       throw new Error(message);
     }
 
@@ -143,11 +152,19 @@ export function AdminDashboard() {
   async function loadData(key = adminKey) {
     setLoading(true);
     setAuthError(null);
+    setDbUnavailable(false);
     try {
       await Promise.all([loadHealth(), loadRepos(key)]);
     } catch (err) {
       setRepos([]);
-      setAuthError(err instanceof Error ? err.message : 'Failed to load admin data');
+      if (err instanceof Error && (err as Error & { isDbError?: boolean }).isDbError) {
+        // DB is down — key is still valid, just show a banner
+        setAdminKey(key);
+        try { sessionStorage.setItem(ADMIN_KEY_STORAGE, key); } catch { /* ignore */ }
+        setDbUnavailable(true);
+      } else {
+        setAuthError(err instanceof Error ? err.message : 'Failed to load admin data');
+      }
       setLoading(false);
     }
   }
@@ -172,13 +189,21 @@ export function AdminDashboard() {
       }
       await loadHealth();
     } catch (err) {
-      setAdminKey('');
-      setRepos([]);
-      setAuthError(err instanceof Error ? err.message : 'Invalid admin API key');
-      try {
-        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
-      } catch {
-        // Ignore storage errors
+      if (err instanceof Error && (err as Error & { isDbError?: boolean }).isDbError) {
+        // DB is down but key may be valid — store it and show a banner
+        setAdminKey(adminKeyDraft.trim());
+        try { sessionStorage.setItem(ADMIN_KEY_STORAGE, adminKeyDraft.trim()); } catch { /* ignore */ }
+        setDbUnavailable(true);
+        await loadHealth();
+      } else {
+        setAdminKey('');
+        setRepos([]);
+        setAuthError(err instanceof Error ? err.message : 'Invalid admin API key');
+        try {
+          sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+        } catch {
+          // Ignore storage errors
+        }
       }
       setLoading(false);
     }
@@ -189,6 +214,7 @@ export function AdminDashboard() {
     setAdminKeyDraft('');
     setRepos([]);
     setAuthError(null);
+    setDbUnavailable(false);
     try {
       sessionStorage.removeItem(ADMIN_KEY_STORAGE);
     } catch {
@@ -331,6 +357,23 @@ export function AdminDashboard() {
           {authError && <span>{authError}</span>}
         </div>
       </Card>
+
+      {/* Database unavailable banner */}
+      {dbUnavailable && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg">⚠️</span>
+            <div>
+              <p className="font-medium text-amber-800">Database unavailable</p>
+              <p className="mt-1 text-sm text-amber-700">
+                Sandra is running without a database connection. Chat and tools work normally using
+                built-in knowledge, but repository management and indexing require a running PostgreSQL
+                database.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Health Status */}
       {health && (

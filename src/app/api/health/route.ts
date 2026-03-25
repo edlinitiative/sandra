@@ -49,7 +49,9 @@ export async function GET() {
       5000,
     );
   } catch (err) {
-    checks.database = `error: ${err instanceof Error ? err.message : 'unknown'}`;
+    const msg = err instanceof Error ? err.message : 'unknown';
+    const isConnectionError = /Can't reach database server|Connection refused|ECONNREFUSED/i.test(msg);
+    checks.database = isConnectionError ? 'unavailable' : `error: ${msg}`;
   }
 
   // Vector store check

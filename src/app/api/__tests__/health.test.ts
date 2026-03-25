@@ -107,7 +107,7 @@ describe('GET /api/health', () => {
 
     expect(response.status).toBe(503);
     expect(body.status).toBe('degraded');
-    expect(body.checks.database).toContain('error');
+    expect(body.checks.database).toBe('unavailable');
     expect(body.checks.vectorStore).toBe('ok');
     expect(body.summary.repos.total).toBeNull();
   });
