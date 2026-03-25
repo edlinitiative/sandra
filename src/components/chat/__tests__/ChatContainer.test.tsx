@@ -47,7 +47,7 @@ const mockGetConversation = vi.mocked(getConversation);
 describe('ChatContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStreamMessage.mockImplementation(async (params, onToken) => {
+    mockStreamMessage.mockImplementation(async (params, onToken, _onToolCall) => {
       onToken('Hello ');
       onToken('from ');
       onToken('Sandra!');
@@ -125,7 +125,46 @@ describe('ChatContainer', () => {
       expect(mockStreamMessage).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'web:test-user-123' }),
         expect.any(Function),
+        expect.any(Function),
       );
+    });
+  });
+
+  it('shows tool-call indicator when a tool is invoked during streaming', async () => {
+    // Simulate a tool call happening before tokens arrive
+    mockStreamMessage.mockImplementation(async (_params, onToken, onToolCall) => {
+      onToolCall?.('getCourseInventory');
+      // Small delay to let React render the indicator
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      onToken('Here are the courses.');
+      return {
+        sessionId: 'session-123',
+        response: 'Here are the courses.',
+        toolsUsed: ['getCourseInventory'],
+        retrievalUsed: false,
+        suggestedFollowUps: [],
+      };
+    });
+
+    const { ChatContainer } = await import('../chat-container');
+    render(<ChatContainer />);
+
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'What courses are available?' } });
+    fireEvent.submit(textarea.closest('form')!);
+
+    // The onToolCall callback should be passed as the third argument
+    await waitFor(() => {
+      expect(mockStreamMessage).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Function),
+        expect.any(Function),
+      );
+    });
+
+    // Final response should render
+    await waitFor(() => {
+      expect(screen.getByText('Here are the courses.')).toBeInTheDocument();
     });
   });
 });

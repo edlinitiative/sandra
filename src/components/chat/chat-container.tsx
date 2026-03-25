@@ -28,6 +28,7 @@ export function ChatContainer() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const [activeToolCall, setActiveToolCall] = useState<string | null>(null);
   const streamBufferRef = useRef('');
   const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
   const { userId } = useUserIdentity();
@@ -107,18 +108,28 @@ export function ChatContainer() {
     setIsLoading(true);
     streamBufferRef.current = '';
     setStreamingContent(null);
+    setActiveToolCall(null);
 
     try {
       const result = await streamMessage(
         { message: content, sessionId, userId: userId ?? undefined, language },
         (token) => {
+          setActiveToolCall(null);
           streamBufferRef.current += token;
           setStreamingContent(streamBufferRef.current);
+        },
+        (toolName) => {
+          setActiveToolCall(toolName);
+          // Show the streaming bubble immediately so the tool indicator is visible
+          if (streamingContent === null && streamBufferRef.current === '') {
+            setStreamingContent('');
+          }
         },
       );
 
       const finalContent = streamBufferRef.current;
       setStreamingContent(null);
+      setActiveToolCall(null);
       streamBufferRef.current = '';
 
       const assistantMessage: Message = {
@@ -136,6 +147,7 @@ export function ChatContainer() {
       }
     } catch (err) {
       setStreamingContent(null);
+      setActiveToolCall(null);
       streamBufferRef.current = '';
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setError(message);
@@ -177,8 +189,10 @@ export function ChatContainer() {
                 onFollowUp={handleSend}
               />
             ))}
-            {isLoading && streamingContent === null && <TypingIndicator />}
-            {streamingContent !== null && <StreamingMessage content={streamingContent} />}
+            {isLoading && streamingContent === null && !activeToolCall && <TypingIndicator />}
+            {(streamingContent !== null || activeToolCall) && (
+              <StreamingMessage content={streamingContent ?? ''} activeToolCall={activeToolCall} />
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
