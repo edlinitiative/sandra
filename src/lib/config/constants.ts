@@ -39,12 +39,15 @@ export const DEFAULT_TOP_K = 5;
 /** Embedding dimension for text-embedding-3-small */
 export const EMBEDDING_DIMENSION = 1536;
 
-/** Supported EdLight platforms */
+/** Supported EdLight platforms and programs */
 export const EDLIGHT_PLATFORMS = [
   'EdLight Code',
   'EdLight Academy',
   'EdLight News',
   'EdLight Initiative',
+  'EdLight Nexus',
+  'EdLight Labs',
+  'ESLP',
 ] as const;
 
 export type EdLightPlatform = (typeof EDLIGHT_PLATFORMS)[number];

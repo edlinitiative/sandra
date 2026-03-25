@@ -45,25 +45,39 @@ describe('getCourseInventory tool — EdLight Academy courses', () => {
     expect(data.totalCourses).toBeGreaterThan(0);
   });
 
-  it('includes Excel course for Academy', async () => {
+  it('includes Maths course for Academy', async () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
     expect(titles.some((t) => t.includes('math'))).toBe(true);
   });
 
-  it('includes PowerPoint course for Academy', async () => {
+  it('includes Physics course for Academy', async () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
     expect(titles.some((t) => t.includes('physics'))).toBe(true);
   });
 
-  it('includes 3D design course for Academy', async () => {
+  it('includes Chemistry course for Academy', async () => {
     const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
-    expect(titles.some((t) => t.includes('economics') || t.includes('economy'))).toBe(true);
+    expect(titles.some((t) => t.includes('chemistry'))).toBe(true);
+  });
+
+  it('includes Economics course for Academy', async () => {
+    const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
+    const data = result.data as CourseData;
+    const titles = data.courses.map((c) => c.title.toLowerCase());
+    expect(titles.some((t) => t.includes('economics'))).toBe(true);
+  });
+
+  it('includes Languages & Communication course for Academy', async () => {
+    const result = await getCourseInventory.handler({ platform: 'academy' }, ctx);
+    const data = result.data as CourseData;
+    const titles = data.courses.map((c) => c.title.toLowerCase());
+    expect(titles.some((t) => t.includes('language'))).toBe(true);
   });
 });
 
@@ -76,25 +90,52 @@ describe('getCourseInventory tool — EdLight Code courses', () => {
     expect(data.totalCourses).toBeGreaterThan(0);
   });
 
-  it('includes Python course for Code', async () => {
+  it('includes Python track for Code', async () => {
     const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
     expect(titles.some((t) => t.includes('python'))).toBe(true);
   });
 
-  it('includes SQL course for Code', async () => {
+  it('includes SQL track for Code', async () => {
     const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
     expect(titles.some((t) => t.includes('sql'))).toBe(true);
   });
 
-  it('includes web development course for Code', async () => {
+  it('includes HTML track for Code', async () => {
     const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title.toLowerCase());
-    expect(titles.some((t) => t.includes('web'))).toBe(true);
+    expect(titles.some((t) => t.includes('html'))).toBe(true);
+  });
+
+  it('includes CSS track for Code', async () => {
+    const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
+    const data = result.data as CourseData;
+    const titles = data.courses.map((c) => c.title.toLowerCase());
+    expect(titles.some((t) => t.includes('css'))).toBe(true);
+  });
+
+  it('includes JavaScript track for Code', async () => {
+    const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
+    const data = result.data as CourseData;
+    const titles = data.courses.map((c) => c.title.toLowerCase());
+    expect(titles.some((t) => t.includes('javascript'))).toBe(true);
+  });
+
+  it('includes Terminal & Git track for Code', async () => {
+    const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
+    const data = result.data as CourseData;
+    const titles = data.courses.map((c) => c.title.toLowerCase());
+    expect(titles.some((t) => t.includes('terminal') || t.includes('git'))).toBe(true);
+  });
+
+  it('has 6 tracks total for Code', async () => {
+    const result = await getCourseInventory.handler({ platform: 'code' }, ctx);
+    const data = result.data as CourseData;
+    expect(data.totalCourses).toBe(6);
   });
 });
 

@@ -138,12 +138,12 @@ describe('getEdLightInitiatives tool', () => {
     expect(getEdLightInitiatives.requiredScopes).toContain('repos:read');
   });
 
-  it('returns all 4 initiatives when no category filter', async () => {
+  it('returns all 6 initiatives when no category filter', async () => {
     const result = await getEdLightInitiatives.handler({}, baseContext);
 
     expect(result.success).toBe(true);
     const data = result.data as { initiatives: Array<{ name: string }> };
-    expect(data.initiatives).toHaveLength(4);
+    expect(data.initiatives).toHaveLength(6);
   });
 
   it('filters by category: coding', async () => {
@@ -172,6 +172,6 @@ describe('getEdLightInitiatives tool', () => {
   it('includes totalPlatforms in response', async () => {
     const result = await getEdLightInitiatives.handler({}, baseContext);
     const data = result.data as { totalPlatforms: number };
-    expect(data.totalPlatforms).toBe(4);
+    expect(data.totalPlatforms).toBe(7);
   });
 });

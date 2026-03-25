@@ -31,71 +31,62 @@ type NewsItem = {
 
 /**
  * Curated fallback news catalogue used when the live knowledge index is not yet populated.
- * Sorted newest-first.
+ * Based on real information from edlight.org. Sorted newest-first.
  */
 const NEWS_ITEMS: NewsItem[] = [
   {
-    title: 'EdLight Summer Leadership Program 2026 — Applications Now Open',
+    title: 'EdLight Nexus — Barcelona Mobility Residency at ESADE Business School',
     category: 'program',
     summary:
-      'Applications for the ESLP 2026 cohort are open. Students and young professionals in Haiti aged 16–25 are encouraged to apply before the spring deadline. The program runs for 4–6 weeks and is completely free.',
+      'EdLight Nexus featured its Barcelona Mobility Residency at ESADE Business School, offering Haitian university students a 7-day immersive experience in one of Europe\'s top business schools. Since launch, 48 fellows from 10+ Haitian cities have participated across 6+ international destinations.',
     date: '2026-02-15',
-    url: 'https://www.edlight.org/news',
-    tags: ['ESLP', 'leadership', 'applications', 'Haiti'],
+    url: 'https://www.edlight.org/nexus',
+    tags: ['Nexus', 'exchange', 'Barcelona', 'ESADE', 'university'],
   },
   {
-    title: 'New Course: Python for Data Analysis — Now Live on EdLight Code',
+    title: 'EdLight Code Now Offers 6 Learning Tracks with Verifiable Certificates',
     category: 'announcement',
     summary:
-      'EdLight Code has launched a new intermediate course covering pandas, numpy, and real-world dataset projects. The course is available to all registered learners at no cost.',
+      'EdLight Code has expanded to 6 learning tracks: SQL (~60h), Python (~55h), Terminal & Git (~9h), HTML (~12h), CSS (~14h), and JavaScript (~14h). All courses are free, browser-based, and available in English, French, and Haitian Creole. Learners earn verifiable certificates with unique URLs.',
     date: '2026-01-20',
-    url: 'https://www.edlight.org/news',
-    tags: ['Python', 'data analysis', 'EdLight Code', 'course launch'],
+    url: 'https://code.edlight.org',
+    tags: ['EdLight Code', 'coding', 'certificates', 'tracks'],
   },
   {
-    title: 'EdLight News: External Scholarship Roundup — January 2026',
+    title: 'EdLight News: External Scholarship Roundup',
     category: 'announcement',
     summary:
-      'EdLight News has published its latest curated list of external scholarships and educational opportunities available to learners in Haiti and the Caribbean. Visit EdLight News for details and application links.',
+      'EdLight News has published its latest curated list of external scholarships and educational opportunities available to learners in Haiti and the Caribbean. EdLight does not offer its own scholarships, but EdLight News curates external opportunities. Visit EdLight News for details.',
     date: '2026-01-10',
     url: 'https://www.edlightnews.com',
     tags: ['scholarships', 'external opportunities', 'EdLight News'],
   },
   {
-    title: 'Digital Literacy Workshop in Port-au-Prince',
-    category: 'event',
-    summary:
-      "EdLight organized a digital literacy workshop for high school students in Port-au-Prince, introducing 80 students to basic computer skills, internet safety, and EdLight's free learning platforms.",
-    date: '2026-01-05',
-    url: 'https://www.edlight.org/news',
-    tags: ['digital literacy', 'workshop', 'community', 'Haiti'],
-  },
-  {
-    title: 'EdLight Academy Adds Exam Preparation Support for Bac Students',
+    title: 'EdLight Academy Reaches 500+ Video Lessons',
     category: 'announcement',
     summary:
-      'EdLight Academy now has a dedicated Exam Preparation Support course for Haitian students preparing for the Baccalauréat. Covers math, physics, economics, and study skills.',
+      'EdLight Academy now offers 500+ free bilingual video lessons in Maths, Physics, Chemistry, Economics, and Languages & Communication. All content is in Haitian Creole and French, aligned with Haitian national exams, self-paced, and mobile-friendly at academy.edlight.org.',
+    date: '2026-01-05',
+    url: 'https://academy.edlight.org',
+    tags: ['Academy', 'video lessons', 'bilingual', 'Haiti'],
+  },
+  {
+    title: 'EdLight Labs Surpasses 25 Digital Builds',
+    category: 'community',
+    summary:
+      'EdLight Labs has launched 25+ digital builds for schools, nonprofits, and startups across Haiti and the diaspora. With an average 8-week go-live timeline and 92% client retention, Labs continues to pair student developers with real-world client projects through its mentorship pipeline.',
     date: '2025-12-10',
-    url: 'https://www.edlight.org/academy',
-    tags: ['Academy', 'exam prep', 'Bac', 'Haiti'],
+    url: 'https://www.edlight.org/labs',
+    tags: ['Labs', 'digital products', 'innovation', 'mentorship'],
   },
   {
-    title: 'Community Spotlight: ESLP Alumni Leading Education Projects Across Haiti',
+    title: 'Community Spotlight: ESLP Alumni Making Impact Across Haiti',
     category: 'community',
     summary:
-      "This month's community spotlight features three ESLP alumni who launched education access projects in their communities, bringing digital learning tools to rural areas.",
+      'ESLP alumni continue to make an impact in their communities after completing the 2-week summer leadership program. ESLP serves approximately 30 high school students aged 15–18 per cohort through intensive seminars, capstone challenges, and expert mentorship.',
     date: '2025-12-01',
-    url: 'https://www.edlight.org/news',
+    url: 'https://www.edlight.org/eslp',
     tags: ['ESLP', 'alumni', 'community impact', 'spotlight'],
-  },
-  {
-    title: 'EdLight Code Reaches 1,000 Enrolled Learners',
-    category: 'community',
-    summary:
-      'EdLight Code has reached a milestone of 1,000 enrolled learners across its coding courses. The platform continues to grow with new Python, SQL, and web development content.',
-    date: '2025-11-01',
-    url: 'https://www.edlight.org/news',
-    tags: ['milestone', 'EdLight Code', 'learners', 'growth'],
   },
 ];
 

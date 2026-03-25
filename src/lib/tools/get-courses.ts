@@ -32,129 +32,139 @@ type CourseCatalogEntry = {
   beginner: boolean;
 };
 
+/**
+ * Academy course catalogue — sourced from edlight.org/academy.
+ * EdLight Academy offers 500+ video lessons, bilingual (Haitian Creole + French),
+ * self-paced, mobile-friendly, aligned with Haitian national exams.
+ */
 const ACADEMY_COURSES: CourseCatalogEntry[] = [
   {
-    title: 'Mathematics Fundamentals',
+    title: 'Maths',
     platform: 'academy',
-    level: 'beginner',
-    topics: ['mathematics', 'problem solving', 'foundations'],
-    path: 'courses/mathematics-fundamentals',
-    url: 'https://www.edlight.org/academy',
+    level: 'general',
+    topics: ['mathematics', 'algebra', 'geometry', 'calculus', 'problem solving'],
+    path: 'courses/maths',
+    url: 'https://academy.edlight.org',
     description:
-      'Build core mathematics skills through structured lessons designed for students who want to strengthen their academic foundation.',
+      'Comprehensive maths curriculum aligned with Haitian national exams. Covers algebra, geometry, calculus, and problem-solving through bilingual video lessons in Haitian Creole and French.',
     beginner: true,
   },
   {
-    title: 'Physics Foundations',
+    title: 'Physics',
     platform: 'academy',
-    level: 'intermediate',
-    topics: ['physics', 'science', 'concepts'],
-    path: 'courses/physics-foundations',
-    url: 'https://www.edlight.org/academy',
+    level: 'general',
+    topics: ['physics', 'mechanics', 'thermodynamics', 'science'],
+    path: 'courses/physics',
+    url: 'https://academy.edlight.org',
     description:
-      'Learn essential physics concepts through guided academic content aimed at high school students.',
+      'Physics video lessons covering mechanics, thermodynamics, and core concepts, aligned with Haitian national exams. Bilingual (Haitian Creole + French), self-paced.',
     beginner: false,
   },
   {
-    title: 'Economics Essentials',
+    title: 'Chemistry',
     platform: 'academy',
-    level: 'intermediate',
-    topics: ['economics', 'markets', 'analysis'],
-    path: 'courses/economics-essentials',
-    url: 'https://www.edlight.org/academy',
+    level: 'general',
+    topics: ['chemistry', 'reactions', 'elements', 'science'],
+    path: 'courses/chemistry',
+    url: 'https://academy.edlight.org',
     description:
-      'Explore core economics concepts to help students better understand markets, incentives, and decision-making.',
+      'Chemistry video lessons covering elements, reactions, and laboratory concepts, aligned with Haitian national exams. Bilingual (Haitian Creole + French), self-paced.',
     beginner: false,
   },
   {
-    title: 'Leadership and Personal Development',
+    title: 'Economics',
     platform: 'academy',
-    level: 'beginner',
-    topics: ['leadership', 'communication', 'growth'],
-    path: 'courses/leadership-personal-development',
-    url: 'https://www.edlight.org/academy',
+    level: 'general',
+    topics: ['economics', 'markets', 'analysis', 'finance'],
+    path: 'courses/economics',
+    url: 'https://academy.edlight.org',
     description:
-      'Develop leadership, communication, and personal growth skills through structured learning content.',
-    beginner: true,
+      'Economics video lessons covering markets, incentives, and economic analysis, aligned with Haitian national exams. Bilingual (Haitian Creole + French), self-paced.',
+    beginner: false,
   },
   {
-    title: 'Exam Preparation Support',
+    title: 'Languages & Communication',
     platform: 'academy',
-    level: 'beginner',
-    topics: ['exam prep', 'revision', 'study skills'],
-    path: 'courses/exam-preparation-support',
-    url: 'https://www.edlight.org/academy',
+    level: 'general',
+    topics: ['languages', 'communication', 'french', 'creole', 'writing'],
+    path: 'courses/languages',
+    url: 'https://academy.edlight.org',
     description:
-      'Review important academic content and strengthen study habits to prepare effectively for exams.',
+      'Language and communication lessons covering reading, writing, and oral expression in French and Haitian Creole. Aligned with the Haitian curriculum.',
     beginner: true,
   },
 ];
 
+/**
+ * Code course catalogue — sourced from edlight.org/code.
+ * EdLight Code is free, browser-based, with verifiable certificates.
+ * Available in English, French, and Haitian Creole.
+ */
 const CODE_COURSES: CourseCatalogEntry[] = [
   {
-    title: 'Coding for Absolute Beginners',
-    platform: 'code',
-    level: 'beginner',
-    topics: ['programming basics', 'logic', 'problem solving'],
-    path: 'courses/coding-101',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/coding-101',
-    description:
-      'Your first step into coding. Learn what code is, how computers think, and write your very first programs.',
-    beginner: true,
-  },
-  {
-    title: 'Python Fundamentals',
-    platform: 'code',
-    level: 'beginner',
-    topics: ['python', 'programming', 'syntax'],
-    path: 'courses/python-fundamentals',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/python-fundamentals',
-    description:
-      'Learn Python from scratch — variables, data types, loops, functions, and building simple programs.',
-    beginner: true,
-  },
-  {
-    title: 'Python for Data Analysis',
-    platform: 'code',
-    level: 'intermediate',
-    topics: ['python', 'data', 'pandas', 'analysis'],
-    path: 'courses/python-data-analysis',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/python-data-analysis',
-    description:
-      'Use Python to work with data: loading, cleaning, and analyzing datasets with pandas and numpy.',
-    beginner: false,
-  },
-  {
-    title: 'SQL and Databases',
+    title: 'SQL Track',
     platform: 'code',
     level: 'beginner',
     topics: ['sql', 'databases', 'queries', 'data'],
-    path: 'courses/sql-databases',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/sql-databases',
+    path: 'tracks/sql',
+    url: 'https://code.edlight.org',
     description:
-      'Learn SQL to query databases — SELECT, WHERE, JOIN, and GROUP BY. No prior experience required.',
+      'Learn SQL from scratch through 6 courses (~60 hours total). Covers SELECT, WHERE, JOIN, GROUP BY, subqueries, window functions, and more. No prior experience required. Verifiable certificate upon completion.',
     beginner: true,
   },
   {
-    title: 'Advanced SQL',
-    platform: 'code',
-    level: 'intermediate',
-    topics: ['sql', 'subqueries', 'optimization', 'analytics'],
-    path: 'courses/advanced-sql',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/advanced-sql',
-    description:
-      'Master advanced SQL: window functions, CTEs, subqueries, and query optimization techniques.',
-    beginner: false,
-  },
-  {
-    title: 'Web Development Basics',
+    title: 'Python Track',
     platform: 'code',
     level: 'beginner',
-    topics: ['html', 'css', 'javascript', 'web'],
-    path: 'courses/web-dev-basics',
-    url: 'https://github.com/edlinitiative/code/tree/main/courses/web-dev-basics',
+    topics: ['python', 'programming', 'data', 'automation'],
+    path: 'tracks/python',
+    url: 'https://code.edlight.org',
     description:
-      'Build your first web pages using HTML, CSS, and JavaScript. Learn how the web works from the ground up.',
+      'Master Python through 7 courses (~55 hours total). Covers variables, data types, loops, functions, data analysis, and real-world projects. Starts from absolute beginner. Verifiable certificate upon completion.',
+    beginner: true,
+  },
+  {
+    title: 'Terminal & Git Track',
+    platform: 'code',
+    level: 'beginner',
+    topics: ['terminal', 'git', 'command line', 'version control'],
+    path: 'tracks/terminal-git',
+    url: 'https://code.edlight.org',
+    description:
+      'Learn to use the terminal and Git version control through 3 courses (~9 hours total). Essential skills for any developer. Verifiable certificate upon completion.',
+    beginner: true,
+  },
+  {
+    title: 'HTML Track',
+    platform: 'code',
+    level: 'beginner',
+    topics: ['html', 'web', 'markup', 'structure'],
+    path: 'tracks/html',
+    url: 'https://code.edlight.org',
+    description:
+      'Learn HTML through 3 courses (~12 hours total). Build the structure of web pages from scratch. No prior experience required. Verifiable certificate upon completion.',
+    beginner: true,
+  },
+  {
+    title: 'CSS Track',
+    platform: 'code',
+    level: 'beginner',
+    topics: ['css', 'web', 'styling', 'design'],
+    path: 'tracks/css',
+    url: 'https://code.edlight.org',
+    description:
+      'Learn CSS through 3 courses (~14 hours total). Style web pages with layouts, colors, typography, and responsive design. Verifiable certificate upon completion.',
+    beginner: true,
+  },
+  {
+    title: 'JavaScript Track',
+    platform: 'code',
+    level: 'beginner',
+    topics: ['javascript', 'web', 'programming', 'interactivity'],
+    path: 'tracks/javascript',
+    url: 'https://code.edlight.org',
+    description:
+      'Learn JavaScript through 3 courses (~14 hours total). Add interactivity to web pages, work with DOM manipulation, and build dynamic applications. Verifiable certificate upon completion.',
     beginner: true,
   },
 ];
@@ -163,11 +173,11 @@ const ALL_COURSES = [...ACADEMY_COURSES, ...CODE_COURSES];
 
 const PLATFORM_CONTEXT: Record<'academy' | 'code' | 'both', string> = {
   academy:
-    'EdLight Academy focuses on academic learning for students, with structured subjects such as math, physics, economics, leadership, and exam preparation.',
+    'EdLight Academy is a free online learning platform with 500+ bilingual video lessons (Haitian Creole + French) in Maths, Physics, Chemistry, Economics, and Languages & Communication. Curriculum-aligned with Haitian national exams, self-paced, mobile-friendly, and available 24/7 at academy.edlight.org.',
   code:
-    'EdLight Code focuses on coding and programming skills, including Python, SQL, web development, and software fundamentals.',
+    'EdLight Code is a free, browser-based coding education platform with 6 learning tracks: SQL (~60h), Python (~55h), Terminal & Git (~9h), HTML (~12h), CSS (~14h), and JavaScript (~14h). Learners earn verifiable certificates. Available in English, French, and Haitian Creole at code.edlight.org.',
   both:
-    'EdLight Academy covers academic subjects and student learning support, while EdLight Code covers coding and programming.',
+    'EdLight Academy offers 500+ bilingual video lessons in academic subjects (Maths, Physics, Chemistry, Economics, Languages), while EdLight Code offers 6 coding tracks (SQL, Python, Terminal & Git, HTML, CSS, JavaScript) with verifiable certificates.',
 };
 
 const PLATFORM_REPO_URLS = {

@@ -4,7 +4,7 @@
  * Validates that Sandra returns grounded, tool-backed, platform-specific
  * answers for the four benchmark prompts from the phase document:
  *
- *   1. "What is EdLight?"            → getEdLightInitiatives (all platforms)
+ *   1. "What is EdLight?"            → getEdLightInitiatives (all 6 platforms)
  *   2. "What courses on Academy?"    → getCourseInventory platform='academy'
  *   3. "What courses on Code?"       → getCourseInventory platform='code'
  *   4. "What does Initiative do?"    → getEdLightInitiatives category='leadership'
@@ -85,11 +85,11 @@ type ProgramData = {
 // ---------------------------------------------------------------------------
 
 describe('Benchmark 1 — "What is EdLight?" → grounded platform overview', () => {
-  it('returns all 4 platforms with grounded descriptions', async () => {
+  it('returns all 6 platforms with grounded descriptions', async () => {
     const result = await getEdLightInitiatives.handler({}, ctx);
     expect(result.success).toBe(true);
     const data = result.data as InitiativeData;
-    expect(data.initiatives).toHaveLength(4);
+    expect(data.initiatives).toHaveLength(6);
   });
 
   it('each platform has a non-generic description', async () => {
@@ -106,9 +106,9 @@ describe('Benchmark 1 — "What is EdLight?" → grounded platform overview', ()
     const result = await getEdLightInitiatives.handler({}, ctx);
     const data = result.data as InitiativeData;
     const focuses = data.initiatives.map((i) => i.focus);
-    // All 4 focus values should be distinct
+    // All 6 focus values should be distinct
     const uniqueFocuses = new Set(focuses);
-    expect(uniqueFocuses.size).toBe(4);
+    expect(uniqueFocuses.size).toBe(6);
   });
 
   it('each platform has highlights with specific named features', async () => {
@@ -146,10 +146,11 @@ describe('Benchmark 2 — "What courses on Academy?" → grounded Academy course
     const data = result.data as CourseData;
     const titles = data.courses.map((c) => c.title);
     // Must include named courses, not generic placeholders
-    expect(titles.some((t) => /math|physics|economics|leadership|exam/i.test(t))).toBe(true);
-    expect(titles.some((t) => /math|physics|economics/i.test(t))).toBe(true);
-    expect(titles.some((t) => /leadership|exam/i.test(t))).toBe(true);
-    expect(titles.some((t) => /math|physics|economics|leadership|exam/i.test(t))).toBe(true);
+    expect(titles.some((t) => /math/i.test(t))).toBe(true);
+    expect(titles.some((t) => /physics/i.test(t))).toBe(true);
+    expect(titles.some((t) => /chemistry/i.test(t))).toBe(true);
+    expect(titles.some((t) => /economics/i.test(t))).toBe(true);
+    expect(titles.some((t) => /language/i.test(t))).toBe(true);
   });
 
   it('includes platform context describing Academy focus', async () => {
@@ -164,7 +165,7 @@ describe('Benchmark 2 — "What courses on Academy?" → grounded Academy course
     const data = result.data as CourseData;
     for (const course of data.courses) {
       expect(course.url).toBeTruthy();
-      expect(course.url).toContain('edlight.org/academy');
+      expect(course.url).toContain('academy.edlight.org');
     }
   });
 
@@ -193,8 +194,8 @@ describe('Benchmark 3 — "What courses on Code?" → grounded Code course list'
     const titles = data.courses.map((c) => c.title);
     expect(titles.some((t) => /python/i.test(t))).toBe(true);
     expect(titles.some((t) => /sql/i.test(t))).toBe(true);
-    expect(titles.some((t) => /web development/i.test(t))).toBe(true);
-    expect(titles.some((t) => /coding|beginner/i.test(t))).toBe(true);
+    expect(titles.some((t) => /html/i.test(t))).toBe(true);
+    expect(titles.some((t) => /javascript/i.test(t))).toBe(true);
   });
 
   it('includes platform context describing Code focus', async () => {
@@ -209,8 +210,8 @@ describe('Benchmark 3 — "What courses on Code?" → grounded Code course list'
     const data = result.data as CourseData;
     for (const course of data.courses) {
       expect(course.url).toBeTruthy();
-      // Code courses link to edlinitiative/code repo
-      expect(course.url).toContain('edlinitiative/code');
+      // Code courses link to code.edlight.org
+      expect(course.url).toContain('code.edlight.org');
     }
   });
 
@@ -298,13 +299,17 @@ describe('Benchmark 5 — "What is EdLight News?" → grounded News answer', () 
 // ---------------------------------------------------------------------------
 
 describe('Benchmark 6 — "What scholarships or programs are available?" → programs tool', () => {
-  it('returns only leadership programs — ESLP is the only real EdLight program', async () => {
+  it('returns all 5 EdLight programs with no scholarships or internships', async () => {
     const result = await getProgramsAndScholarships.handler({}, ctx);
     expect(result.success).toBe(true);
     const data = result.data as ProgramData;
 
-    expect(data.total).toBe(1);
-    expect(data.types).toEqual(['leadership']);
+    expect(data.total).toBe(5);
+    expect(data.types).toContain('leadership');
+    expect(data.types).toContain('exchange');
+    expect(data.types).toContain('education');
+    expect(data.types).toContain('coding');
+    expect(data.types).toContain('innovation');
     expect(data.types).not.toContain('scholarship');
     expect(data.types).not.toContain('internship');
   });

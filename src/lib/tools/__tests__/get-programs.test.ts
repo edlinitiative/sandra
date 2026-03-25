@@ -67,7 +67,7 @@ describe('getProgramsAndScholarships tool', () => {
     expect(data.programs.some((program) => /Scholarship|Award/i.test(program.name))).toBe(false);
   });
 
-  it('filters fallback programs by type — only leadership exists', async () => {
+  it('filters fallback programs by type — leadership returns only ESLP', async () => {
     const result = await getProgramsAndScholarships.handler({ type: 'leadership' }, ctx);
     const data = result.data as ProgramData;
 

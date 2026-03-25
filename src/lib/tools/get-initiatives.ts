@@ -11,52 +11,77 @@ import {
 import type { KnowledgePlatform } from '@/lib/knowledge';
 
 const inputSchema = z.object({
-  category: z.string().optional().describe('Filter by category: coding, news, leadership, education'),
+  category: z.string().optional().describe('Filter by category: coding, news, leadership, education, exchange, innovation'),
 });
 
+/**
+ * EdLight ecosystem platforms and programs — sourced from edlight.org (scraped June 2025).
+ */
 const INITIATIVES = [
   {
     name: 'EdLight Code',
     category: 'coding',
-    repo: 'edlinitiative/code',
-    url: 'https://github.com/edlinitiative/code',
+    repo: 'edlinitiative/edlight-code',
+    url: 'https://code.edlight.org',
     description:
-      'The core EdLight coding education platform — hands-on coding curriculum and learning tools for students. Offers courses in Python, SQL, web development, and programming fundamentals. Designed to take learners from absolute beginner to practical coding skills.',
+      'EdLight Code is a free, browser-based coding education platform with 6+ learning tracks: SQL (6 courses, ~60h), Python (7 courses, ~55h), Terminal & Git (3 courses, ~9h), HTML (3 courses, ~12h), CSS (3 courses, ~14h), and JavaScript (3 courses, ~14h). Learners earn verifiable certificates with unique URLs. Available in English, French, and Haitian Creole.',
     focus: 'coding education',
-    highlights: ['Python programming', 'SQL and databases', 'Web development (HTML/CSS/JS)', 'Beginner-to-intermediate progression'],
+    highlights: ['6 learning tracks: SQL, Python, Terminal & Git, HTML, CSS, JavaScript', 'Free and browser-based — no installation needed', 'Verifiable certificates with unique URLs', 'Multilingual: English, French, Haitian Creole'],
     status: 'active',
   },
   {
     name: 'EdLight Academy',
     category: 'education',
-    repo: 'edlinitiative/EdLight-Academy',
-    url: 'https://github.com/edlinitiative/EdLight-Academy',
+    repo: 'edlinitiative/edlight-academy',
+    url: 'https://academy.edlight.org',
     description:
-      'Educational platform and learning resources for the EdLight ecosystem — structured courses covering digital literacy, productivity tools, and design skills. Covers Microsoft Office Suite, Excel data skills, PowerPoint, and 3D design. Ideal for learners building professional and academic competencies.',
+      'EdLight Academy is a free online learning platform offering 500+ video lessons for Haitian students. Courses are bilingual (Haitian Creole and French), self-paced, mobile-friendly, and available 24/7. Curriculum aligned with Haitian national exams covering Maths, Physics, Chemistry, Economics, and Languages & Communication.',
     focus: 'accessible academic education and exam preparation',
-    highlights: ['Free online courses for high school students', 'Core academic subjects such as math, physics, and economics', 'Self-paced learning accessible from anywhere', 'Educational support for Haitian students preparing for exams'],
+    highlights: ['500+ free bilingual video lessons (Haitian Creole + French)', 'Subjects: Maths, Physics, Chemistry, Economics, Languages & Communication', 'Curriculum aligned with Haitian national exams', 'Self-paced, mobile-friendly, 24/7'],
     status: 'active',
   },
   {
     name: 'EdLight News',
     category: 'news',
-    repo: 'edlinitiative/EdLight-News',
-    url: 'https://github.com/edlinitiative/EdLight-News',
+    repo: 'edlinitiative/edlight-news',
+    url: 'https://www.edlightnews.com',
     description:
-      'News and updates platform for the EdLight community — publishes announcements, event coverage, program updates, and community stories from across the EdLight ecosystem. Keeps learners, educators, and community members informed about new courses, initiatives, and milestones.',
-    focus: 'community news and announcements',
-    highlights: ['Program announcements', 'Community event coverage', 'New course launches', 'Ecosystem updates', 'Community member spotlights'],
+      'News and updates platform for the EdLight community — publishes announcements, event coverage, program updates, external scholarship listings, and community stories from across the EdLight ecosystem.',
+    focus: 'community news, announcements, and external scholarship curation',
+    highlights: ['Program announcements and updates', 'Community event coverage', 'Curated external scholarship and opportunity listings', 'Community member spotlights'],
     status: 'active',
   },
   {
     name: 'EdLight Initiative',
     category: 'leadership',
     repo: 'edlinitiative/EdLight-Initiative',
-    url: 'https://github.com/edlinitiative/EdLight-Initiative',
+    url: 'https://www.edlight.org',
     description:
-      'The EdLight Initiative is the organizational and community hub for the entire EdLight ecosystem — it runs leadership development programs, coordinates cross-platform community building, and drives the mission of accessible education and technology for underserved communities.',
-    focus: 'leadership and community organization',
-    highlights: ['Leadership development programs', 'Community building and outreach', 'Cross-platform coordination', 'Mission: accessible education for underserved communities'],
+      'The EdLight Initiative is the organizational hub for the entire EdLight ecosystem. Its mission is to make education free and accessible to all people in Haiti. It coordinates all EdLight programs (ESLP, Nexus, Academy, Code, Labs) and drives community building.',
+    focus: 'organizational hub and mission coordination',
+    highlights: ['Governs the entire EdLight ecosystem', 'Runs 5 programs: ESLP, Nexus, Academy, Code, Labs', 'Mission: free, accessible education for all people in Haiti', 'Community building and cross-platform coordination'],
+    status: 'active',
+  },
+  {
+    name: 'EdLight Nexus',
+    category: 'exchange',
+    repo: null,
+    url: 'https://www.edlight.org/nexus',
+    description:
+      'EdLight Nexus is a global exchange and immersion program for Haitian university students. Fellows participate in 7-day residencies across 6+ destinations (France, Spain, Canada, US, Panama, Dominican Republic). 48 fellows since launch from 10+ Haitian cities. Three pathways: Academic Immersion, Leadership & Policy, Culture & Creative Industries. 70% average scholarship coverage.',
+    focus: 'global exchange and immersion for university students',
+    highlights: ['7-day international residencies in 6+ countries', '48 fellows since launch, 10+ Haitian cities represented', '3 pathways: Academic Immersion, Leadership & Policy, Culture & Creative Industries', '70% average scholarship coverage'],
+    status: 'active',
+  },
+  {
+    name: 'EdLight Labs',
+    category: 'innovation',
+    repo: null,
+    url: 'https://www.edlight.org/labs',
+    description:
+      'EdLight Labs builds digital products, websites, and innovation pilots for mission-led organizations. Services include website & product design, full-stack development (Next.js, React, TypeScript), care & optimization, and innovation lab sprints. Also runs maker labs in Haitian classrooms and mentorship pipelines pairing student developers with real client projects. 25+ digital builds launched, 8-week average go-live, 92% client retention.',
+    focus: 'digital products, innovation, and student mentorship',
+    highlights: ['25+ digital builds for schools, nonprofits, and startups', 'Full-stack: Next.js, React, TypeScript', 'Maker labs introducing 3D printing to Haitian classrooms', 'Mentorship pipelines for student developers', '92% client retention'],
     status: 'active',
   },
 ];
@@ -64,14 +89,14 @@ const INITIATIVES = [
 const getEdLightInitiatives: SandraTool = {
   name: 'getEdLightInitiatives',
   description:
-    'Get information about EdLight initiatives and platforms. Returns details about EdLight Code, EdLight Academy, EdLight News, and EdLight Initiative.',
+    'Get information about EdLight initiatives and platforms. Returns details about EdLight Code, Academy, News, Initiative, Nexus, and Labs — the full EdLight ecosystem.',
   parameters: {
     type: 'object',
     properties: {
       category: {
         type: 'string',
-        description: 'Filter by category: coding, news, leadership, education',
-        enum: ['coding', 'news', 'leadership', 'education'],
+        description: 'Filter by category: coding, news, leadership, education, exchange, innovation',
+        enum: ['coding', 'news', 'leadership', 'education', 'exchange', 'innovation'],
       },
     },
     required: [],
@@ -154,6 +179,8 @@ function categoryToPlatform(category: string): KnowledgePlatform {
       return 'code';
     case 'news':
       return 'news';
+    case 'exchange':
+    case 'innovation':
     default:
       return 'initiative';
   }

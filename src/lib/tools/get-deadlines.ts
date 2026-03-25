@@ -4,66 +4,111 @@ import { toolRegistry } from './registry';
 
 const inputSchema = z.object({
   type: z
-    .enum(['leadership', 'all'])
+    .enum(['leadership', 'exchange', 'education', 'coding', 'innovation', 'all'])
     .optional()
     .default('all')
-    .describe("Filter by program type: 'leadership' or 'all'. Currently only ESLP (leadership) is available."),
+    .describe("Filter by program type: 'leadership' (ESLP), 'exchange' (Nexus), 'education' (Academy), 'coding' (Code), 'innovation' (Labs), or 'all'."),
   openOnly: z
     .boolean()
     .optional()
-    .default(true)
-    .describe('When true (default), return only currently open or rolling programs'),
+    .default(false)
+    .describe('When true, return only programs currently accepting applications'),
 });
 
-type ProgramType = 'leadership';
-type DeadlineStatus = 'open' | 'closing-soon' | 'closed';
-type DeadlineUrgency = 'rolling' | 'seasonal' | 'imminent';
+type ProgramType = 'leadership' | 'exchange' | 'education' | 'coding' | 'innovation';
+type DeadlineStatus = 'open' | 'upcoming' | 'closed';
+type DeadlineUrgency = 'always-open' | 'seasonal' | 'pending-announcement';
 
 type DeadlineEntry = {
   program: string;
   type: ProgramType;
   status: DeadlineStatus;
   deadline: string;
-  /** ISO date string for seasonal deadlines, null for rolling */
+  /** ISO date string for seasonal deadlines, null when not yet announced */
   deadlineDate: string | null;
   cost: string;
   applicationUrl: string;
   urgency: DeadlineUrgency;
+  contact: string;
 };
 
 /**
  * Application deadline catalogue for all EdLight programs.
- * Rolling programs accept applications year-round; seasonal programs have a fixed annual window.
+ * Sourced from edlight.org (scraped June 2025). Dates are updated when officially announced.
  */
 const DEADLINES: DeadlineEntry[] = [
-  // ── Leadership ─────────────────────────────────────────────────────────────
   {
     program: 'EdLight Summer Leadership Program (ESLP)',
     type: 'leadership',
+    status: 'upcoming',
+    deadline: 'ESLP 2026 dates have not yet been announced. Check edlight.org/eslp for updates.',
+    deadlineDate: null,
+    cost: 'Free (fully funded)',
+    applicationUrl: 'https://www.edlight.org/eslp',
+    urgency: 'pending-announcement',
+    contact: 'eslp@edlight.org',
+  },
+  {
+    program: 'EdLight Nexus',
+    type: 'exchange',
+    status: 'upcoming',
+    deadline: 'Next Nexus cohort has not yet been announced. Check edlight.org/nexus for updates.',
+    deadlineDate: null,
+    cost: 'Approx. $1,250 (excl. flights & visa); 70% avg scholarship coverage',
+    applicationUrl: 'https://www.edlight.org/nexus',
+    urgency: 'pending-announcement',
+    contact: 'nexus@edlight.org',
+  },
+  {
+    program: 'EdLight Academy',
+    type: 'education',
     status: 'open',
-    deadline: 'Applications open annually in spring — submit before May',
-    deadlineDate: '2026-05-01',
+    deadline: 'Always open — no application required',
+    deadlineDate: null,
     cost: 'Free',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'seasonal',
+    applicationUrl: 'https://academy.edlight.org',
+    urgency: 'always-open',
+    contact: 'academy@edlight.org',
+  },
+  {
+    program: 'EdLight Code',
+    type: 'coding',
+    status: 'open',
+    deadline: 'Always open — no application required',
+    deadlineDate: null,
+    cost: 'Free',
+    applicationUrl: 'https://code.edlight.org',
+    urgency: 'always-open',
+    contact: 'code@edlight.org',
+  },
+  {
+    program: 'EdLight Labs',
+    type: 'innovation',
+    status: 'open',
+    deadline: 'Ongoing — reach out any time to start a project brief',
+    deadlineDate: null,
+    cost: 'Custom pricing; transparent scopes',
+    applicationUrl: 'https://www.edlight.org/labs',
+    urgency: 'always-open',
+    contact: 'labs@edlight.org',
   },
 ];
 
 const getProgramDeadlines: SandraTool = {
   name: 'getProgramDeadlines',
   description:
-    'Get application deadlines for EdLight programs, scholarships, and internships. Use this when users ask about when to apply, upcoming deadlines, which programs are currently accepting applications, or closing dates.',
+    'Get application deadlines for EdLight programs. Use this when users ask about when to apply, upcoming deadlines, which programs are currently accepting applications, or closing dates. Covers ESLP, Nexus, Academy, Code, and Labs.',
   parameters: {
     type: 'object',
     properties: {
       type: {
         type: 'string',
-        description: "Filter by type: 'leadership' or 'all'. Currently only ESLP (leadership) is available.",
-        enum: ['leadership', 'all'],
+        description: "Filter by type: 'leadership' (ESLP), 'exchange' (Nexus), 'education' (Academy), 'coding' (Code), 'innovation' (Labs), or 'all'.",
+        enum: ['leadership', 'exchange', 'education', 'coding', 'innovation', 'all'],
       },
       openOnly: {
         type: 'boolean',
-        description: 'When true (default), return only currently open programs',
+        description: 'When true, return only programs currently accepting applications',
       },
     },
     required: [],
@@ -75,14 +120,14 @@ const getProgramDeadlines: SandraTool = {
     const params = inputSchema.parse(input);
 
     let filtered = params.openOnly
-      ? DEADLINES.filter((d) => d.status !== 'closed')
+      ? DEADLINES.filter((d) => d.status === 'open')
       : DEADLINES;
 
     if (params.type !== 'all') {
       filtered = filtered.filter((d) => d.type === params.type);
     }
 
-    // Sort: seasonal (have a specific date) first, then rolling
+    // Sort: seasonal (have a specific date) first, then pending, then always-open
     const sorted = [...filtered].sort((a, b) => {
       if (a.deadlineDate && b.deadlineDate) return a.deadlineDate.localeCompare(b.deadlineDate);
       if (a.deadlineDate) return -1;
@@ -90,16 +135,19 @@ const getProgramDeadlines: SandraTool = {
       return 0;
     });
 
-    const rollingCount = sorted.filter((d) => d.urgency === 'rolling').length;
+    const alwaysOpenCount = sorted.filter((d) => d.urgency === 'always-open').length;
     const seasonalCount = sorted.filter((d) => d.urgency === 'seasonal').length;
+    const pendingCount = sorted.filter((d) => d.urgency === 'pending-announcement').length;
 
     let tip: string;
-    if (rollingCount > 0 && seasonalCount > 0) {
-      tip = 'Some programs accept rolling applications year-round. Seasonal programs have specific deadlines — apply early.';
-    } else if (rollingCount > 0) {
-      tip = 'All currently open programs accept rolling applications — you can apply any time.';
+    if (pendingCount > 0 && alwaysOpenCount > 0) {
+      tip = 'Some programs (Academy, Code, Labs) are always open. ESLP and Nexus have seasonal applications — dates will be announced on edlight.org.';
+    } else if (alwaysOpenCount > 0) {
+      tip = 'These programs are always open — you can start any time.';
+    } else if (pendingCount > 0) {
+      tip = 'Application dates have not yet been announced. Check edlight.org for updates.';
     } else {
-      tip = 'These programs have specific seasonal deadlines. Apply before the dates listed to be considered.';
+      tip = 'These programs have specific seasonal deadlines. Apply before the dates listed.';
     }
 
     return {
@@ -108,11 +156,13 @@ const getProgramDeadlines: SandraTool = {
         deadlines: sorted,
         total: sorted.length,
         summary: {
-          rollingApplications: rollingCount,
+          alwaysOpen: alwaysOpenCount,
           seasonalDeadlines: seasonalCount,
+          pendingAnnouncement: pendingCount,
         },
         tip,
-        applicationHub: 'https://www.edlight.org/initiative',
+        applicationHub: 'https://www.edlight.org',
+        note: 'Deadline information is based on publicly available data from edlight.org. Visit the program pages for the latest details.',
       },
     };
   },

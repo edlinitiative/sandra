@@ -4,67 +4,103 @@ import { toolRegistry } from './registry';
 
 const inputSchema = z.object({
   platform: z
-    .enum(['academy', 'code', 'news', 'initiative', 'all'])
+    .enum(['academy', 'code', 'news', 'initiative', 'eslp', 'nexus', 'labs', 'all'])
     .optional()
     .default('all')
-    .describe("Which EdLight platform to get contact info/links for, or 'all'"),
+    .describe("Which EdLight platform/program to get contact info/links for, or 'all'"),
 });
 
-type EdLightPlatform = 'academy' | 'code' | 'news' | 'initiative';
+type EdLightPlatform = 'academy' | 'code' | 'news' | 'initiative' | 'eslp' | 'nexus' | 'labs';
 
 type PlatformInfo = {
   name: string;
   platform: EdLightPlatform;
   role: string;
   website: string;
-  github: string;
+  github: string | null;
   applicationLink: string | null;
-  contact: string | null;
+  contact: string;
   social: Record<string, string>;
 };
 
+/**
+ * Real contact and platform information sourced from edlight.org (scraped June 2025).
+ */
 const PLATFORM_INFO: PlatformInfo[] = [
   {
     name: 'EdLight Initiative',
     platform: 'initiative',
-    role: 'Organizational hub — programs, scholarships, leadership development, and community coordination',
-    website: 'https://www.edlight.org/initiative',
+    role: 'Organizational hub — the governing organization that runs all EdLight programs and coordinates the ecosystem',
+    website: 'https://www.edlight.org',
     github: 'https://github.com/edlinitiative/EdLight-Initiative',
-    applicationLink: 'https://www.edlight.org/initiative',
-    contact: 'contact@edlight.org',
+    applicationLink: 'https://www.edlight.org/get-involved',
+    contact: 'info@edlight.org',
     social: {
-      twitter: 'https://twitter.com/edlinitiative',
-      linkedin: 'https://linkedin.com/company/edlinitiative',
+      facebook: 'https://www.facebook.com/edlinitiative',
+      twitter: 'https://x.com/edlinitiative',
+      instagram: 'https://www.instagram.com/edlinitiative/',
+      youtube: 'https://www.youtube.com/@edlight-initiative',
+      linkedin: 'https://www.linkedin.com/company/edlight-initiative/',
     },
+  },
+  {
+    name: 'EdLight Summer Leadership Program (ESLP)',
+    platform: 'eslp',
+    role: '2-week summer leadership program for Haitian high school students aged 15–18',
+    website: 'https://www.edlight.org/eslp',
+    github: null,
+    applicationLink: 'https://www.edlight.org/eslp',
+    contact: 'eslp@edlight.org',
+    social: {},
+  },
+  {
+    name: 'EdLight Nexus',
+    platform: 'nexus',
+    role: 'Global exchange and immersion program for Haitian university students — 7-day international residencies',
+    website: 'https://www.edlight.org/nexus',
+    github: null,
+    applicationLink: 'https://www.edlight.org/nexus',
+    contact: 'nexus@edlight.org',
+    social: {},
   },
   {
     name: 'EdLight Academy',
     platform: 'academy',
-    role: 'Academic learning — free courses in math, physics, economics, leadership, and exam prep for students in Haiti',
-    website: 'https://www.edlight.org/academy',
-    github: 'https://github.com/edlinitiative/EdLight-Academy',
-    applicationLink: null,
-    contact: null,
+    role: 'Free bilingual online learning platform — 500+ video lessons in Maths, Physics, Chemistry, Economics, Languages for Haitian students',
+    website: 'https://academy.edlight.org',
+    github: 'https://github.com/edlinitiative/edlight-academy',
+    applicationLink: 'https://academy.edlight.org',
+    contact: 'academy@edlight.org',
     social: {},
   },
   {
     name: 'EdLight Code',
     platform: 'code',
-    role: 'Coding education — Python, SQL, web development, and programming fundamentals',
-    website: 'https://www.edlight.org/code',
-    github: 'https://github.com/edlinitiative/code',
-    applicationLink: null,
-    contact: null,
+    role: 'Free browser-based coding education — 6 tracks (SQL, Python, Terminal & Git, HTML, CSS, JavaScript) with verifiable certificates',
+    website: 'https://code.edlight.org',
+    github: 'https://github.com/edlinitiative/edlight-code',
+    applicationLink: 'https://code.edlight.org',
+    contact: 'code@edlight.org',
+    social: {},
+  },
+  {
+    name: 'EdLight Labs',
+    platform: 'labs',
+    role: 'Digital products, websites, and innovation pilots for mission-led organizations. Also runs maker labs and student mentorship pipelines.',
+    website: 'https://www.edlight.org/labs',
+    github: null,
+    applicationLink: 'https://www.edlight.org/labs',
+    contact: 'labs@edlight.org',
     social: {},
   },
   {
     name: 'EdLight News',
     platform: 'news',
-    role: 'Community news hub — announcements, event coverage, program updates, and community stories',
-    website: 'https://www.edlight.org/news',
-    github: 'https://github.com/edlinitiative/EdLight-News',
+    role: 'Community news hub — announcements, event coverage, program updates, external scholarship listings, and community stories',
+    website: 'https://www.edlightnews.com',
+    github: 'https://github.com/edlinitiative/edlight-news',
     applicationLink: null,
-    contact: null,
+    contact: 'info@edlight.org',
     social: {},
   },
 ];
@@ -72,14 +108,14 @@ const PLATFORM_INFO: PlatformInfo[] = [
 const getContactInfo: SandraTool = {
   name: 'getContactInfo',
   description:
-    "Get official links, websites, and contact information for EdLight platforms. Use this when users ask for EdLight's website, how to contact EdLight, where to apply, or direct links to a specific platform.",
+    "Get official links, websites, and contact information for EdLight platforms and programs. Use this when users ask for EdLight's website, how to contact EdLight, where to apply, or direct links. Covers: Initiative, ESLP, Nexus, Academy, Code, Labs, and News.",
   parameters: {
     type: 'object',
     properties: {
       platform: {
         type: 'string',
-        description: "Which EdLight platform to get info for, or 'all'",
-        enum: ['academy', 'code', 'news', 'initiative', 'all'],
+        description: "Which EdLight platform/program to get info for, or 'all'",
+        enum: ['academy', 'code', 'news', 'initiative', 'eslp', 'nexus', 'labs', 'all'],
       },
     },
     required: [],
@@ -100,9 +136,16 @@ const getContactInfo: SandraTool = {
       data: {
         platforms: filtered,
         total: filtered.length,
-        primaryContact: 'contact@edlight.org',
-        applicationHub: 'https://www.edlight.org/initiative',
-        note: 'For program applications, scholarships, and general inquiries, the EdLight Initiative page is the main entry point.',
+        primaryContact: 'info@edlight.org',
+        applicationHub: 'https://www.edlight.org',
+        socialLinks: {
+          facebook: 'https://www.facebook.com/edlinitiative',
+          twitter: 'https://x.com/edlinitiative',
+          instagram: 'https://www.instagram.com/edlinitiative/',
+          youtube: 'https://www.youtube.com/@edlight-initiative',
+          linkedin: 'https://www.linkedin.com/company/edlight-initiative/',
+        },
+        note: 'Contact information sourced from edlight.org. For the most up-to-date links, visit edlight.org directly.',
       },
     };
   },
