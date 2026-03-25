@@ -10,7 +10,7 @@ describe('ChatEmptyState', () => {
     render(<ChatEmptyState />);
 
     expect(screen.getByRole('button', { name: /what courses can i take on edlight/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /scholarships or programs/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /programs and opportunities/i })).toBeInTheDocument();
     nowSpy.mockRestore();
   });
 

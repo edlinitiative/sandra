@@ -64,10 +64,10 @@ describe('getProgramDeadlines tool — all programs', () => {
     expect(data.deadlines.some((d) => /ESLP|Summer Leadership/i.test(d.program))).toBe(true);
   });
 
-  it('includes the Access Scholarship in the results', async () => {
+  it('does not include any scholarship deadlines (EdLight has no internal scholarships)', async () => {
     const result = await getProgramDeadlines.handler({}, ctx);
     const data = result.data as DeadlineData;
-    expect(data.deadlines.some((d) => /Access Scholarship/i.test(d.program))).toBe(true);
+    expect(data.deadlines.some((d) => /Scholarship|Award/i.test(d.program))).toBe(false);
   });
 
   it('provides a summary with rolling and seasonal counts', async () => {
@@ -102,13 +102,12 @@ describe('getProgramDeadlines tool — type filter', () => {
     }
   });
 
-  it('returns only scholarship deadlines when type=scholarship', async () => {
-    const result = await getProgramDeadlines.handler({ type: 'scholarship' }, ctx);
+  it('has no scholarship type — scholarship is not a valid filter', async () => {
+    // EdLight does not offer its own scholarships; 'scholarship' is no longer a valid type
+    const result = await getProgramDeadlines.handler({ type: 'all' }, ctx);
     const data = result.data as DeadlineData;
-    expect(data.total).toBeGreaterThan(0);
-    for (const d of data.deadlines) {
-      expect(d.type).toBe('scholarship');
-    }
+    const types = new Set(data.deadlines.map((d) => d.type));
+    expect(types.has('scholarship')).toBe(false);
   });
 
   it('returns only internship deadlines when type=internship', async () => {

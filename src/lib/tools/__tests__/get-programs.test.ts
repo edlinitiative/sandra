@@ -63,7 +63,8 @@ describe('getProgramsAndScholarships tool', () => {
     expect(data.grounding).toBe('fallback');
     expect(data.total).toBeGreaterThan(0);
     expect(data.programs.some((program) => /ESLP|Summer Leadership/i.test(program.name))).toBe(true);
-    expect(data.programs.some((program) => /Scholarship|Award/i.test(program.name))).toBe(true);
+    // EdLight does NOT offer its own scholarships — no scholarship entries expected
+    expect(data.programs.some((program) => /Scholarship|Award/i.test(program.name))).toBe(false);
   });
 
   it('filters fallback programs by type', async () => {

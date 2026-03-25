@@ -10,17 +10,17 @@ import {
 
 const inputSchema = z.object({
   type: z
-    .enum(['scholarship', 'leadership', 'internship', 'all'])
+    .enum(['leadership', 'internship', 'all'])
     .optional()
     .default('all')
-    .describe("Filter by program type: 'scholarship', 'leadership', 'internship', or 'all'"),
+    .describe("Filter by program type: 'leadership', 'internship', or 'all'"),
   open: z
     .boolean()
     .optional()
     .describe('When true, return only currently open/accepting programs'),
 });
 
-type ProgramType = 'leadership' | 'scholarship' | 'internship';
+type ProgramType = 'leadership' | 'internship';
 type ProgramEntry = {
   name: string;
   type: ProgramType;
@@ -81,48 +81,6 @@ const PROGRAMS: ProgramEntry[] = [
     cost: 'Free',
   },
 
-  // ── Scholarships ─────────────────────────────────────────────────────────────
-  {
-    name: 'EdLight Access Scholarship',
-    type: 'scholarship',
-    organization: 'EdLight Initiative',
-    description:
-      'Need-based scholarship supporting Haitian students who want to pursue coding education and digital skills but face financial barriers. Covers access to EdLight Code courses and supplementary materials.',
-    eligibility: 'Students in Haiti with demonstrated financial need',
-    duration: '1 academic year (renewable)',
-    language: ['en', 'fr', 'ht'],
-    applicationUrl: 'https://www.edlight.org/initiative',
-    highlights: [
-      'Full access to EdLight Code course catalog',
-      'Mentorship pairing',
-      'Priority enrollment in new courses',
-      'Certificate recognition upon completion',
-    ],
-    status: 'open',
-    deadline: 'Apply year-round; cohorts start quarterly',
-    cost: 'Free (scholarship covers all fees)',
-  },
-  {
-    name: 'EdLight Excellence Award',
-    type: 'scholarship',
-    organization: 'EdLight Initiative',
-    description:
-      'Merit-based recognition and scholarship for top-performing students across EdLight Academy and EdLight Code. Awarded to learners who demonstrate exceptional dedication and achievement.',
-    eligibility: 'Current EdLight Academy or EdLight Code students with strong completion records',
-    duration: 'One-time award',
-    language: ['en', 'fr', 'ht'],
-    applicationUrl: 'https://www.edlight.org/initiative',
-    highlights: [
-      'Financial support for continued education',
-      'Public recognition in EdLight News',
-      'Mentorship with EdLight team',
-      'Access to advanced courses',
-    ],
-    status: 'open',
-    deadline: 'Nominations accepted annually',
-    cost: 'Free',
-  },
-
   // ── Internships / Volunteering ────────────────────────────────────────────────
   {
     name: 'EdLight Content Volunteer Program',
@@ -171,14 +129,14 @@ const PROGRAMS: ProgramEntry[] = [
 const getProgramsAndScholarships: SandraTool = {
   name: 'getProgramsAndScholarships',
   description:
-    'Get information about EdLight programs, scholarships, and internship opportunities. Use this for questions about leadership programs (ESLP), scholarships, applications, deadlines, and eligibility. Returns details about all available programs.',
+    'Get information about EdLight programs and opportunities. Use this for questions about leadership programs (ESLP), internships, volunteering, applications, deadlines, and eligibility. EdLight does NOT offer its own scholarships — for external scholarships, direct users to EdLight News.',
   parameters: {
     type: 'object',
     properties: {
       type: {
         type: 'string',
-        description: "Filter by program type: 'scholarship', 'leadership', 'internship', or 'all'",
-        enum: ['scholarship', 'leadership', 'internship', 'all'],
+        description: "Filter by program type: 'leadership', 'internship', or 'all'",
+        enum: ['leadership', 'internship', 'all'],
       },
       open: {
         type: 'boolean',
@@ -193,13 +151,11 @@ const getProgramsAndScholarships: SandraTool = {
   async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
     const query =
-      params.type === 'scholarship'
-        ? 'scholarships application eligibility deadlines'
-        : params.type === 'internship'
-          ? 'internships volunteering application'
-          : params.type === 'leadership'
-            ? 'leadership programs ESLP application'
-            : 'programs scholarships internships leadership';
+      params.type === 'internship'
+        ? 'internships volunteering application'
+        : params.type === 'leadership'
+          ? 'leadership programs ESLP application'
+          : 'programs internships leadership opportunities';
     const groundedResults = await searchPlatformKnowledge(query, {
       platform: 'initiative',
       contentType: 'program',
@@ -226,7 +182,7 @@ const getProgramsAndScholarships: SandraTool = {
 
       return {
         ...program,
-        type: groundedProgram.type,
+        type: groundedProgram.type as ProgramType,
         description: groundedProgram.description,
         sourcePath: groundedProgram.path,
       };

@@ -3,27 +3,27 @@ import { useEffect, useState } from 'react';
 const SUGGESTED_QUESTIONS: Record<string, string[]> = {
   en: [
     'What courses can I take on EdLight?',
-    'Are there scholarships or programs I can apply to?',
+    'What programs and opportunities does EdLight offer?',
     'Tell me about the EdLight Summer Leadership Program',
     'Where should a complete beginner start learning to code?',
     'What is EdLight Academy?',
-    'How do I apply for the EdLight Access Scholarship?',
+    'What\'s new at EdLight?',
   ],
   fr: [
     'Quels cours puis-je suivre sur EdLight ?',
-    'Y a-t-il des bourses ou des programmes auxquels je peux postuler ?',
+    'Quels programmes et opportunités EdLight offre-t-il ?',
     "Parlez-moi du Programme de Leadership d'Été EdLight",
     'Par où un débutant complet devrait-il commencer à apprendre à coder ?',
     "Qu'est-ce qu'EdLight Academy ?",
-    "Comment postuler à la bourse d'accès EdLight ?",
+    'Quoi de neuf chez EdLight ?',
   ],
   ht: [
     'Ki kou mwen ka suiv sou EdLight?',
-    'Èske genyen bous oswa pwogram mwen ka aplike?',
+    'Ki pwogram ak opotünite EdLight ofri?',
     'Pale mwen sou Pwogram Lidèchip Ete EdLight la',
     'Ki kote yon debutant nèt ta dwe kòmanse aprann kode?',
     'Kisa EdLight Academy ye?',
-    'Kijan mwen ka aplike pou bous aksè EdLight la?',
+    'Ki sa ki nouvo nan EdLight?',
   ],
 };
 

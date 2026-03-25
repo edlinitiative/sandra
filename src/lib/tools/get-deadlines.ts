@@ -4,10 +4,10 @@ import { toolRegistry } from './registry';
 
 const inputSchema = z.object({
   type: z
-    .enum(['scholarship', 'leadership', 'internship', 'all'])
+    .enum(['leadership', 'internship', 'all'])
     .optional()
     .default('all')
-    .describe("Filter by program type: 'scholarship', 'leadership', 'internship', or 'all'"),
+    .describe("Filter by program type: 'leadership', 'internship', or 'all'"),
   openOnly: z
     .boolean()
     .optional()
@@ -15,7 +15,7 @@ const inputSchema = z.object({
     .describe('When true (default), return only currently open or rolling programs'),
 });
 
-type ProgramType = 'scholarship' | 'leadership' | 'internship';
+type ProgramType = 'leadership' | 'internship';
 type DeadlineStatus = 'open' | 'closing-soon' | 'closed';
 type DeadlineUrgency = 'rolling' | 'seasonal' | 'imminent';
 
@@ -58,28 +58,6 @@ const DEADLINES: DeadlineEntry[] = [
     urgency: 'rolling',
   },
 
-  // ── Scholarships ────────────────────────────────────────────────────────────
-  {
-    program: 'EdLight Access Scholarship',
-    type: 'scholarship',
-    status: 'open',
-    deadline: 'Rolling — cohorts start quarterly (Q1, Q2, Q3, Q4)',
-    deadlineDate: null,
-    cost: 'Free (covers all course fees)',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'rolling',
-  },
-  {
-    program: 'EdLight Excellence Award',
-    type: 'scholarship',
-    status: 'open',
-    deadline: 'Nominations accepted annually — submit before December',
-    deadlineDate: '2026-12-01',
-    cost: 'Free',
-    applicationUrl: 'https://www.edlight.org/initiative',
-    urgency: 'seasonal',
-  },
-
   // ── Internships / Volunteering ───────────────────────────────────────────────
   {
     program: 'EdLight Tech Internship',
@@ -112,8 +90,8 @@ const getProgramDeadlines: SandraTool = {
     properties: {
       type: {
         type: 'string',
-        description: "Filter by type: 'scholarship', 'leadership', 'internship', or 'all'",
-        enum: ['scholarship', 'leadership', 'internship', 'all'],
+        description: "Filter by type: 'leadership', 'internship', or 'all'",
+        enum: ['leadership', 'internship', 'all'],
       },
       openOnly: {
         type: 'boolean',

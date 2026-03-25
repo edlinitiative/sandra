@@ -298,24 +298,24 @@ describe('Benchmark 5 — "What is EdLight News?" → grounded News answer', () 
 // ---------------------------------------------------------------------------
 
 describe('Benchmark 6 — "What scholarships or programs are available?" → programs tool', () => {
-  it('returns leadership, scholarship, and internship program types', async () => {
+  it('returns leadership and internship program types (no scholarship — EdLight has none)', async () => {
     const result = await getProgramsAndScholarships.handler({}, ctx);
     expect(result.success).toBe(true);
     const data = result.data as ProgramData;
 
     expect(data.total).toBeGreaterThan(0);
     expect(data.types).toContain('leadership');
-    expect(data.types).toContain('scholarship');
+    expect(data.types).not.toContain('scholarship');
     expect(data.types).toContain('internship');
   });
 
-  it('includes named programs such as ESLP and scholarships', async () => {
+  it('includes named programs such as ESLP but no internal scholarships', async () => {
     const result = await getProgramsAndScholarships.handler({}, ctx);
     const data = result.data as ProgramData;
     const names = data.programs.map((program) => program.name);
 
     expect(names.some((name) => /ESLP|Summer Leadership/i.test(name))).toBe(true);
-    expect(names.some((name) => /Scholarship|Award/i.test(name))).toBe(true);
+    expect(names.some((name) => /Scholarship|Award/i.test(name))).toBe(false);
   });
 
   it('returns application URLs and a grounding state for transparency', async () => {
@@ -348,7 +348,7 @@ describe('Benchmark 7 — grounding transparency', () => {
   });
 
   it('program inventory exposes grounding metadata for downstream honest answers', async () => {
-    const result = await getProgramsAndScholarships.handler({ type: 'scholarship' }, ctx);
+    const result = await getProgramsAndScholarships.handler({ type: 'all' }, ctx);
     const data = result.data as ProgramData;
 
     expect(data.grounding).toBeTruthy();

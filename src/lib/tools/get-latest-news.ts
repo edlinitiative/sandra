@@ -53,13 +53,13 @@ const NEWS_ITEMS: NewsItem[] = [
     tags: ['Python', 'data analysis', 'EdLight Code', 'course launch'],
   },
   {
-    title: 'EdLight Access Scholarship — Q1 2026 Cohort Announced',
+    title: 'EdLight News: External Scholarship Roundup — January 2026',
     category: 'announcement',
     summary:
-      'The Q1 2026 cohort of the EdLight Access Scholarship has been selected. Ten new scholars will receive full access to EdLight Code courses along with mentorship support.',
+      'EdLight News has published its latest curated list of external scholarships and educational opportunities available to learners in Haiti and the Caribbean. Visit EdLight News for details and application links.',
     date: '2026-01-10',
-    url: 'https://www.edlight.org/news',
-    tags: ['scholarship', 'Access Scholarship', 'cohort'],
+    url: 'https://www.edlightnews.com',
+    tags: ['scholarships', 'external opportunities', 'EdLight News'],
   },
   {
     title: 'Digital Literacy Workshop in Port-au-Prince',

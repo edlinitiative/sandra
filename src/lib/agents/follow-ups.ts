@@ -54,24 +54,24 @@ const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
   getProgramsAndScholarships: {
     en: [
       'How do I apply for the ESLP program?',
-      'What are the eligibility requirements for scholarships?',
       'Are these programs free?',
       'When is the next application deadline?',
       'What courses can I take on EdLight Code?',
+      'Are there external scholarships I can apply for?',
     ],
     fr: [
       'Comment postuler au programme ESLP ?',
-      'Quelles sont les conditions d\'éligibilité pour les bourses ?',
       'Ces programmes sont-ils gratuits ?',
       'Quelle est la prochaine date limite de candidature ?',
       'Quels cours puis-je suivre sur EdLight Code ?',
+      'Y a-t-il des bourses externes auxquelles je peux postuler ?',
     ],
     ht: [
       'Kijan mwen ka aplike pou pwogram ESLP la?',
-      'Ki kondisyon pou bous yo?',
       'Èske pwogram sa yo gratis?',
       'Ki dat limit pwochèn aplikasyon an?',
       'Ki kou mwen ka suiv sou EdLight Code?',
+      'Èske genyen bous eksèn mwen ka aplike pou yo?',
     ],
   },
   searchKnowledgeBase: {
@@ -138,43 +138,43 @@ const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
     en: [
       'How do I apply for the ESLP?',
       'Are any of these programs free?',
-      'What is the Access Scholarship?',
       'Can I apply for multiple programs at once?',
       'Where do I submit my application?',
+      'Are there external scholarships listed on EdLight News?',
     ],
     fr: [
       'Comment postuler à l\'ESLP ?',
       'Ces programmes sont-ils gratuits ?',
-      'Qu\'est-ce que la bourse d\'accès ?',
       'Puis-je postuler à plusieurs programmes en même temps ?',
       'Où dois-je soumettre ma candidature ?',
+      'Y a-t-il des bourses externes sur EdLight News ?',
     ],
     ht: [
       'Kijan mwen ka aplike pou ESLP la?',
       'Èske pwogram sa yo gratis?',
-      'Kisa bous aksè a ye?',
       'Èske mwen ka aplike pou plizyè pwogram anmenmtan?',
       'Ki kote mwen ka soumèt aplikasyon mwen?',
+      'Èske genyen bous eksèn sou EdLight News?',
     ],
   },
   getContactInfo: {
     en: [
-      'What programs and scholarships does EdLight offer?',
+      'What programs and opportunities does EdLight offer?',
       'What courses can I take on EdLight?',
-      'How do I apply for a scholarship?',
       'What is the EdLight Summer Leadership Program?',
+      'What\'s new at EdLight?',
     ],
     fr: [
-      'Quels programmes et bourses EdLight propose-t-il ?',
+      'Quels programmes et opportunités EdLight propose-t-il ?',
       'Quels cours puis-je suivre sur EdLight ?',
-      'Comment postuler à une bourse ?',
       'Qu\'est-ce que le programme ESLP ?',
+      'Quoi de neuf chez EdLight ?',
     ],
     ht: [
-      'Ki pwogram ak bous EdLight ofri?',
+      'Ki pwogram ak opòtinite EdLight ofri?',
       'Ki kou mwen ka pran sou EdLight?',
-      'Kijan mwen ka aplike pou yon bous?',
       'Kisa ESLP la ye?',
+      'Ki sa ki nouvo nan EdLight?',
     ],
   },
 };
@@ -184,19 +184,19 @@ const DEFAULT_FOLLOW_UPS: Record<SupportedLanguage, string[]> = {
   en: [
     'What EdLight platforms are available?',
     'What courses can I take?',
-    'Are there any programs or scholarships?',
+    'Are there any programs or opportunities?',
     'How can EdLight help me?',
   ],
   fr: [
     'Quelles plateformes EdLight sont disponibles ?',
     'Quels cours puis-je suivre ?',
-    'Y a-t-il des programmes ou des bourses ?',
+    'Y a-t-il des programmes ou des opportunités ?',
     'Comment EdLight peut-il m\'aider ?',
   ],
   ht: [
     'Ki platfòm EdLight ki disponib?',
     'Ki kou mwen ka pran?',
-    'Èske genyen pwogram oswa bous?',
+    'Èske genyen pwogram oswa opòtinite?',
     'Kijan EdLight ka ede mwen?',
   ],
 };
