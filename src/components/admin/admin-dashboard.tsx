@@ -126,7 +126,8 @@ export function AdminDashboard() {
       const message = errorBody?.error?.message ?? 'Admin request failed';
 
       // Distinguish database connectivity errors from auth/other errors
-      if (response.status === 503 || code === 'DATABASE_UNAVAILABLE') {
+      if (response.status === 503 || code === 'DATABASE_UNAVAILABLE' ||
+          /Can't reach database server|Connection refused|ECONNREFUSED|database.*unavailable/i.test(message)) {
         const err = new Error(message);
         (err as Error & { isDbError: boolean }).isDbError = true;
         throw err;
@@ -177,6 +178,7 @@ export function AdminDashboard() {
 
     setLoading(true);
     setAuthError(null);
+    setDbUnavailable(false);
 
     try {
       const normalizedKey = adminKeyDraft.trim();
