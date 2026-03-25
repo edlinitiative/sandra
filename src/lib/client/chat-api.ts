@@ -111,41 +111,43 @@ export async function streamMessage(
           const data = line.slice(6).trim();
           if (!data) continue;
 
+          let event: Record<string, unknown>;
           try {
-            const event = JSON.parse(data) as Record<string, unknown>;
-
-            switch (event.type) {
-              case 'start':
-                if (event.sessionId) sessionId = String(event.sessionId);
-                break;
-              case 'chunk':
-              case 'token':
-                onToken(String(event.content ?? event.data ?? ''));
-                break;
-              case 'tool':
-              case 'tool_call':
-                onToolCall?.(String(event.name ?? event.data ?? ''));
-                break;
-              case 'done':
-                if (event.toolsUsed && Array.isArray(event.toolsUsed)) {
-                  toolsUsed = event.toolsUsed as string[];
-                }
-                if (typeof event.response === 'string') {
-                  finalResponse = event.response;
-                }
-                if (typeof event.retrievalUsed === 'boolean') {
-                  retrievalUsed = event.retrievalUsed;
-                }
-                if (event.suggestedFollowUps && Array.isArray(event.suggestedFollowUps)) {
-                  suggestedFollowUps = event.suggestedFollowUps as string[];
-                }
-                if (event.sessionId) sessionId = String(event.sessionId);
-                break;
-              case 'error':
-                throw new Error(String(event.message ?? event.data ?? 'Stream error'));
-            }
-          } catch (parseErr) {
+            event = JSON.parse(data) as Record<string, unknown>;
+          } catch {
             // Skip unparseable events
+            continue;
+          }
+
+          switch (event.type) {
+            case 'start':
+              if (event.sessionId) sessionId = String(event.sessionId);
+              break;
+            case 'chunk':
+            case 'token':
+              onToken(String(event.content ?? event.data ?? ''));
+              break;
+            case 'tool':
+            case 'tool_call':
+              onToolCall?.(String(event.name ?? event.data ?? ''));
+              break;
+            case 'done':
+              if (event.toolsUsed && Array.isArray(event.toolsUsed)) {
+                toolsUsed = event.toolsUsed as string[];
+              }
+              if (typeof event.response === 'string') {
+                finalResponse = event.response;
+              }
+              if (typeof event.retrievalUsed === 'boolean') {
+                retrievalUsed = event.retrievalUsed;
+              }
+              if (event.suggestedFollowUps && Array.isArray(event.suggestedFollowUps)) {
+                suggestedFollowUps = event.suggestedFollowUps as string[];
+              }
+              if (event.sessionId) sessionId = String(event.sessionId);
+              break;
+            case 'error':
+              throw new Error(String(event.message ?? event.data ?? 'Stream error'));
           }
         }
       }

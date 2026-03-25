@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'Sandra — EdLight AI Assistant',
   description: 'Sandra is the AI assistant for the EdLight ecosystem. She supports Haitian Creole, French, and English.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/sandra-logo.svg',
   },
 };
 

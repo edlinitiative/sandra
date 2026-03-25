@@ -17,7 +17,7 @@ const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
       'Comment m\'inscrire à un cours ?',
       'Quel cours un débutant complet devrait-il commencer ?',
       'Les cours EdLight sont-ils gratuits ?',
-      'Reçoit-on un certificat après avoir terminé un cours ?',
+      'Reçoit-on un certificat après avoir terminurs ?',
       'Quelle est la différence entre EdLight Academy et EdLight Code ?',
     ],
     ht: [
@@ -111,6 +111,72 @@ const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
       'Èske mwen ka kontribye nan depo EdLight yo?',
     ],
   },
+  getLatestNews: {
+    en: [
+      'Are there any programs or scholarships I can apply for?',
+      'When is the next ESLP application deadline?',
+      'What courses are currently available on EdLight?',
+      'How can I get involved with EdLight?',
+      'Where can I read more EdLight news?',
+    ],
+    fr: [
+      'Y a-t-il des programmes ou des bourses auxquels je peux postuler ?',
+      'Quelle est la prochaine date limite pour l\'ESLP ?',
+      'Quels cours sont actuellement disponibles sur EdLight ?',
+      'Comment puis-je m\'impliquer dans EdLight ?',
+      'Où puis-je lire plus d\'actualités EdLight ?',
+    ],
+    ht: [
+      'Èske genyen pwogram oswa bous mwen ka aplike pou yo?',
+      'Ki dat limit pou ESLP la?',
+      'Ki kou ki disponib sou EdLight kounye a?',
+      'Kijan mwen ka enplike nan EdLight?',
+      'Ki kote mwen ka li plis nouvèl EdLight?',
+    ],
+  },
+  getProgramDeadlines: {
+    en: [
+      'How do I apply for the ESLP?',
+      'Are any of these programs free?',
+      'What is the Access Scholarship?',
+      'Can I apply for multiple programs at once?',
+      'Where do I submit my application?',
+    ],
+    fr: [
+      'Comment postuler à l\'ESLP ?',
+      'Ces programmes sont-ils gratuits ?',
+      'Qu\'est-ce que la bourse d\'accès ?',
+      'Puis-je postuler à plusieurs programmes en même temps ?',
+      'Où dois-je soumettre ma candidature ?',
+    ],
+    ht: [
+      'Kijan mwen ka aplike pou ESLP la?',
+      'Èske pwogram sa yo gratis?',
+      'Kisa bous aksè a ye?',
+      'Èske mwen ka aplike pou plizyè pwogram anmenmtan?',
+      'Ki kote mwen ka soumèt aplikasyon mwen?',
+    ],
+  },
+  getContactInfo: {
+    en: [
+      'What programs and scholarships does EdLight offer?',
+      'What courses can I take on EdLight?',
+      'How do I apply for a scholarship?',
+      'What is the EdLight Summer Leadership Program?',
+    ],
+    fr: [
+      'Quels programmes et bourses EdLight propose-t-il ?',
+      'Quels cours puis-je suivre sur EdLight ?',
+      'Comment postuler à une bourse ?',
+      'Qu\'est-ce que le programme ESLP ?',
+    ],
+    ht: [
+      'Ki pwogram ak bous EdLight ofri?',
+      'Ki kou mwen ka pran sou EdLight?',
+      'Kijan mwen ka aplike pou yon bous?',
+      'Kisa ESLP la ye?',
+    ],
+  },
 };
 
 /** Default follow-ups when no tools were used */
@@ -147,6 +213,9 @@ export function generateFollowUps(
   // Priority: first match wins
   const priorityOrder = [
     'getProgramsAndScholarships',
+    'getProgramDeadlines',
+    'getLatestNews',
+    'getContactInfo',
     'getCourseInventory',
     'getEdLightInitiatives',
     'searchKnowledgeBase',
