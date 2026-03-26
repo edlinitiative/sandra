@@ -14,7 +14,8 @@ export type {
 } from './types';
 export { chunkDocument } from './chunker';
 export { embedChunks, embedQuery } from './embeddings';
-export { InMemoryVectorStore, getVectorStore, setVectorStore } from './vector-store';
+export { InMemoryVectorStore, getVectorStore, setVectorStore, resetVectorStore } from './vector-store';
+export { PgVectorStore } from './pg-vector-store';
 export { retrieveContext, formatRetrievalContext } from './retrieval';
 export { ingestDocuments, removeSource } from './ingest';
 export {

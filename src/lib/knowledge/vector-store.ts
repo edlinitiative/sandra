@@ -14,6 +14,7 @@ import {
   metadataNumber,
   metadataString,
 } from './platform-metadata';
+import { PgVectorStore } from './pg-vector-store';
 
 const log = createLogger('knowledge:vectorstore');
 
@@ -170,13 +171,31 @@ function cosineSimilarity(a: number[], b: number[]): number {
 // Singleton
 let vectorStore: VectorStore | null = null;
 
+/**
+ * Get the vector store singleton.
+ * Prefers PgVectorStore (persistent) when DATABASE_URL is configured.
+ * Falls back to InMemoryVectorStore for testing or when DB is unavailable.
+ */
 export function getVectorStore(): VectorStore {
   if (!vectorStore) {
-    vectorStore = new InMemoryVectorStore();
+    if (process.env.DATABASE_URL) {
+      log.info('Initializing PgVectorStore (pgvector-backed, persistent)');
+      vectorStore = new PgVectorStore();
+    } else {
+      log.info('Initializing InMemoryVectorStore (volatile, no DATABASE_URL)');
+      vectorStore = new InMemoryVectorStore();
+    }
   }
   return vectorStore;
 }
 
 export function setVectorStore(store: VectorStore): void {
   vectorStore = store;
+}
+
+/**
+ * Reset the singleton (used in tests).
+ */
+export function resetVectorStore(): void {
+  vectorStore = null;
 }

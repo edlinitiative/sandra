@@ -123,7 +123,8 @@ model IndexedSource {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  documents      IndexedDocument[]
+  // documents relation removed — IndexedDocument.sourceId is now a repo full name,
+  // not a cuid referencing this table. Relationship managed by application code.
 
   @@unique([type, url])
   @@index([status])
@@ -133,19 +134,22 @@ model IndexedSource {
 
 model IndexedDocument {
   id             String    @id @default(cuid())
-  sourceId       String
+  sourceId       String    // Repo full name (e.g. "edlinitiative/code") — no FK
   title          String?
   path           String?   // File path or URL path within the source
   content        String    // Raw text content
   chunkIndex     Int       @default(0) // Position in chunked sequence
   chunkTotal     Int       @default(1) // Total chunks for this document
   contentHash    String?   // For dedup / change detection
-  embedding      Float[]   // Embedding vector for similarity search
+  // Stored as pgvector vector(1536) — use raw SQL for similarity search.
+  // Prisma reads/writes via Unsupported("vector(1536)"); use $queryRaw for search.
+  embedding      Unsupported("vector(1536)")?
   metadata       Json?     // Extra fields: language, section, etc.
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  source         IndexedSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  // FK removed — sourceId is now the repo full name, not an IndexedSource cuid.
+  // Relationship managed by application code; see PgVectorStore and indexer.
 
   @@index([sourceId])
   @@index([contentHash])
