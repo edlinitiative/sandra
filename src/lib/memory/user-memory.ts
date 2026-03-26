@@ -5,11 +5,11 @@ import { PrismaUserMemoryStore } from './prisma-user-memory-store';
 
 const log = createLogger('memory:user');
 
-// ── In-Memory User Memory Store ───────────────────────────────────────────────
+// ── In-Memory User Memory Store (for tests only) ─────────────────────────────
 
 /**
  * In-memory user memory store.
- * Production replacement: backed by Postgres (Memory table).
+ * Used only in tests or when DATABASE_URL is not configured.
  */
 export class InMemoryUserMemoryStore implements UserMemoryStore {
   private store = new Map<string, Map<string, UserMemoryEntry>>();
@@ -50,99 +50,23 @@ export class InMemoryUserMemoryStore implements UserMemoryStore {
   }
 }
 
-class ResilientUserMemoryStore implements UserMemoryStore {
-  constructor(
-    private readonly persistentStore: UserMemoryStore,
-    private readonly fallbackStore: UserMemoryStore,
-  ) {}
-
-  async getMemories(userId: string): Promise<UserMemoryEntry[]> {
-    try {
-      const memories = await this.persistentStore.getMemories(userId);
-      if (memories.length > 0) {
-        return memories;
-      }
-    } catch (error) {
-      log.warn('Falling back to in-memory user memories', {
-        userId,
-        error: error instanceof Error ? error.message : 'unknown',
-      });
-    }
-
-    return this.fallbackStore.getMemories(userId);
-  }
-
-  async getMemory(userId: string, key: string): Promise<UserMemoryEntry | null> {
-    try {
-      const memory = await this.persistentStore.getMemory(userId, key);
-      if (memory) {
-        return memory;
-      }
-    } catch (error) {
-      log.warn('Falling back to in-memory user memory lookup', {
-        userId,
-        key,
-        error: error instanceof Error ? error.message : 'unknown',
-      });
-    }
-
-    return this.fallbackStore.getMemory(userId, key);
-  }
-
-  async saveMemory(userId: string, entry: UserMemoryEntry): Promise<void> {
-    await this.fallbackStore.saveMemory(userId, entry);
-
-    try {
-      await this.persistentStore.saveMemory(userId, entry);
-    } catch (error) {
-      log.warn('Failed to persist user memory; kept in fallback store', {
-        userId,
-        key: entry.key,
-        error: error instanceof Error ? error.message : 'unknown',
-      });
-    }
-  }
-
-  async deleteMemory(userId: string, key: string): Promise<void> {
-    await this.fallbackStore.deleteMemory(userId, key);
-
-    try {
-      await this.persistentStore.deleteMemory(userId, key);
-    } catch (error) {
-      log.warn('Failed to delete persistent user memory', {
-        userId,
-        key,
-        error: error instanceof Error ? error.message : 'unknown',
-      });
-    }
-  }
-
-  async getMemorySummary(userId: string): Promise<string> {
-    try {
-      const summary = await this.persistentStore.getMemorySummary(userId);
-      if (summary) {
-        return summary;
-      }
-    } catch (error) {
-      log.warn('Falling back to in-memory user memory summary', {
-        userId,
-        error: error instanceof Error ? error.message : 'unknown',
-      });
-    }
-
-    return this.fallbackStore.getMemorySummary(userId);
-  }
-}
-
 // Singleton
 let userMemoryStore: UserMemoryStore | null = null;
 
+/**
+ * Get the user memory store singleton.
+ * Prefers PrismaUserMemoryStore (DB-backed, persistent) when DATABASE_URL is set.
+ * Falls back to InMemoryUserMemoryStore for tests.
+ */
 export function getUserMemoryStore(): UserMemoryStore {
   if (!userMemoryStore) {
-    userMemoryStore = new ResilientUserMemoryStore(
-      new PrismaUserMemoryStore(db),
-      new InMemoryUserMemoryStore(),
-    );
+    if (process.env.DATABASE_URL) {
+      log.info('Initializing PrismaUserMemoryStore (DB-backed, persistent)');
+      userMemoryStore = new PrismaUserMemoryStore(db);
+    } else {
+      log.info('Initializing InMemoryUserMemoryStore (volatile, no DATABASE_URL)');
+      userMemoryStore = new InMemoryUserMemoryStore();
+    }
   }
   return userMemoryStore;
 }

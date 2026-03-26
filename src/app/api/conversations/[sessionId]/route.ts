@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPrismaSessionStore, getSessionStore } from '@/lib/memory/session-store';
+import { getPrismaSessionStore } from '@/lib/memory/session-store';
 import { apiErrorResponse, generateRequestId, successResponse, sessionIdSchema, ValidationError, NotFoundError } from '@/lib/utils';
 
 interface RouteContext {
@@ -21,34 +21,11 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const store = getPrismaSessionStore();
-    const memoryStore = getSessionStore();
-    let messages = await store.getMessages(sessionId, { limit: 100 }).catch(() => []);
+    const messages = await store.getMessages(sessionId, { limit: 100 }).catch(() => []);
     const session =
       typeof store.getSession === 'function'
         ? await store.getSession(sessionId).catch(() => null)
         : null;
-
-    if (messages.length === 0) {
-      const history = await memoryStore.getHistory(sessionId, 100).catch(() => []);
-      if (history.length > 0) {
-        return NextResponse.json(
-          successResponse(
-            {
-              sessionId,
-              language: session?.language ?? null,
-              messages: history
-                .filter((m) => m.role === 'user' || m.role === 'assistant')
-                .map((m) => ({
-                  role: m.role,
-                  content: m.content,
-                  createdAt: m.timestamp.toISOString(),
-                })),
-            },
-            { requestId },
-          ),
-        );
-      }
-    }
 
     if (messages.length === 0) {
       const err = new NotFoundError('Session', sessionId);

@@ -32,10 +32,6 @@ vi.mock('@/lib/ai', () => ({
 
 vi.mock('@/lib/memory/session-store', () => ({
   getSessionStore: () => mockSessionStore,
-  getPrismaSessionStore: () => ({
-    addMessage: vi.fn().mockResolvedValue(undefined),
-    loadContext: vi.fn().mockResolvedValue([]),
-  }),
 }));
 
 vi.mock('@/lib/memory/user-memory', () => ({

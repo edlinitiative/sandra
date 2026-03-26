@@ -5,7 +5,7 @@ import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
 import type { ChatMessage } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
-import { getSessionStore, getPrismaSessionStore } from '@/lib/memory/session-store';
+import { getSessionStore } from '@/lib/memory/session-store';
 import {
   getSessionContinuityContext,
   rememberConversationInsights,
@@ -15,38 +15,6 @@ import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } f
 import { createLogger, ProviderError } from '@/lib/utils';
 
 const log = createLogger('agents:sandra');
-
-async function loadConversationContext(
-  sessionId: string,
-  sessionStore: ReturnType<typeof getSessionStore>,
-  prismaStore: ReturnType<typeof getPrismaSessionStore>,
-): Promise<ChatMessage[]> {
-  const liveHistory = await sessionStore.getContextMessages(sessionId);
-  if (liveHistory.length > 0) {
-    return liveHistory;
-  }
-
-  try {
-    if (typeof prismaStore.loadContext !== 'function') {
-      return liveHistory;
-    }
-
-    const persistedHistory = await prismaStore.loadContext(sessionId);
-    if (persistedHistory.length > 0) {
-      log.debug('Loaded persisted session context fallback', {
-        sessionId,
-        messageCount: persistedHistory.length,
-      });
-    }
-    return persistedHistory;
-  } catch (error) {
-    log.warn('Failed to load persisted session context fallback', {
-      sessionId,
-      error: error instanceof Error ? error.message : 'unknown',
-    });
-    return liveHistory;
-  }
-}
 
 /**
  * Run the Sandra agent loop.
@@ -67,7 +35,6 @@ export async function runSandraAgent(
   const cfg = { ...DEFAULT_AGENT_CONFIG, ...config };
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
-  const prismaStore = getPrismaSessionStore();
 
   log.info(`Agent invoked`, {
     sessionId: input.sessionId,
@@ -77,8 +44,8 @@ export async function runSandraAgent(
   });
 
   try {
-    // 1. Load conversation history
-    const historyMessages = await loadConversationContext(input.sessionId, sessionStore, prismaStore);
+    // 1. Load conversation history (DB is single source of truth)
+    const historyMessages = await sessionStore.getContextMessages(input.sessionId);
 
     // 2. Load user memory
     let userMemorySummary = '';
@@ -140,20 +107,12 @@ export async function runSandraAgent(
       { role: 'user', content: input.message },
     ];
 
-    // Save user message to session
+    // Save user message to session (DB-backed)
     await sessionStore.addEntry(input.sessionId, {
       role: 'user',
       content: input.message,
       timestamp: new Date(),
     });
-
-    // Also persist to DB for durable history
-    await prismaStore.addMessage({
-      sessionId: input.sessionId,
-      role: 'user',
-      content: input.message,
-      language: input.language,
-    }).catch(() => { /* best-effort — DB may not be available in all envs */ });
 
     await rememberConversationInsights({
       sessionId: input.sessionId,
@@ -197,20 +156,12 @@ export async function runSandraAgent(
       if (response.toolCalls.length === 0 || response.finishReason !== 'tool_calls') {
         const content = response.content ?? 'I apologize, but I was unable to generate a response. Please try again.';
 
-        // Save assistant response to session
+        // Save assistant response to session (DB-backed)
         await sessionStore.addEntry(input.sessionId, {
           role: 'assistant',
           content,
           timestamp: new Date(),
         });
-
-        // Persist to DB
-        await prismaStore.addMessage({
-          sessionId: input.sessionId,
-          role: 'assistant',
-          content,
-          language: input.language,
-        }).catch(() => { /* best-effort */ });
 
         await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
@@ -287,13 +238,6 @@ export async function runSandraAgent(
       timestamp: new Date(),
     });
 
-    await prismaStore.addMessage({
-      sessionId: input.sessionId,
-      role: 'assistant',
-      content: fallback,
-      language: input.language,
-    }).catch(() => { /* best-effort */ });
-
     await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
     return {
@@ -325,13 +269,6 @@ export async function runSandraAgent(
         content: errorMessage,
         timestamp: new Date(),
       });
-
-      await prismaStore.addMessage({
-        sessionId: input.sessionId,
-        role: 'assistant',
-        content: errorMessage,
-        language: input.language,
-      });
     } catch {
       // Best effort
     }
@@ -356,13 +293,12 @@ export async function* runSandraAgentStream(
   const cfg = { ...DEFAULT_AGENT_CONFIG, ...config };
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
-  const prismaStore = getPrismaSessionStore();
 
   log.info('Streaming agent invoked', { sessionId: input.sessionId });
 
   try {
-    // Load conversation history
-    const historyMessages = await loadConversationContext(input.sessionId, sessionStore, prismaStore);
+    // Load conversation history (DB is single source of truth)
+    const historyMessages = await sessionStore.getContextMessages(input.sessionId);
 
     // Load user memory
     let userMemorySummary = '';
@@ -419,19 +355,12 @@ export async function* runSandraAgentStream(
       { role: 'user', content: input.message },
     ];
 
-    // Save user message
+    // Save user message (DB-backed)
     await sessionStore.addEntry(input.sessionId, {
       role: 'user',
       content: input.message,
       timestamp: new Date(),
     });
-
-    await prismaStore.addMessage({
-      sessionId: input.sessionId,
-      role: 'user',
-      content: input.message,
-      language: input.language,
-    }).catch(() => { /* best-effort */ });
 
     await rememberConversationInsights({
       sessionId: input.sessionId,
@@ -477,13 +406,6 @@ export async function* runSandraAgentStream(
           content: response,
           timestamp: new Date(),
         });
-
-        await prismaStore.addMessage({
-          sessionId: input.sessionId,
-          role: 'assistant',
-          content: response,
-          language: input.language,
-        }).catch(() => { /* best-effort */ });
 
         await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
@@ -569,13 +491,6 @@ export async function* runSandraAgentStream(
       content: fallback,
       timestamp: new Date(),
     });
-
-    await prismaStore.addMessage({
-      sessionId: input.sessionId,
-      role: 'assistant',
-      content: fallback,
-      language: input.language,
-    }).catch(() => { /* best-effort */ });
 
     await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 

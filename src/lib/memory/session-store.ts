@@ -14,14 +14,15 @@ import {
   getMessagesBySessionId,
 } from '@/lib/db/messages';
 import type { MessageRole } from '@prisma/client';
+import { PrismaSessionStore as PrismaSessionMemoryStore } from './prisma-session-store';
 
 const log = createLogger('memory:session');
 
-// ── In-Memory Session Store (for agent context window) ────────────────────────
+// ── In-Memory Session Store (for tests only) ─────────────────────────────────
 
 /**
  * In-memory session store.
- * Production replacement: backed by Redis or Postgres.
+ * Used only in tests or when DATABASE_URL is not configured.
  */
 export class InMemorySessionStore implements SessionMemoryStore {
   private store = new Map<string, ConversationEntry[]>();
@@ -54,12 +55,23 @@ export class InMemorySessionStore implements SessionMemoryStore {
   }
 }
 
-// Singleton for the default in-memory session store
+// Singleton for the session store
 let sessionStore: SessionMemoryStore | null = null;
 
+/**
+ * Get the session memory store singleton.
+ * Prefers PrismaSessionStore (DB-backed, persistent) when DATABASE_URL is set.
+ * Falls back to InMemorySessionStore for tests.
+ */
 export function getSessionStore(): SessionMemoryStore {
   if (!sessionStore) {
-    sessionStore = new InMemorySessionStore();
+    if (process.env.DATABASE_URL) {
+      log.info('Initializing PrismaSessionStore (DB-backed, persistent)');
+      sessionStore = new PrismaSessionMemoryStore(db);
+    } else {
+      log.info('Initializing InMemorySessionStore (volatile, no DATABASE_URL)');
+      sessionStore = new InMemorySessionStore();
+    }
   }
   return sessionStore;
 }

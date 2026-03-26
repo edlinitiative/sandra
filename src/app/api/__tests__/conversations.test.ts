@@ -11,9 +11,6 @@ const { mockGetSession } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/memory/session-store', () => ({
-  getSessionStore: () => ({
-    getHistory: mockGetHistory,
-  }),
   getPrismaSessionStore: () => ({
     getMessages: mockGetHistory,
     getSession: mockGetSession,
