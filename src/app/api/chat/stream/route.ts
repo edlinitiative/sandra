@@ -5,6 +5,7 @@ import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { authenticateRequest, getScopesForRole } from '@/lib/auth';
+import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { env } from '@/lib/config';
 
 const chatRequestSchema = z.object({
@@ -31,6 +32,9 @@ function isApiKeyMissing(): boolean {
  *   - { type: 'error', message }
  */
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+  setCorrelationId(requestId);
+
   try {
     const body = await request.json();
     const parsed = chatRequestSchema.safeParse(body);
@@ -182,5 +186,7 @@ export async function POST(request: Request) {
       JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: 'Failed to process request' } }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
+  } finally {
+    clearCorrelationId();
   }
 }

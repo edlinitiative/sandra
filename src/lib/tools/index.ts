@@ -14,6 +14,24 @@ import './get-user-enrollments';
 import './get-user-certificates';
 import './get-application-status';
 
+// Admin tools (require admin:tools scope)
+import './trigger-indexing';
+import './get-indexing-status';
+import './list-connected-systems';
+import './view-system-health';
+
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';
 export { executeTool } from './executor';
+export {
+  withRetry,
+  withTimeout,
+  CircuitBreaker,
+  CircuitOpenError,
+  TimeoutError,
+  getCircuitBreaker,
+  getAllCircuitBreakerStats,
+  getCorrelationId,
+  setCorrelationId,
+  clearCorrelationId,
+} from './resilience';

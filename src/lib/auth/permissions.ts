@@ -46,6 +46,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'applications:write',
     'admin:read',
     'admin:write',
+    'admin:tools',
     'audit:read',
   ],
 };
@@ -88,6 +89,7 @@ export const PRIVATE_SCOPES = [
   'certificates:write',
   'applications:read',
   'applications:write',
+  'admin:tools',
 ] as const;
 
 /** Check if a tool's required scopes indicate it accesses private user data. */

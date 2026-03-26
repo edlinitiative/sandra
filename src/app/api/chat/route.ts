@@ -5,6 +5,7 @@ import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { authenticateRequest, getScopesForRole } from '@/lib/auth';
+import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
@@ -45,6 +46,7 @@ function isApiKeyMissing(): boolean {
 
 export async function POST(request: Request) {
   const requestId = generateRequestId();
+  setCorrelationId(requestId);
 
   try {
     let body: unknown;
@@ -176,5 +178,7 @@ export async function POST(request: Request) {
 
     const { envelope, status } = apiErrorResponse(error, requestId);
     return NextResponse.json(envelope, { status });
+  } finally {
+    clearCorrelationId();
   }
 }
