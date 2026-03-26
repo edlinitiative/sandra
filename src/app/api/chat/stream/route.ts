@@ -4,6 +4,7 @@ import { generateFollowUps } from '@/lib/agents/follow-ups';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
+import { authenticateRequest, getScopesForRole } from '@/lib/auth';
 import { env } from '@/lib/config';
 
 const chatRequestSchema = z.object({
@@ -69,6 +70,17 @@ export async function POST(request: Request) {
       userId: canonicalUser.userId,
     });
 
+    // Resolve auth scopes (optional — anonymous users get guest scopes)
+    let scopes = getScopesForRole('guest');
+    try {
+      const authResult = await authenticateRequest(request);
+      if (authResult.authenticated) {
+        scopes = authResult.user.scopes;
+      }
+    } catch {
+      // Continue with guest scopes
+    }
+
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
@@ -120,6 +132,7 @@ export async function POST(request: Request) {
             userId: canonicalUser.userId,
             language,
             channel,
+            scopes,
           })) {
             switch (event.type) {
               case 'token':

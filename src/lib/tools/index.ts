@@ -8,6 +8,12 @@ import './get-latest-news';
 import './get-deadlines';
 import './get-contact-info';
 
+// Private user tools (require authentication)
+import './get-user-profile';
+import './get-user-enrollments';
+import './get-user-certificates';
+import './get-application-status';
+
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';
 export { executeTool } from './executor';

@@ -17,3 +17,11 @@ export {
   extractSessionProfile,
   buildConversationSummary,
 } from './session-insights';
+export { summarizeConversation, needsAISummarization } from './conversation-summarizer';
+export {
+  estimateTokens,
+  estimateMessagesTokens,
+  calculateContextBudget,
+  optimizeContextWindow,
+} from './context-manager';
+export type { ContextBudget } from './context-manager';

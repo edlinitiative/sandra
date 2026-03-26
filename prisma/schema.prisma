@@ -30,6 +30,13 @@ enum SyncStatus {
   error
 }
 
+enum UserRole {
+  guest
+  student
+  educator
+  admin
+}
+
 // ── Users ────────────────────────────────────────────────────────────────────
 
 model User {
@@ -37,6 +44,7 @@ model User {
   externalId     String?   @unique // ID from external auth provider
   name           String?
   email          String?   @unique
+  role           UserRole  @default(guest)
   language       String    @default("en") // en | fr | ht
   channel        String    @default("web") // web | whatsapp | instagram | email | voice
   metadata       Json?     // Flexible extra data
@@ -45,6 +53,9 @@ model User {
 
   sessions       Session[]
   memories       Memory[]
+  enrollments    Enrollment[]
+  certificates   Certificate[]
+  applications   ProgramApplication[]
 
   @@index([email])
   @@index([externalId])
@@ -177,4 +188,76 @@ model RepoRegistry {
 
   @@unique([owner, name])
   @@index([isActive])
+}
+
+// ── Enrollments ──────────────────────────────────────────────────────────────
+
+model Enrollment {
+  id             String    @id @default(cuid())
+  userId         String
+  courseId        String    // Platform-specific course identifier
+  courseName     String
+  platform       String    // "academy" | "code"
+  status         String    @default("active") // active | completed | dropped
+  enrolledAt     DateTime  @default(now())
+  completedAt    DateTime?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+// ── Certificates ─────────────────────────────────────────────────────────────
+
+model Certificate {
+  id             String    @id @default(cuid())
+  userId         String
+  courseName     String
+  platform       String    // "academy" | "code"
+  issuedAt       DateTime  @default(now())
+  certificateUrl String?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Program Applications ─────────────────────────────────────────────────────
+
+model ProgramApplication {
+  id             String    @id @default(cuid())
+  userId         String
+  programName    String    // e.g., "ESLP", "Nexus", "Academy Scholarship"
+  programId      String?
+  status         String    @default("submitted") // submitted | under_review | accepted | rejected | waitlisted
+  appliedAt      DateTime  @default(now())
+  reviewedAt     DateTime?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([programId])
+}
+
+// ── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String    @id @default(cuid())
+  userId         String?
+  sessionId      String?
+  action         String    // tool_execution | permission_denied | auth_failure | data_access
+  resource       String?   // Tool name, endpoint, etc.
+  details        Json?
+  ip             String?
+  success        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([action])
+  @@index([createdAt])
 }

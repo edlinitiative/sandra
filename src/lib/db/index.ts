@@ -27,3 +27,25 @@ export {
   deleteDocumentsForSource,
 } from './documents';
 export type { CreateIndexedDocumentInput, CreateOrUpdateSourceInput, SaveDocumentInput } from './documents';
+export {
+  createEnrollment,
+  getEnrollmentsByUserId,
+  getEnrollmentById,
+  updateEnrollmentStatus,
+} from './enrollments';
+export type { CreateEnrollmentInput } from './enrollments';
+export {
+  createCertificate,
+  getCertificatesByUserId,
+  getCertificateById,
+} from './certificates';
+export type { CreateCertificateInput } from './certificates';
+export {
+  createApplication,
+  getApplicationsByUserId,
+  getApplicationById,
+  updateApplicationStatus,
+} from './applications';
+export type { CreateApplicationInput } from './applications';
+export { createAuditLogEntry, getAuditLogs } from './audit';
+export type { CreateAuditLogInput } from './audit';

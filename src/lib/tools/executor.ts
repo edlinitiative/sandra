@@ -1,6 +1,8 @@
 import { toolRegistry } from './registry';
 import type { ToolResult, ToolContext } from './types';
 import { createLogger, AuthError, ValidationError } from '@/lib/utils';
+import { logAuditEvent } from '@/lib/audit';
+import { isPrivateToolScopes } from '@/lib/auth/permissions';
 
 const log = createLogger('tools:executor');
 
@@ -37,16 +39,42 @@ export async function executeTool(
   }
 
   const start = Date.now();
+  const shouldAudit = isPrivateToolScopes(tool.requiredScopes);
+
   try {
     log.info(`Executing tool: ${name}`, { sessionId: context.sessionId });
     const result = await tool.handler(parsed.data, context);
     const duration = Date.now() - start;
     log.info(`Tool '${name}' completed in ${duration}ms`, { success: result.success });
+
+    if (shouldAudit) {
+      logAuditEvent({
+        userId: context.userId,
+        sessionId: context.sessionId,
+        action: 'tool_execution',
+        resource: name,
+        details: { duration, success: result.success },
+        success: result.success,
+      }).catch(() => { /* best-effort */ });
+    }
+
     return result;
   } catch (error) {
     const duration = Date.now() - start;
     const msg = error instanceof Error ? error.message : 'Unknown error';
     log.error(`Tool '${name}' handler threw after ${duration}ms`, { error: msg });
+
+    if (shouldAudit) {
+      logAuditEvent({
+        userId: context.userId,
+        sessionId: context.sessionId,
+        action: 'tool_execution',
+        resource: name,
+        details: { duration, error: msg },
+        success: false,
+      }).catch(() => { /* best-effort */ });
+    }
+
     return { success: false, data: null, error: msg };
   }
 }

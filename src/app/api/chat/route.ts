@@ -4,6 +4,7 @@ import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
+import { authenticateRequest, getScopesForRole } from '@/lib/auth';
 import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
@@ -91,6 +92,17 @@ export async function POST(request: Request) {
       userId: canonicalUser.userId,
     });
 
+    // Resolve auth scopes (optional — anonymous users get guest scopes)
+    let scopes = getScopesForRole('guest');
+    try {
+      const authResult = await authenticateRequest(request);
+      if (authResult.authenticated) {
+        scopes = authResult.user.scopes;
+      }
+    } catch {
+      // Continue with guest scopes
+    }
+
     // Demo mode: return canned response when API key is not configured
     if (isApiKeyMissing()) {
       return NextResponse.json(
@@ -115,6 +127,7 @@ export async function POST(request: Request) {
       userId: canonicalUser.userId,
       language,
       channel: 'web',
+      scopes,
     });
 
     return NextResponse.json(
