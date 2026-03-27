@@ -67,3 +67,46 @@ export async function ensureSessionContinuity(params: {
     });
   }
 }
+
+/**
+ * Get or create a session for an inbound channel message.
+ *
+ * Uses a deterministic sessionId (`{channel}:{channelUserId}`) so that repeated
+ * messages from the same phone number / user always resolve to the same session,
+ * providing cross-message conversation continuity.
+ */
+export async function getOrCreateSessionForChannel(params: {
+  channel: ChannelType;
+  channelUserId: string;
+  userId?: string;
+}): Promise<{ sessionId: string; userId?: string; language: SupportedLanguage }> {
+  const sessionId = `${params.channel}:${params.channelUserId}`;
+  const store = getPrismaSessionStore();
+
+  try {
+    const existing = await store.getSession(sessionId);
+
+    if (existing) {
+      return {
+        sessionId: existing.id,
+        userId: existing.userId ?? params.userId,
+        language: (existing.language ?? 'en') as SupportedLanguage,
+      };
+    }
+  } catch {
+    // Fall through to create
+  }
+
+  try {
+    await store.createSession({
+      id: sessionId,
+      channel: params.channel,
+      language: 'en',
+      userId: params.userId,
+    });
+  } catch {
+    // May already exist due to race — that's fine
+  }
+
+  return { sessionId, userId: params.userId, language: 'en' };
+}

@@ -56,6 +56,7 @@ model User {
   enrollments    Enrollment[]
   certificates   Certificate[]
   applications   ProgramApplication[]
+  channelIdentities ChannelIdentity[]
 
   @@index([email])
   @@index([externalId])
@@ -260,4 +261,24 @@ model AuditLog {
   @@index([sessionId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ── Channel Identity ─────────────────────────────────────────────────────────
+
+model ChannelIdentity {
+  id             String    @id @default(cuid())
+  userId         String
+  channel        String    // 'whatsapp' | 'instagram' | 'email' | 'voice'
+  externalId     String    // Phone (WhatsApp), PSID (Instagram), email address, etc.
+  displayName    String?   // Name from the channel profile
+  verified       Boolean   @default(false)
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, externalId])
+  @@index([userId])
+  @@index([channel])
 }

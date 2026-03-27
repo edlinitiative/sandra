@@ -8,10 +8,31 @@ import { VoiceChannelAdapter } from './voice';
 export type { ChannelAdapter, ChannelType, InboundMessage, OutboundMessage, MessageAttachment } from './types';
 export { CHANNEL_TYPES } from './types';
 export { WebChannelAdapter, webChatInputSchema, type WebChatInput } from './web';
-export { WhatsAppChannelAdapter } from './whatsapp';
+export {
+  WhatsAppChannelAdapter,
+  getWhatsAppAdapter,
+  extractWhatsAppMessages,
+  type WhatsAppWebhookPayload,
+  type WhatsAppMessage,
+} from './whatsapp';
 export { InstagramChannelAdapter } from './instagram';
 export { EmailChannelAdapter } from './email';
 export { VoiceChannelAdapter } from './voice';
+export {
+  findChannelIdentity,
+  resolveChannelIdentity,
+  linkChannelIdentity,
+  getUserChannelIdentities,
+  type ChannelIdentityRecord,
+  type ResolveChannelIdentityParams,
+  type ResolveChannelIdentityResult,
+} from './channel-identity';
+export {
+  formatForWhatsApp,
+  splitForWhatsApp,
+  buildTypingIndicatorText,
+  WHATSAPP_MAX_LENGTH,
+} from './whatsapp-formatter';
 
 /**
  * Get a channel adapter by type.

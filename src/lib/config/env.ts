@@ -30,6 +30,12 @@ const envSchema = z.object({
   // Admin
   ADMIN_API_KEY: z.string().optional(),
 
+  // WhatsApp (Meta Cloud API)
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
+  WHATSAPP_API_VERSION: z.string().default('v19.0'),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
