@@ -36,6 +36,18 @@ const envSchema = z.object({
   WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
   WHATSAPP_API_VERSION: z.string().default('v19.0'),
 
+  // Instagram (Meta Graph API)
+  INSTAGRAM_PAGE_ACCESS_TOKEN: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  INSTAGRAM_VERIFY_TOKEN: z.string().optional(),
+  INSTAGRAM_API_VERSION: z.string().default('v19.0'),
+
+  // Email (SendGrid)
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().email().optional(),
+  SENDGRID_FROM_NAME: z.string().default('Sandra — EdLight'),
+  SENDGRID_WEBHOOK_SECRET: z.string().optional(),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });

@@ -15,8 +15,18 @@ export {
   type WhatsAppWebhookPayload,
   type WhatsAppMessage,
 } from './whatsapp';
-export { InstagramChannelAdapter } from './instagram';
-export { EmailChannelAdapter } from './email';
+export {
+  InstagramChannelAdapter,
+  getInstagramAdapter,
+  extractInstagramMessaging,
+  type InstagramWebhookPayload,
+  type InstagramMessage,
+} from './instagram';
+export {
+  EmailChannelAdapter,
+  getEmailAdapter,
+  type InboundEmail,
+} from './email';
 export { VoiceChannelAdapter } from './voice';
 export {
   findChannelIdentity,
@@ -33,6 +43,17 @@ export {
   buildTypingIndicatorText,
   WHATSAPP_MAX_LENGTH,
 } from './whatsapp-formatter';
+export {
+  formatForInstagram,
+  splitForInstagram,
+  INSTAGRAM_MAX_LENGTH,
+} from './instagram-formatter';
+export {
+  formatForEmail,
+  buildEmailBody,
+  extractEmailReply,
+  EMAIL_MAX_LENGTH,
+} from './email-formatter';
 
 /**
  * Get a channel adapter by type.
