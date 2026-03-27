@@ -4,7 +4,6 @@ import { WhatsAppChannelAdapter } from './whatsapp';
 import { InstagramChannelAdapter } from './instagram';
 import { EmailChannelAdapter } from './email';
 import { VoiceChannelAdapter } from './voice';
-
 export type { ChannelAdapter, ChannelType, InboundMessage, OutboundMessage, MessageAttachment } from './types';
 export { CHANNEL_TYPES } from './types';
 export { WebChannelAdapter, webChatInputSchema, type WebChatInput } from './web';
@@ -27,7 +26,12 @@ export {
   getEmailAdapter,
   type InboundEmail,
 } from './email';
-export { VoiceChannelAdapter } from './voice';
+export { VoiceChannelAdapter, getVoiceAdapter, transcribeAudio, synthesizeSpeech, type VoiceInboundPayload, type TranscriptionResult, type TtsVoice, type TtsFormat } from './voice';
+export {
+  formatForVoice,
+  estimateSpeakDuration,
+  VOICE_MAX_LENGTH,
+} from './voice-formatter';
 export {
   findChannelIdentity,
   resolveChannelIdentity,

@@ -48,6 +48,11 @@ const envSchema = z.object({
   SENDGRID_FROM_NAME: z.string().default('Sandra — EdLight'),
   SENDGRID_WEBHOOK_SECRET: z.string().optional(),
 
+  // Voice (OpenAI Whisper STT + TTS — reuses OPENAI_API_KEY)
+  OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),
+  OPENAI_TTS_MODEL: z.string().default('tts-1'),
+  OPENAI_TTS_VOICE: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).default('alloy'),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
