@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './chat-message';
-import { ChatInput } from './chat-input';
+import { ChatInput, type VoiceResult } from './chat-input';
 import { ChatEmptyState } from './chat-empty-state';
 import { TypingIndicator } from './typing-indicator';
 import { StreamingMessage } from './streaming-message';
 import { LanguageSelector } from './language-selector';
+import { VoiceConversation } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { streamMessage, getConversation } from '@/lib/client';
@@ -94,6 +95,34 @@ export function ChatContainer() {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
 
+  const handleVoiceResult = useCallback((result: VoiceResult) => {
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: `🎤 ${result.transcription}`,
+      timestamp: new Date().toISOString(),
+    };
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: result.response,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+
+    if (!storedSessionId && result.sessionId) {
+      setSessionId(result.sessionId);
+    }
+
+    // Play back the audio response
+    if (result.audio) {
+      const audio = new Audio(`data:audio/mp3;base64,${result.audio}`);
+      audio.play().catch(() => {
+        // Autoplay may be blocked; user can hear the text in the chat
+      });
+    }
+  }, [storedSessionId, setSessionId]);
+
   const handleSend = async (content: string) => {
     setError(null);
 
@@ -166,10 +195,32 @@ export function ChatContainer() {
     }
   };
 
+  const handleLiveTurn = useCallback((userText: string, assistantText: string) => {
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: `🎤 ${userText}`,
+      timestamp: new Date().toISOString(),
+    };
+    const assistantMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: assistantText,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+  }, []);
+
   return (
     <div className="flex h-full flex-col">
-      {/* Language selector bar */}
-      <div className="flex items-center justify-end border-b border-gray-100 bg-white/80 px-4 py-2 backdrop-blur">
+      {/* Header bar — language selector + live voice button */}
+      <div className="flex items-center justify-between border-b border-gray-100 bg-white/80 px-4 py-2 backdrop-blur">
+        <VoiceConversation
+          sessionId={storedSessionId ?? undefined}
+          language={language}
+          onTurn={handleLiveTurn}
+          onSessionId={(id) => { if (!storedSessionId) setSessionId(id); }}
+        />
         <LanguageSelector language={language} onChange={setLanguageState} />
       </div>
 
@@ -207,7 +258,7 @@ export function ChatContainer() {
 
       {/* Input area */}
       <div className="mx-auto w-full max-w-3xl">
-        <ChatInput onSend={handleSend} isLoading={isLoading} />
+        <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
       </div>
     </div>
   );
