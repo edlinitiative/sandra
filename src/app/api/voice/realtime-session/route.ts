@@ -14,7 +14,7 @@ import { env } from '@/lib/config';
 
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
-export async function POST() {
+export async function POST(_req: Request) {
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: 'OPENAI_API_KEY is not configured' },

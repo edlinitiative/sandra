@@ -1,4 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// ── Hoisted mocks ─────────────────────────────────────────────────────────────
+
+const { mockEnv } = vi.hoisted(() => ({
+  mockEnv: {
+    OPENAI_API_KEY: 'sk-test-key' as string | undefined,
+    OPENAI_TTS_VOICE: 'alloy' as string | undefined,
+  },
+}));
+
+vi.mock('@/lib/config', () => ({ env: mockEnv }));
 
 vi.mock('@/lib/channels/voice', () => ({
   transcribeAudio: vi.fn(),
@@ -154,6 +165,69 @@ describe('POST /api/voice/speak', () => {
     const { POST } = await import('../speak/route');
     const res = await POST(makeSpeakRequest({ text: 'Hello' }));
     expect(res.status).toBe(500);
+  });
+});
+
+describe('POST /api/voice/realtime-session', () => {
+  const mockFetch = vi.fn();
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    global.fetch = mockFetch;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  function makeRequest(): Request {
+    return new Request('http://localhost/api/voice/realtime-session', { method: 'POST' });
+  }
+
+  it('returns the OpenAI session payload including client_secret', async () => {
+    const sessionPayload = {
+      id: 'sess_abc123',
+      object: 'realtime.session',
+      model: 'gpt-4o-realtime-preview',
+      voice: 'alloy',
+      client_secret: { value: 'ek_ephemeral_xyz', expires_at: 9999999999 },
+    };
+    mockFetch.mockResolvedValue(new Response(JSON.stringify(sessionPayload), { status: 200 }));
+
+    const { POST } = await import('../realtime-session/route');
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.client_secret.value).toBe('ek_ephemeral_xyz');
+    expect(body.model).toBe('gpt-4o-realtime-preview');
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.openai.com/v1/realtime/sessions',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('returns 502 when OpenAI rejects the request', async () => {
+    mockFetch.mockResolvedValue(new Response('Unauthorized', { status: 401 }));
+
+    const { POST } = await import('../realtime-session/route');
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(502);
+    expect(body.error).toContain('401');
+  });
+
+  it('returns 500 when fetch throws a network error', async () => {
+    mockFetch.mockRejectedValue(new Error('Network unreachable'));
+
+    const { POST } = await import('../realtime-session/route');
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe('Network unreachable');
   });
 });
 
