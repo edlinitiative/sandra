@@ -316,3 +316,22 @@ model ChannelIdentity {
   @@index([userId])
   @@index([channel])
 }
+
+// ── Analytics Events ─────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  eventType  String   // "message_sent" | "tool_executed" | "retrieval_completed" | "response_generated" | "session_started" | "cache_hit"
+  sessionId  String?
+  userId     String?
+  channel    String?  // "web" | "whatsapp" | "instagram" | "email" | "voice"
+  language   String?  // "en" | "fr" | "ht"
+  data       Json?    // event-specific payload (tool name, latency, score, etc.)
+  createdAt  DateTime @default(now())
+
+  @@index([eventType])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([channel])
+  @@index([createdAt])
+}

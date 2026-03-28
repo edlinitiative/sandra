@@ -16,7 +16,7 @@ export { chunkDocument } from './chunker';
 export { embedChunks, embedQuery } from './embeddings';
 export { InMemoryVectorStore, getVectorStore, setVectorStore, resetVectorStore } from './vector-store';
 export { PgVectorStore } from './pg-vector-store';
-export { retrieveContext, formatRetrievalContext } from './retrieval';
+export { retrieveContext, formatRetrievalContext, rerankResults } from './retrieval';
 export { ingestDocuments, removeSource } from './ingest';
 export {
   searchPlatformKnowledge,
@@ -28,6 +28,8 @@ export {
   listGroundingSources,
   fallbackPlatformDescription,
 } from './platform-knowledge';
+export { getPersonalizedRecommendations } from './recommendations';
+export type { RecommendationItem, PersonalizedRecommendations } from './recommendations';
 export {
   normalizePlatform,
   platformFromRepo,

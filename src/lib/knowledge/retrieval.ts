@@ -6,9 +6,52 @@ import { createLogger } from '@/lib/utils';
 
 const log = createLogger('knowledge:retrieval');
 
+// ─── Platform keyword map for reranking ──────────────────────────────────────
+
+const PLATFORM_KEYWORDS: Record<string, string[]> = {
+  academy: ['academy', 'maths', 'physics', 'chemistry', 'economics', 'video lesson', 'bilingual', 'creole'],
+  code: ['code', 'coding', 'sql', 'python', 'javascript', 'html', 'css', 'terminal', 'git', 'certificate'],
+  news: ['news', 'announcement', 'update', 'event', 'scholarship', 'opportunity'],
+  initiative: ['initiative', 'edlight', 'eslp', 'nexus', 'leadership', 'exchange', 'program', 'labs'],
+  labs: ['labs', 'digital product', 'website', 'innovation', 'maker lab'],
+};
+
+/**
+ * Rerank results by boosting score when chunk platform matches query keywords.
+ * Score boost: +0.12 for a strong platform match, +0.06 for a weak match.
+ */
+export function rerankResults(results: SearchResult[], query: string): SearchResult[] {
+  const queryLower = query.toLowerCase();
+
+  // Detect which platforms are mentioned in the query
+  const matchedPlatforms = new Set<string>();
+  for (const [platform, keywords] of Object.entries(PLATFORM_KEYWORDS)) {
+    if (keywords.some((kw) => queryLower.includes(kw))) {
+      matchedPlatforms.add(platform);
+    }
+  }
+
+  // No platform signal — return as-is
+  if (matchedPlatforms.size === 0) return results;
+
+  const reranked = results.map((r) => {
+    const chunkPlatform = typeof r.chunk.metadata?.platform === 'string'
+      ? r.chunk.metadata.platform.toLowerCase()
+      : null;
+
+    if (chunkPlatform && matchedPlatforms.has(chunkPlatform)) {
+      return { ...r, score: Math.min(1.0, r.score + 0.12) };
+    }
+    return r;
+  });
+
+  // Re-sort by boosted scores
+  return reranked.sort((a, b) => b.score - a.score);
+}
+
 /**
  * High-level retrieval service.
- * Embeds a query and searches the vector store.
+ * Embeds a query, searches the vector store, and reranks results.
  */
 export async function retrieveContext(
   query: string,
@@ -25,15 +68,18 @@ export async function retrieveContext(
     // Filter by minimum score
     const filtered = results.filter((r) => r.score >= minScore);
 
-    log.info(`Retrieved ${filtered.length} results for query`, {
+    // Rerank: boost platform-matching chunks
+    const reranked = rerankResults(filtered, query);
+
+    log.info(`Retrieved ${reranked.length} results for query`, {
       query: query.slice(0, 80),
       topK,
       minScore,
       totalResults: results.length,
-      filteredResults: filtered.length,
+      filteredResults: reranked.length,
     });
 
-    return filtered;
+    return reranked;
   } catch (error) {
     log.error('Retrieval failed', {
       error: error instanceof Error ? error.message : 'Unknown error',

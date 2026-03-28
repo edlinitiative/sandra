@@ -13,6 +13,7 @@ import {
 } from '@/lib/memory/session-insights';
 import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 const log = createLogger('agents:sandra');
 
@@ -41,6 +42,26 @@ export async function runSandraAgent(
     language: input.language,
     channel: input.channel,
     messageLength: input.message.length,
+  });
+
+  const agentStartMs = Date.now();
+
+  trackEvent({
+    eventType: 'session_started',
+    sessionId: input.sessionId,
+    userId: input.userId,
+    channel: input.channel,
+    language: input.language,
+    data: { channel: input.channel ?? 'web', language: input.language, isNewSession: false },
+  });
+
+  trackEvent({
+    eventType: 'message_sent',
+    sessionId: input.sessionId,
+    userId: input.userId,
+    channel: input.channel,
+    language: input.language,
+    data: { messageLength: input.message.length, channel: input.channel ?? 'web', language: input.language },
   });
 
   try {
@@ -172,6 +193,15 @@ export async function runSandraAgent(
           totalTokens: totalUsage.totalTokens,
         });
 
+        trackEvent({
+          eventType: 'response_generated',
+          sessionId: input.sessionId,
+          userId: input.userId,
+          channel: input.channel,
+          language: input.language,
+          data: { latencyMs: Date.now() - agentStartMs, responseLength: content.length, toolsUsed, model: 'gpt-4o', cacheHit: false },
+        });
+
         return {
           response: content,
           language: input.language,
@@ -194,7 +224,10 @@ export async function runSandraAgent(
         log.info(`Executing tool: ${toolCall.name}`, { id: toolCall.id, sessionId: input.sessionId });
         toolsUsed.push(toolCall.name);
 
+        const toolStartMs = Date.now();
         let resultStr: string;
+        let toolSuccess = true;
+        let toolError: string | undefined;
         try {
           const parsedArgs = JSON.parse(toolCall.arguments) as unknown;
           const result = await executeTool(toolCall.name, parsedArgs, {
@@ -205,15 +238,28 @@ export async function runSandraAgent(
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})
             : `Tool call failed: ${result.error ?? 'unknown error'}`;
+          if (!result.success) { toolSuccess = false; toolError = result.error ?? undefined; }
         } catch (err) {
+          toolSuccess = false;
           if (err instanceof SyntaxError) {
             resultStr = 'Tool call failed: invalid arguments (could not parse JSON)';
+            toolError = 'invalid arguments';
             log.warn(`Invalid tool call arguments for ${toolCall.name}`, { id: toolCall.id });
           } else {
             resultStr = `Tool call failed: ${err instanceof Error ? err.message : 'unknown error'}`;
+            toolError = err instanceof Error ? err.message : 'unknown error';
             log.error(`Tool execution error for ${toolCall.name}`, { id: toolCall.id, err });
           }
         }
+
+        trackEvent({
+          eventType: 'tool_executed',
+          sessionId: input.sessionId,
+          userId: input.userId,
+          channel: input.channel,
+          language: input.language,
+          data: { toolName: toolCall.name, latencyMs: Date.now() - toolStartMs, success: toolSuccess, errorMessage: toolError },
+        });
 
         // Feed tool result back to LLM
         state.messages.push({
