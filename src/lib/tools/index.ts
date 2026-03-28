@@ -20,6 +20,13 @@ import './get-indexing-status';
 import './list-connected-systems';
 import './view-system-health';
 
+// Phase 10 — Action tools (agentic, queue-backed, rate-limited)
+import './recommend-courses';
+import './create-lead';
+import './submit-interest-form';
+import './queue-reminder';
+import './draft-email';
+
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';
 export { executeTool } from './executor';

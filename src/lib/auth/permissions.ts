@@ -23,6 +23,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'certificates:read',
     'applications:read',
     'applications:write',
+    'actions:submit',
   ],
   educator: [
     'knowledge:read',
@@ -33,6 +34,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'certificates:read',
     'applications:read',
     'applications:write',
+    'actions:submit',
   ],
   admin: [
     'knowledge:read',
@@ -48,6 +50,8 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'admin:write',
     'admin:tools',
     'audit:read',
+    'actions:submit',
+    'actions:approve',
   ],
 };
 
@@ -90,6 +94,8 @@ export const PRIVATE_SCOPES = [
   'applications:read',
   'applications:write',
   'admin:tools',
+  'actions:submit',
+  'actions:approve',
 ] as const;
 
 /** Check if a tool's required scopes indicate it accesses private user data. */

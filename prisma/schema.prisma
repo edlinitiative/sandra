@@ -30,6 +30,14 @@ enum SyncStatus {
   error
 }
 
+enum ActionStatus {
+  pending
+  approved
+  rejected
+  executed
+  failed
+}
+
 enum UserRole {
   guest
   student
@@ -261,6 +269,32 @@ model AuditLog {
   @@index([sessionId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ── Channel Identity ─────────────────────────────────────────────────────────
+
+model ActionRequest {
+  id                String       @id @default(cuid())
+  userId            String?
+  sessionId         String?
+  channel           String       @default("web")
+  tool              String       // Which action tool was requested
+  input             Json         // Serialised tool input
+  status            ActionStatus @default(pending)
+  requiresApproval  Boolean      @default(false)
+  requestedAt       DateTime     @default(now())
+  reviewedAt        DateTime?
+  reviewedBy        String?      // userId of admin who reviewed
+  reviewNote        String?      // Admin note on approval/rejection
+  result            Json?        // Output after execution
+  metadata          Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([tool])
+  @@index([requestedAt])
 }
 
 // ── Channel Identity ─────────────────────────────────────────────────────────
