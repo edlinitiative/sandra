@@ -1,14 +1,15 @@
 import type { UserMemoryStore, UserMemoryEntry } from './types';
 import { createLogger } from '@/lib/utils';
 import { db } from '@/lib/db';
+import { PrismaUserMemoryStore } from './prisma-user-memory-store';
 
 const log = createLogger('memory:user');
 
-// ── In-Memory User Memory Store ───────────────────────────────────────────────
+// ── In-Memory User Memory Store (for tests only) ─────────────────────────────
 
 /**
  * In-memory user memory store.
- * Production replacement: backed by Postgres (Memory table).
+ * Used only in tests or when DATABASE_URL is not configured.
  */
 export class InMemoryUserMemoryStore implements UserMemoryStore {
   private store = new Map<string, Map<string, UserMemoryEntry>>();
@@ -52,9 +53,20 @@ export class InMemoryUserMemoryStore implements UserMemoryStore {
 // Singleton
 let userMemoryStore: UserMemoryStore | null = null;
 
+/**
+ * Get the user memory store singleton.
+ * Prefers PrismaUserMemoryStore (DB-backed, persistent) when DATABASE_URL is set.
+ * Falls back to InMemoryUserMemoryStore for tests.
+ */
 export function getUserMemoryStore(): UserMemoryStore {
   if (!userMemoryStore) {
-    userMemoryStore = new InMemoryUserMemoryStore();
+    if (process.env.DATABASE_URL) {
+      log.info('Initializing PrismaUserMemoryStore (DB-backed, persistent)');
+      userMemoryStore = new PrismaUserMemoryStore(db);
+    } else {
+      log.info('Initializing InMemoryUserMemoryStore (volatile, no DATABASE_URL)');
+      userMemoryStore = new InMemoryUserMemoryStore();
+    }
   }
   return userMemoryStore;
 }

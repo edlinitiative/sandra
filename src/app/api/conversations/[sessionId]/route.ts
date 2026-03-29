@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionStore } from '@/lib/memory/session-store';
+import { getPrismaSessionStore } from '@/lib/memory/session-store';
 import { apiErrorResponse, generateRequestId, successResponse, sessionIdSchema, ValidationError, NotFoundError } from '@/lib/utils';
 
 interface RouteContext {
@@ -20,11 +20,14 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json(envelope, { status });
     }
 
-    const store = getSessionStore();
-    const history = await store.getHistory(sessionId);
+    const store = getPrismaSessionStore();
+    const messages = await store.getMessages(sessionId, { limit: 100 }).catch(() => []);
+    const session =
+      typeof store.getSession === 'function'
+        ? await store.getSession(sessionId).catch(() => null)
+        : null;
 
-    if (history.length === 0) {
-      // If no history, treat as not found
+    if (messages.length === 0) {
       const err = new NotFoundError('Session', sessionId);
       const { envelope, status } = apiErrorResponse(err, requestId);
       return NextResponse.json(envelope, { status });
@@ -34,11 +37,14 @@ export async function GET(_request: Request, context: RouteContext) {
       successResponse(
         {
           sessionId,
-          messages: history.map((entry) => ({
-            role: entry.role,
-            content: entry.content,
-            createdAt: entry.timestamp.toISOString(),
-          })),
+          language: session?.language ?? null,
+          messages: messages
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .map((m) => ({
+              role: m.role,
+              content: m.content,
+              createdAt: m.createdAt.toISOString(),
+            })),
         },
         { requestId },
       ),

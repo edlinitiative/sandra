@@ -16,19 +16,35 @@ export async function createIndexedDocument(
   prisma: PrismaClient,
   input: CreateIndexedDocumentInput,
 ): Promise<IndexedDocument> {
-  return prisma.indexedDocument.create({
-    data: {
-      sourceId: input.sourceId,
-      title: input.title,
-      path: input.path,
-      content: input.content,
-      chunkIndex: input.chunkIndex ?? 0,
-      chunkTotal: input.chunkTotal ?? 1,
-      contentHash: input.contentHash,
-      embedding: input.embedding ?? [],
-      metadata: input.metadata as Prisma.InputJsonValue | undefined,
-    },
-  });
+  const embeddingStr = input.embedding?.length
+    ? `[${input.embedding.join(',')}]`
+    : null;
+  const meta = input.metadata ? JSON.stringify(input.metadata) : null;
+
+  const rows: IndexedDocument[] = await prisma.$queryRawUnsafe(
+    `INSERT INTO "IndexedDocument"
+       ("id", "sourceId", "title", "path", "content",
+        "chunkIndex", "chunkTotal", "contentHash", "embedding", "metadata",
+        "createdAt", "updatedAt")
+     VALUES (
+       gen_random_uuid()::text, $1, $2, $3, $4,
+       $5, $6, $7, $8::vector, $9::jsonb,
+       NOW(), NOW()
+     )
+     RETURNING "id", "sourceId", "title", "path", "content",
+       "chunkIndex", "chunkTotal", "contentHash", "metadata",
+       "createdAt", "updatedAt"`,
+    input.sourceId,
+    input.title ?? null,
+    input.path ?? null,
+    input.content,
+    input.chunkIndex ?? 0,
+    input.chunkTotal ?? 1,
+    input.contentHash ?? null,
+    embeddingStr,
+    meta,
+  );
+  return rows[0]!;
 }
 
 export async function getDocumentsBySourceId(
@@ -113,6 +129,7 @@ export type SaveDocumentInput = {
 
 /**
  * Bulk create IndexedDocument records for a source.
+ * Uses raw SQL to handle the pgvector embedding column.
  */
 export async function saveIndexedDocuments(
   prisma: PrismaClient,
@@ -121,19 +138,34 @@ export async function saveIndexedDocuments(
 ): Promise<void> {
   if (documents.length === 0) return;
 
-  await prisma.indexedDocument.createMany({
-    data: documents.map((doc) => ({
+  // Insert in batches using raw SQL (Prisma can't handle vector type via createMany)
+  for (const doc of documents) {
+    const embeddingStr = doc.embedding?.length
+      ? `[${doc.embedding.join(',')}]`
+      : null;
+    const meta = doc.metadata ? JSON.stringify(doc.metadata) : null;
+
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "IndexedDocument"
+         ("id", "sourceId", "title", "path", "content",
+          "chunkIndex", "chunkTotal", "contentHash", "embedding", "metadata",
+          "createdAt", "updatedAt")
+       VALUES (
+         gen_random_uuid()::text, $1, $2, $3, $4,
+         $5, $6, $7, $8::vector, $9::jsonb,
+         NOW(), NOW()
+       )`,
       sourceId,
-      title: doc.title,
-      path: doc.path,
-      content: doc.content,
-      chunkIndex: doc.chunkIndex ?? 0,
-      chunkTotal: doc.chunkTotal ?? 1,
-      contentHash: doc.contentHash,
-      embedding: doc.embedding ?? [],
-      metadata: doc.metadata as Prisma.InputJsonValue | undefined,
-    })),
-  });
+      doc.title ?? null,
+      doc.path ?? null,
+      doc.content,
+      doc.chunkIndex ?? 0,
+      doc.chunkTotal ?? 1,
+      doc.contentHash ?? null,
+      embeddingStr,
+      meta,
+    );
+  }
 
   // Update the source's documentCount
   await prisma.indexedSource.update({

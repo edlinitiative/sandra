@@ -29,10 +29,12 @@ describe('chatInputSchema', () => {
     const result = chatInputSchema.parse({
       message: 'hello',
       sessionId: '123e4567-e89b-12d3-a456-426614174000',
+      userId: 'web:test-user-123',
       language: 'fr',
     });
     expect(result.language).toBe('fr');
     expect(result.sessionId).toBe('123e4567-e89b-12d3-a456-426614174000');
+    expect(result.userId).toBe('web:test-user-123');
   });
 
   it('rejects empty message', () => {
@@ -64,8 +66,9 @@ describe('indexInputSchema', () => {
     expect(result.repoId).toBe('repo_123');
   });
 
-  it('rejects missing repoId', () => {
-    expect(() => indexInputSchema.parse({})).toThrow();
+  it('accepts missing repoId for index-all requests', () => {
+    const result = indexInputSchema.parse({});
+    expect(result.repoId).toBeUndefined();
   });
 
   it('rejects empty repoId', () => {

@@ -4,6 +4,16 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 describe('ChatEmptyState', () => {
+  it('renders benchmark-aligned starter prompts', async () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(0);
+    const { ChatEmptyState } = await import('../chat-empty-state');
+    render(<ChatEmptyState />);
+
+    expect(screen.getByRole('button', { name: /what courses can i take on edlight/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /programs and opportunities/i })).toBeInTheDocument();
+    nowSpy.mockRestore();
+  });
+
   it('renders suggestion cards', async () => {
     const { ChatEmptyState } = await import('../chat-empty-state');
     render(<ChatEmptyState />);

@@ -1,21 +1,29 @@
+import { useEffect, useState } from 'react';
+
 const SUGGESTED_QUESTIONS: Record<string, string[]> = {
   en: [
-    'What is EdLight?',
-    'Tell me about EdLight Academy',
-    'How can EdLight help my school?',
-    'What resources does EdLight offer?',
+    'What courses can I take on EdLight?',
+    'What programs and opportunities does EdLight offer?',
+    'Tell me about the EdLight Summer Leadership Program',
+    'Where should a complete beginner start learning to code?',
+    'What is EdLight Academy?',
+    'What\'s new at EdLight?',
   ],
   fr: [
-    "Qu'est-ce qu'EdLight?",
-    "Parlez-moi d'EdLight Academy",
-    'Comment EdLight peut-il aider mon école?',
-    "Quelles ressources EdLight offre-t-il?",
+    'Quels cours puis-je suivre sur EdLight ?',
+    'Quels programmes et opportunités EdLight offre-t-il ?',
+    "Parlez-moi du Programme de Leadership d'Été EdLight",
+    'Par où un débutant complet devrait-il commencer à apprendre à coder ?',
+    "Qu'est-ce qu'EdLight Academy ?",
+    'Quoi de neuf chez EdLight ?',
   ],
   ht: [
-    'Kisa EdLight ye?',
-    'Pale mwen sou EdLight Academy',
-    'Kijan EdLight ka ede lekòl mwen?',
-    'Ki resous EdLight ofri?',
+    'Ki kou mwen ka suiv sou EdLight?',
+    'Ki pwogram ak opotünite EdLight ofri?',
+    'Pale mwen sou Pwogram Lidèchip Ete EdLight la',
+    'Ki kote yon debutant nèt ta dwe kòmanse aprann kode?',
+    'Kisa EdLight Academy ye?',
+    'Ki sa ki nouvo nan EdLight?',
   ],
 };
 
@@ -25,7 +33,18 @@ interface ChatEmptyStateProps {
 }
 
 export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps) {
-  const questions = SUGGESTED_QUESTIONS[language] ?? SUGGESTED_QUESTIONS['en']!;
+  const [bucket, setBucket] = useState(0);
+  const allQuestions = SUGGESTED_QUESTIONS[language] ?? SUGGESTED_QUESTIONS['en']!;
+
+  useEffect(() => {
+    // Rotate suggestions after mount so the empty state feels fresh without a hydration mismatch.
+    setBucket(Math.floor(Date.now() / 60_000) % 3);
+  }, []);
+
+  const questions = [
+    ...allQuestions.slice(bucket * 2),
+    ...allQuestions.slice(0, bucket * 2),
+  ].slice(0, 4);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">

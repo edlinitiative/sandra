@@ -1,6 +1,7 @@
 import type { PrismaClient, Session, Message, Prisma } from '@prisma/client';
 
 export type CreateSessionInput = {
+  id?: string;
   userId?: string;
   channel?: string;
   language?: string;
@@ -12,6 +13,7 @@ export type UpdateSessionInput = {
   title?: string;
   language?: string;
   isActive?: boolean;
+  userId?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -21,6 +23,7 @@ export async function createSession(
 ): Promise<Session> {
   return prisma.session.create({
     data: {
+      id: input.id,
       userId: input.userId,
       channel: input.channel ?? 'web',
       language: input.language ?? 'en',
@@ -61,6 +64,7 @@ export async function updateSession(
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.language !== undefined ? { language: input.language } : {}),
       ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      ...(input.userId !== undefined ? { userId: input.userId } : {}),
       ...(input.metadata !== undefined ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
     },
   });

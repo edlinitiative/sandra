@@ -14,14 +14,15 @@ import {
   getMessagesBySessionId,
 } from '@/lib/db/messages';
 import type { MessageRole } from '@prisma/client';
+import { PrismaSessionStore as PrismaSessionMemoryStore } from './prisma-session-store';
 
 const log = createLogger('memory:session');
 
-// ── In-Memory Session Store (for agent context window) ────────────────────────
+// ── In-Memory Session Store (for tests only) ─────────────────────────────────
 
 /**
  * In-memory session store.
- * Production replacement: backed by Redis or Postgres.
+ * Used only in tests or when DATABASE_URL is not configured.
  */
 export class InMemorySessionStore implements SessionMemoryStore {
   private store = new Map<string, ConversationEntry[]>();
@@ -54,12 +55,23 @@ export class InMemorySessionStore implements SessionMemoryStore {
   }
 }
 
-// Singleton for the default in-memory session store
+// Singleton for the session store
 let sessionStore: SessionMemoryStore | null = null;
 
+/**
+ * Get the session memory store singleton.
+ * Prefers PrismaSessionStore (DB-backed, persistent) when DATABASE_URL is set.
+ * Falls back to InMemorySessionStore for tests.
+ */
 export function getSessionStore(): SessionMemoryStore {
   if (!sessionStore) {
-    sessionStore = new InMemorySessionStore();
+    if (process.env.DATABASE_URL) {
+      log.info('Initializing PrismaSessionStore (DB-backed, persistent)');
+      sessionStore = new PrismaSessionMemoryStore(db);
+    } else {
+      log.info('Initializing InMemorySessionStore (volatile, no DATABASE_URL)');
+      sessionStore = new InMemorySessionStore();
+    }
   }
   return sessionStore;
 }
@@ -76,12 +88,14 @@ export function setSessionStore(store: SessionMemoryStore): void {
  */
 export class PrismaSessionStore implements ISessionStore {
   async createSession(params: {
+    id?: string;
     channel?: string;
     language?: string;
     userId?: string;
     title?: string;
   }): Promise<Session> {
     const session = await dbCreateSession(db, {
+      id: params.id,
       channel: params.channel ?? 'web',
       language: params.language ?? 'en',
       userId: params.userId,
@@ -97,7 +111,13 @@ export class PrismaSessionStore implements ISessionStore {
 
   async updateSession(
     sessionId: string,
-    updates: { title?: string; language?: string; isActive?: boolean },
+    updates: {
+      title?: string;
+      language?: string;
+      isActive?: boolean;
+      userId?: string;
+      metadata?: Record<string, unknown>;
+    },
   ): Promise<Session> {
     const session = await dbUpdateSession(db, sessionId, updates);
     log.info(`Updated session: ${sessionId}`, updates);
@@ -113,6 +133,8 @@ export class PrismaSessionStore implements ISessionStore {
     toolCallId?: string;
     metadata?: Record<string, unknown>;
   }): Promise<Message> {
+    await this.ensureSessionExists(params.sessionId, params.language);
+
     const message = await dbCreateMessage(db, {
       sessionId: params.sessionId,
       role: params.role as MessageRole,
@@ -161,6 +183,20 @@ export class PrismaSessionStore implements ISessionStore {
         role: msg.role as ChatMessage['role'],
         content: msg.content,
       };
+    });
+  }
+
+  private async ensureSessionExists(sessionId: string, language?: string): Promise<void> {
+    await db.session.upsert({
+      where: { id: sessionId },
+      update: {
+        ...(language ? { language } : {}),
+      },
+      create: {
+        id: sessionId,
+        channel: 'web',
+        language: language ?? 'en',
+      },
     });
   }
 }

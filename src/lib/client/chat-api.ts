@@ -12,6 +12,7 @@ export interface ChatMessage {
 export interface SendMessageParams {
   message: string;
   sessionId?: string;
+  userId?: string;
   language?: 'en' | 'fr' | 'ht';
 }
 
@@ -26,13 +27,16 @@ export interface SendMessageResult {
 export interface StreamMessageParams {
   message: string;
   sessionId?: string;
+  userId?: string;
   language?: 'en' | 'fr' | 'ht';
 }
 
 export interface StreamMessageResult {
   sessionId: string;
+  response: string;
   toolsUsed: string[];
   retrievalUsed: boolean;
+  suggestedFollowUps: string[];
 }
 
 /**
@@ -64,19 +68,19 @@ export async function streamMessage(
   onToken: (token: string) => void,
   onToolCall?: (toolName: string) => void,
 ): Promise<StreamMessageResult> {
-  const response = await fetch('/api/chat/stream', {
+  const httpResponse = await fetch('/api/chat/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
 
-  if (!response.ok) {
-    const json = await response.json().catch(() => ({}));
+  if (!httpResponse.ok) {
+    const json = await httpResponse.json().catch(() => ({}));
     const message = (json as Record<string, unknown>)?.error?.toString() ?? 'Failed to start stream';
     throw new Error(message);
   }
 
-  const reader = response.body?.getReader();
+  const reader = httpResponse.body?.getReader();
   if (!reader) {
     throw new Error('Response body is not readable');
   }
@@ -84,8 +88,10 @@ export async function streamMessage(
   const decoder = new TextDecoder();
   let buffer = '';
   let sessionId = params.sessionId ?? '';
+  let finalResponse = '';
   let toolsUsed: string[] = [];
   let retrievalUsed = false;
+  let suggestedFollowUps: string[] = [];
 
   try {
     while (true) {
@@ -105,35 +111,43 @@ export async function streamMessage(
           const data = line.slice(6).trim();
           if (!data) continue;
 
+          let event: Record<string, unknown>;
           try {
-            const event = JSON.parse(data) as Record<string, unknown>;
-
-            switch (event.type) {
-              case 'start':
-                if (event.sessionId) sessionId = String(event.sessionId);
-                break;
-              case 'chunk':
-              case 'token':
-                onToken(String(event.content ?? event.data ?? ''));
-                break;
-              case 'tool':
-              case 'tool_call':
-                onToolCall?.(String(event.name ?? event.data ?? ''));
-                break;
-              case 'done':
-                if (event.toolsUsed && Array.isArray(event.toolsUsed)) {
-                  toolsUsed = event.toolsUsed as string[];
-                }
-                if (typeof event.retrievalUsed === 'boolean') {
-                  retrievalUsed = event.retrievalUsed;
-                }
-                if (event.sessionId) sessionId = String(event.sessionId);
-                break;
-              case 'error':
-                throw new Error(String(event.message ?? event.data ?? 'Stream error'));
-            }
-          } catch (parseErr) {
+            event = JSON.parse(data) as Record<string, unknown>;
+          } catch {
             // Skip unparseable events
+            continue;
+          }
+
+          switch (event.type) {
+            case 'start':
+              if (event.sessionId) sessionId = String(event.sessionId);
+              break;
+            case 'chunk':
+            case 'token':
+              onToken(String(event.content ?? event.data ?? ''));
+              break;
+            case 'tool':
+            case 'tool_call':
+              onToolCall?.(String(event.name ?? event.data ?? ''));
+              break;
+            case 'done':
+              if (event.toolsUsed && Array.isArray(event.toolsUsed)) {
+                toolsUsed = event.toolsUsed as string[];
+              }
+              if (typeof event.response === 'string') {
+                finalResponse = event.response;
+              }
+              if (typeof event.retrievalUsed === 'boolean') {
+                retrievalUsed = event.retrievalUsed;
+              }
+              if (event.suggestedFollowUps && Array.isArray(event.suggestedFollowUps)) {
+                suggestedFollowUps = event.suggestedFollowUps as string[];
+              }
+              if (event.sessionId) sessionId = String(event.sessionId);
+              break;
+            case 'error':
+              throw new Error(String(event.message ?? event.data ?? 'Stream error'));
           }
         }
       }
@@ -142,7 +156,7 @@ export async function streamMessage(
     reader.releaseLock();
   }
 
-  return { sessionId, toolsUsed, retrievalUsed };
+  return { sessionId, response: finalResponse, toolsUsed, retrievalUsed, suggestedFollowUps };
 }
 
 /**
@@ -150,6 +164,7 @@ export async function streamMessage(
  */
 export async function getConversation(sessionId: string): Promise<{
   sessionId: string;
+  language?: string | null;
   messages: ChatMessage[];
 }> {
   const response = await fetch(`/api/conversations/${encodeURIComponent(sessionId)}`);
@@ -160,5 +175,5 @@ export async function getConversation(sessionId: string): Promise<{
     throw new Error(message);
   }
 
-  return json.data as { sessionId: string; messages: ChatMessage[] };
+  return json.data as { sessionId: string; language?: string | null; messages: ChatMessage[] };
 }

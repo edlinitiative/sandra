@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "tasks_completed": ["V2-P3-A", "V2-P3-B", "V2-P3-C", "V2-P3-D"],
+  "tests_passed": true,
+  "test_count": 432,
+  "test_files": 47,
+  "files_changed": [
+    "src/lib/tools/get-initiatives.ts",
+    "src/lib/tools/get-courses.ts",
+    "src/lib/agents/prompts.ts",
+    "src/lib/agents/__tests__/grounded-knowledge.test.ts",
+    ".agent/impl_docs/tasks.md",
+    ".agent/impl_docs/progress.md"
+  ],
+  "notes": "V2-P3-A: Added url fields to all 12 courses and platformContext to getCourseInventory response. V2-P3-B: Expanded getEdLightInitiatives with grounded descriptions, focus fields, and highlights arrays for all 4 platforms — especially News (community news/announcements) and Initiative (leadership programs/community organization). V2-P3-C: Updated both system prompt builders with explicit platform differentiation — Academy vs Code for courses, News for announcements, Initiative for leadership/community programs — plus platform-specific routing examples for all 4 benchmark prompts. V2-P3-D: Added 25 benchmark tests in grounded-knowledge.test.ts validating grounded data quality, platform differentiation, and system prompt routing for all 4 phase benchmark scenarios (What is EdLight, Academy courses, Code courses, What does Initiative do)."
+}

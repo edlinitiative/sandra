@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { runSandraAgentStream } from '@/lib/agents';
+import { generateFollowUps } from '@/lib/agents/follow-ups';
 import { resolveLanguage } from '@/lib/i18n';
+import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
+import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
+import { authenticateRequest, getScopesForRole } from '@/lib/auth';
+import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { env } from '@/lib/config';
 
 const chatRequestSchema = z.object({
@@ -27,6 +32,9 @@ function isApiKeyMissing(): boolean {
  *   - { type: 'error', message }
  */
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+  setCorrelationId(requestId);
+
   try {
     const body = await request.json();
     const parsed = chatRequestSchema.safeParse(body);
@@ -44,9 +52,38 @@ export async function POST(request: Request) {
       );
     }
 
-    const { message, userId, channel } = parsed.data;
+    const { message, userId: rawUserId, channel } = parsed.data;
     const sessionId = parsed.data.sessionId ?? crypto.randomUUID();
-    const language = resolveLanguage({ explicit: parsed.data.language });
+    const sessionLanguage = await getSessionLanguage(parsed.data.sessionId);
+    const userLanguage = await getCanonicalUserLanguage(rawUserId);
+    const language = resolveLanguage({
+      explicit: parsed.data.language,
+      sessionLanguage: sessionLanguage ?? userLanguage,
+    });
+    const canonicalUser = await resolveCanonicalUser({
+      sessionId,
+      externalUserId: rawUserId,
+      language,
+      channel,
+    });
+
+    await ensureSessionContinuity({
+      sessionId,
+      channel,
+      language,
+      userId: canonicalUser.userId,
+    });
+
+    // Resolve auth scopes (optional — anonymous users get guest scopes)
+    let scopes = getScopesForRole('guest');
+    try {
+      const authResult = await authenticateRequest(request);
+      if (authResult.authenticated) {
+        scopes = authResult.user.scopes;
+      }
+    } catch {
+      // Continue with guest scopes
+    }
 
     const encoder = new TextEncoder();
 
@@ -80,8 +117,11 @@ export async function POST(request: Request) {
 
             send({
               type: 'done',
+              sessionId,
+              response: demoMsg,
               toolsUsed: [],
               retrievalUsed: false,
+              suggestedFollowUps: generateFollowUps([], language),
               demoMode: true,
               usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             });
@@ -90,43 +130,40 @@ export async function POST(request: Request) {
           }
 
           // True token-level streaming via runSandraAgentStream
-          const toolsUsed: string[] = [];
-
           for await (const event of runSandraAgentStream({
             message,
             sessionId,
-            userId,
+            userId: canonicalUser.userId,
             language,
             channel,
+            scopes,
           })) {
             switch (event.type) {
               case 'token':
                 send({ type: 'token', data: event.data });
                 break;
               case 'tool_call':
-                toolsUsed.push(event.data);
                 send({ type: 'tool_call', data: event.data });
                 break;
               case 'error':
                 send({ type: 'error', message: event.data });
                 break;
-              case 'tool_result':
               case 'done':
-                // Internal events — not forwarded individually
+                send({
+                  type: 'done',
+                  sessionId: event.data.sessionId,
+                  response: event.data.response,
+                  toolsUsed: event.data.toolsUsed,
+                  retrievalUsed: event.data.retrievalUsed,
+                  suggestedFollowUps: event.data.suggestedFollowUps,
+                  usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+                });
+                break;
+              case 'tool_result':
+                // Internal event — not forwarded individually
                 break;
             }
           }
-
-          const retrievalUsed = toolsUsed.some((t) =>
-            t.includes('search') || t.includes('knowledge') || t.includes('rag'),
-          );
-
-          send({
-            type: 'done',
-            toolsUsed,
-            retrievalUsed,
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'An unexpected error occurred';
           send({ type: 'error', message });
@@ -149,5 +186,7 @@ export async function POST(request: Request) {
       JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: 'Failed to process request' } }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
+  } finally {
+    clearCorrelationId();
   }
 }

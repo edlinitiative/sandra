@@ -1,0 +1,14 @@
+{
+  "status": "completed",
+  "tasks_completed": ["phase6-A", "phase6-B", "phase6-C", "phase6-D", "phase6-E"],
+  "tests_passed": true,
+  "files_changed": [
+    "src/lib/tools/get-courses.ts",
+    "src/lib/tools/index.ts",
+    "src/lib/agents/prompts.ts",
+    "src/lib/tools/__tests__/get-courses.test.ts",
+    "src/lib/agents/__tests__/prompts.test.ts",
+    ".agent/impl_docs/progress.md"
+  ],
+  "notes": "Implemented Phase 6: tool routing and course accuracy. Added getCourseInventory tool with a static catalog of 12 courses (6 Academy, 6 Code) covering Python, SQL, Excel, PowerPoint, 3D, and web development. Updated both system prompt builders (buildSandraSystemPrompt and getSandraSystemPrompt) with explicit routing rules that direct course inventory questions to getCourseInventory and restrict getEdLightInitiatives to ecosystem overview questions. Added 29 new tests (20 tool tests + 9 routing tests). All 376 tests pass. Lint and type check clean."
+}

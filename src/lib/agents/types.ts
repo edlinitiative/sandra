@@ -24,6 +24,7 @@ export interface AgentOutput {
   language: SupportedLanguage;
   toolsUsed: string[];
   retrievalUsed: boolean;
+  suggestedFollowUps?: string[];
   tokenUsage?: {
     promptTokens: number;
     completionTokens: number;
@@ -67,7 +68,18 @@ export interface AgentContext {
 }
 
 /** A streaming event from the Sandra agent */
-export interface AgentStreamEvent {
-  type: 'token' | 'tool_call' | 'tool_result' | 'done' | 'error';
-  data: string;
-}
+export type AgentStreamEvent =
+  | { type: 'token'; data: string }
+  | { type: 'tool_call'; data: string }
+  | { type: 'tool_result'; data: string }
+  | {
+      type: 'done';
+      data: {
+        sessionId: string;
+        response: string;
+        toolsUsed: string[];
+        retrievalUsed: boolean;
+        suggestedFollowUps: string[];
+      };
+    }
+  | { type: 'error'; data: string };

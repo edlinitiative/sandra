@@ -30,6 +30,21 @@ enum SyncStatus {
   error
 }
 
+enum ActionStatus {
+  pending
+  approved
+  rejected
+  executed
+  failed
+}
+
+enum UserRole {
+  guest
+  student
+  educator
+  admin
+}
+
 // ── Users ────────────────────────────────────────────────────────────────────
 
 model User {
@@ -37,6 +52,7 @@ model User {
   externalId     String?   @unique // ID from external auth provider
   name           String?
   email          String?   @unique
+  role           UserRole  @default(guest)
   language       String    @default("en") // en | fr | ht
   channel        String    @default("web") // web | whatsapp | instagram | email | voice
   metadata       Json?     // Flexible extra data
@@ -45,6 +61,10 @@ model User {
 
   sessions       Session[]
   memories       Memory[]
+  enrollments    Enrollment[]
+  certificates   Certificate[]
+  applications   ProgramApplication[]
+  channelIdentities ChannelIdentity[]
 
   @@index([email])
   @@index([externalId])
@@ -123,7 +143,8 @@ model IndexedSource {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  documents      IndexedDocument[]
+  // documents relation removed — IndexedDocument.sourceId is now a repo full name,
+  // not a cuid referencing this table. Relationship managed by application code.
 
   @@unique([type, url])
   @@index([status])
@@ -133,19 +154,22 @@ model IndexedSource {
 
 model IndexedDocument {
   id             String    @id @default(cuid())
-  sourceId       String
+  sourceId       String    // Repo full name (e.g. "edlinitiative/code") — no FK
   title          String?
   path           String?   // File path or URL path within the source
   content        String    // Raw text content
   chunkIndex     Int       @default(0) // Position in chunked sequence
   chunkTotal     Int       @default(1) // Total chunks for this document
   contentHash    String?   // For dedup / change detection
-  embedding      Float[]   // Embedding vector for similarity search
+  // Stored as pgvector vector(1536) — use raw SQL for similarity search.
+  // Prisma reads/writes via Unsupported("vector(1536)"); use $queryRaw for search.
+  embedding      Unsupported("vector(1536)")?
   metadata       Json?     // Extra fields: language, section, etc.
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  source         IndexedSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  // FK removed — sourceId is now the repo full name, not an IndexedSource cuid.
+  // Relationship managed by application code; see PgVectorStore and indexer.
 
   @@index([sourceId])
   @@index([contentHash])
@@ -173,4 +197,141 @@ model RepoRegistry {
 
   @@unique([owner, name])
   @@index([isActive])
+}
+
+// ── Enrollments ──────────────────────────────────────────────────────────────
+
+model Enrollment {
+  id             String    @id @default(cuid())
+  userId         String
+  courseId        String    // Platform-specific course identifier
+  courseName     String
+  platform       String    // "academy" | "code"
+  status         String    @default("active") // active | completed | dropped
+  enrolledAt     DateTime  @default(now())
+  completedAt    DateTime?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+// ── Certificates ─────────────────────────────────────────────────────────────
+
+model Certificate {
+  id             String    @id @default(cuid())
+  userId         String
+  courseName     String
+  platform       String    // "academy" | "code"
+  issuedAt       DateTime  @default(now())
+  certificateUrl String?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Program Applications ─────────────────────────────────────────────────────
+
+model ProgramApplication {
+  id             String    @id @default(cuid())
+  userId         String
+  programName    String    // e.g., "ESLP", "Nexus", "Academy Scholarship"
+  programId      String?
+  status         String    @default("submitted") // submitted | under_review | accepted | rejected | waitlisted
+  appliedAt      DateTime  @default(now())
+  reviewedAt     DateTime?
+  metadata       Json?
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([programId])
+}
+
+// ── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String    @id @default(cuid())
+  userId         String?
+  sessionId      String?
+  action         String    // tool_execution | permission_denied | auth_failure | data_access
+  resource       String?   // Tool name, endpoint, etc.
+  details        Json?
+  ip             String?
+  success        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ── Channel Identity ─────────────────────────────────────────────────────────
+
+model ActionRequest {
+  id                String       @id @default(cuid())
+  userId            String?
+  sessionId         String?
+  channel           String       @default("web")
+  tool              String       // Which action tool was requested
+  input             Json         // Serialised tool input
+  status            ActionStatus @default(pending)
+  requiresApproval  Boolean      @default(false)
+  requestedAt       DateTime     @default(now())
+  reviewedAt        DateTime?
+  reviewedBy        String?      // userId of admin who reviewed
+  reviewNote        String?      // Admin note on approval/rejection
+  result            Json?        // Output after execution
+  metadata          Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([tool])
+  @@index([requestedAt])
+}
+
+// ── Channel Identity ─────────────────────────────────────────────────────────
+
+model ChannelIdentity {
+  id             String    @id @default(cuid())
+  userId         String
+  channel        String    // 'whatsapp' | 'instagram' | 'email' | 'voice'
+  externalId     String    // Phone (WhatsApp), PSID (Instagram), email address, etc.
+  displayName    String?   // Name from the channel profile
+  verified       Boolean   @default(false)
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, externalId])
+  @@index([userId])
+  @@index([channel])
+}
+
+// ── Analytics Events ─────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  eventType  String   // "message_sent" | "tool_executed" | "retrieval_completed" | "response_generated" | "session_started" | "cache_hit"
+  sessionId  String?
+  userId     String?
+  channel    String?  // "web" | "whatsapp" | "instagram" | "email" | "voice"
+  language   String?  // "en" | "fr" | "ht"
+  data       Json?    // event-specific payload (tool name, latency, score, etc.)
+  createdAt  DateTime @default(now())
+
+  @@index([eventType])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([channel])
+  @@index([createdAt])
 }
