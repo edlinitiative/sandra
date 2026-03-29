@@ -5,6 +5,7 @@
   "description": "Sandra — AI assistant for the EdLight ecosystem",
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
