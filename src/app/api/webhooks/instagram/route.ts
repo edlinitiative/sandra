@@ -84,6 +84,7 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     }
 
     const { channelUserId: psid, content, metadata } = inbound;
+    const pageId = metadata?.pageId as string | undefined;
 
     log.info('Processing Instagram inbound DM', {
       from: `${psid.slice(0, 4)}****`,
@@ -130,6 +131,7 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
         recipientId: psid,
         content: chunk,
         language: result.language,
+        metadata: { pageId },
       });
     }
 

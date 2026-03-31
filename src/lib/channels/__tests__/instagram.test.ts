@@ -168,13 +168,15 @@ describe('InstagramChannelAdapter', () => {
         recipientId: 'psid-12345',
         content: 'Hello',
         language: 'en',
+        metadata: { pageId: 'ig-page-123' },
       });
 
       expect(mockFetch).toHaveBeenCalledOnce();
-      const [url] = mockFetch.mock.calls[0]! as [string];
+      const [url, options] = mockFetch.mock.calls[0]! as [string, RequestInit];
+      expect(url).toContain('graph.instagram.com');
       expect(url).toContain('v19.0');
-      expect(url).toContain('me/messages');
-      expect(url).toContain('test-ig-token');
+      expect(url).toContain('ig-page-123/messages');
+      expect(options.headers).toHaveProperty('Authorization', 'Bearer test-ig-token');
     });
 
     it('throws on API error response', async () => {

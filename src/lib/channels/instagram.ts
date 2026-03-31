@@ -60,7 +60,7 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   readonly channelType = 'instagram' as const;
 
   private get apiBase(): string {
-    return `https://graph.facebook.com/${env.INSTAGRAM_API_VERSION}`;
+    return `https://graph.instagram.com/${env.INSTAGRAM_API_VERSION}`;
   }
 
   private get pageAccessToken(): string {
@@ -161,13 +161,21 @@ export class InstagramChannelAdapter implements ChannelAdapter {
     }
 
     const body = await this.formatOutbound(message);
-    const url = `${this.apiBase}/me/messages?access_token=${this.pageAccessToken}`;
+    // Instagram API with Instagram Login requires:
+    // - graph.instagram.com (not graph.facebook.com)
+    // - Authorization: Bearer header (not access_token query param)
+    // - /{instagram-scoped-id}/messages endpoint
+    const igScopedId = message.metadata?.pageId as string | undefined;
+    const endpoint = igScopedId ? `${this.apiBase}/${igScopedId}/messages` : `${this.apiBase}/me/messages`;
 
-    log.info('Sending Instagram message', { to: `${message.recipientId.slice(0, 4)}****` });
+    log.info('Sending Instagram message', { to: `${message.recipientId.slice(0, 4)}****`, endpoint });
 
-    const response = await fetch(url, {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.pageAccessToken}`,
+      },
       body: JSON.stringify(body),
     });
 
