@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getEmailAdapter } from '@/lib/channels/email';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
@@ -37,8 +37,8 @@ export async function POST(request: Request) {
     }
   }
 
-  // Respond immediately — SendGrid retries if we don't respond quickly
-  void processEmailAsync(fields, requestId);
+  // Use after() to keep the serverless function alive after responding
+  after(processEmailAsync(fields, requestId));
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }

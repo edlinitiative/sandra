@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getWhatsAppAdapter } from '@/lib/channels/whatsapp';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
@@ -44,8 +44,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
-  // Fire-and-forget: process in background, respond immediately
-  void processWebhookAsync(rawBody, requestId);
+  // Use after() to keep the serverless function alive after responding
+  after(processWebhookAsync(rawBody, requestId));
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }

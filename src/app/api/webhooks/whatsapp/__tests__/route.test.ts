@@ -92,6 +92,15 @@ vi.mock('@/lib/channels/whatsapp-formatter', () => ({
   splitForWhatsApp: (text: string) => [text],
 }));
 
+// Mock next/server's after() — in tests it just runs the promise immediately
+vi.mock('next/server', async (importOriginal) => {
+  const original = await importOriginal<typeof import('next/server')>();
+  return {
+    ...original,
+    after: (promise: Promise<unknown>) => { void promise; },
+  };
+});
+
 // ── Fixture ───────────────────────────────────────────────────────────────────
 
 function makeTextPayload(): WhatsAppWebhookPayload {
