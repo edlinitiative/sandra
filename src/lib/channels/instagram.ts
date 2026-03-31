@@ -8,7 +8,7 @@ const log = createLogger('channels:instagram');
 // ─── Instagram Graph API payload types ───────────────────────────────────────
 
 export interface InstagramWebhookPayload {
-  object: 'instagram';
+  object: 'instagram' | 'page';
   entry: InstagramEntry[];
 }
 
@@ -97,7 +97,7 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   async parseInbound(rawPayload: unknown): Promise<InboundMessage> {
     const payload = rawPayload as InstagramWebhookPayload;
 
-    if (payload.object !== 'instagram') {
+    if (payload.object !== 'instagram' && payload.object !== 'page') {
       throw new Error(`Unexpected webhook object: ${payload.object}`);
     }
 

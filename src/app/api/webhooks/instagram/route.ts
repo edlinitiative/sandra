@@ -43,6 +43,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
+  // Log the raw payload for debugging
+  log.info('Instagram webhook received', {
+    requestId,
+    object: (rawBody as Record<string, unknown>)?.object,
+    entryCount: Array.isArray((rawBody as Record<string, unknown>)?.entry)
+      ? ((rawBody as Record<string, unknown>).entry as unknown[]).length
+      : 0,
+    payload: JSON.stringify(rawBody).slice(0, 500),
+  });
+
   // Await processing — errors are caught inside so we always reach the 200
   await processInboundAsync(rawBody, requestId);
 
