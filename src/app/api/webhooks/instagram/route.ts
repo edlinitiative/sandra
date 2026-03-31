@@ -91,6 +91,9 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
       requestId,
     });
 
+    // Show typing indicator immediately so the user knows Sandra is working
+    void adapter.sendTypingIndicator(psid, pageId);
+
     // Resolve or create channel identity → Sandra user
     const identity = await resolveChannelIdentity({
       channel: 'instagram',

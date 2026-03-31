@@ -142,6 +142,30 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   }
 
   /**
+   * Send a "typing_on" indicator so the user sees Sandra is composing a reply.
+   * Best-effort — fire-and-forget, never throws.
+   */
+  async sendTypingIndicator(recipientId: string, pageId?: string): Promise<void> {
+    if (!this.isConfigured()) return;
+
+    const endpoint = pageId
+      ? `${this.apiBase}/${pageId}/messages`
+      : `${this.apiBase}/me/messages`;
+
+    await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.pageAccessToken}`,
+      },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        sender_action: 'typing_on',
+      }),
+    }).catch(() => { /* best-effort */ });
+  }
+
+  /**
    * Format an outbound message as an Instagram Graph API request body.
    */
   async formatOutbound(message: OutboundMessage): Promise<InstagramOutboundBody> {

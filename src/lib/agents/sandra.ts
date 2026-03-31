@@ -115,6 +115,7 @@ export async function runSandraAgent(
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
+      channel: input.channel,
       userMemorySummary,
       conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
