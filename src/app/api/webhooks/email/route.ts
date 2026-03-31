@@ -1,4 +1,5 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { getEmailAdapter } from '@/lib/channels/email';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
@@ -37,8 +38,8 @@ export async function POST(request: Request) {
     }
   }
 
-  // Use after() to keep the serverless function alive after responding
-  after(processEmailAsync(fields, requestId));
+  // waitUntil keeps the serverless function alive after responding
+  waitUntil(processEmailAsync(fields, requestId));
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }

@@ -1,4 +1,5 @@
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { getInstagramAdapter } from '@/lib/channels/instagram';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
@@ -43,8 +44,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
-  // Use after() to keep the serverless function alive after responding
-  after(processInboundAsync(rawBody, requestId));
+  // waitUntil keeps the serverless function alive after responding
+  waitUntil(processInboundAsync(rawBody, requestId));
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
