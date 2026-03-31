@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { waitUntil } from '@vercel/functions';
 import { getWhatsAppAdapter } from '@/lib/channels/whatsapp';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
@@ -45,8 +44,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
-  // waitUntil keeps the serverless function alive after responding
-  waitUntil(processWebhookAsync(rawBody, requestId));
+  // Await processing — errors are caught inside so we always reach the 200
+  await processWebhookAsync(rawBody, requestId);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
