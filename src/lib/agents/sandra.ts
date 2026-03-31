@@ -116,6 +116,7 @@ export async function runSandraAgent(
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
       channel: input.channel,
+      senderName: input.senderName,
       userMemorySummary,
       conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
@@ -389,6 +390,8 @@ export async function* runSandraAgentStream(
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
+      channel: input.channel,
+      senderName: input.senderName,
       userMemorySummary,
       conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,

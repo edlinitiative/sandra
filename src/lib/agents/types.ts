@@ -13,6 +13,8 @@ export interface AgentInput {
   userId?: string;
   language: SupportedLanguage;
   channel: ChannelType;
+  /** Display name of the person messaging (used for personalisation on social channels) */
+  senderName?: string;
   /** Permission scopes for tool execution. Defaults to ['knowledge:read', 'repos:read'] */
   scopes?: string[];
   metadata?: Record<string, unknown>;

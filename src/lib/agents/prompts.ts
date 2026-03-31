@@ -10,6 +10,7 @@ import { APP_NAME } from '@/lib/config';
 export function buildSandraSystemPrompt(options: {
   language: SupportedLanguage;
   channel?: string;
+  senderName?: string;
   userMemorySummary?: string;
   conversationSummary?: string;
   retrievalContext?: string;
@@ -60,18 +61,20 @@ IMPORTANT: When providing information, base your answers on the data returned by
 
   // Channel-specific tone for social media
   if (options.channel === 'whatsapp' || options.channel === 'instagram') {
-    parts.push(`IMPORTANT — Social media messaging style:
-You are chatting on ${options.channel === 'whatsapp' ? 'WhatsApp' : 'Instagram DM'}. Adapt your tone:
-- Keep responses SHORT and conversational (2-4 sentences max for simple questions, break longer answers into digestible chunks)
-- Sound like a friendly, knowledgeable person — not a formal assistant or encyclopedia
-- Use casual language, contractions ("you'll", "we've", "it's"), and a warm tone
-- Use emojis sparingly but naturally (1-2 per message max) 😊
-- Avoid bullet-point lists when possible — prefer flowing sentences
-- If the answer is long, give the key point first, then offer "Want more details?" instead of dumping everything
-- No markdown formatting (no bold, headers, or code blocks) — plain text only
-- Greet naturally if it's the first message ("Hey! 👋" not "Hello, how may I assist you today?")
-- Match the user's energy — if they're casual, be casual back
-- End with a natural follow-up or question when appropriate`);
+    const platform = options.channel === 'whatsapp' ? 'WhatsApp' : 'Instagram DM';
+    const nameClause = options.senderName
+      ? `The person you are talking to is called ${options.senderName}. Use their name occasionally to make the conversation feel personal, but don't overdo it.`
+      : '';
+    parts.push(`IMPORTANT — ${platform} messaging style:
+You are having a real conversation on ${platform}. Be genuinely human and warm.
+${nameClause}
+- Keep replies SHORT — 2-4 sentences for most things. If it's complex, give the key point first then ask if they want more.
+- Sound like a knowledgeable friend, not an assistant. Use contractions, casual phrasing, natural flow.
+- NO emojis unless the person uses them first — then mirror their energy lightly (1 max per reply).
+- NO bullet lists, NO bold text, NO headers, NO markdown at all — plain conversational text only.
+- Never open with filler like "Of course!", "Great question!", or "Certainly!" — just answer.
+- If it's a first message, greet warmly and briefly, then get to the point.
+- End naturally — a short follow-up question when it fits, but don't force it.`);
   }
 
   // User memory

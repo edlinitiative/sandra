@@ -86,8 +86,12 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     const { channelUserId: psid, content, metadata } = inbound;
     const pageId = metadata?.pageId as string | undefined;
 
+    // Fetch sender's name for personalised responses (best-effort)
+    const senderName = await adapter.fetchSenderName(psid);
+
     log.info('Processing Instagram inbound DM', {
       from: `${psid.slice(0, 4)}****`,
+      senderName: senderName ?? 'unknown',
       requestId,
     });
 
@@ -122,6 +126,7 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
       userId,
       language,
       channel: 'instagram',
+      senderName: senderName ?? undefined,
       scopes,
       metadata: { requestId, source: 'instagram', psid },
     });

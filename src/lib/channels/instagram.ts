@@ -142,6 +142,23 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   }
 
   /**
+   * Fetch the display name of an Instagram user by their IGSID.
+   * Returns null if unavailable or on any error.
+   */
+  async fetchSenderName(senderId: string): Promise<string | null> {
+    if (!this.isConfigured()) return null;
+    try {
+      const url = `${this.apiBase}/${senderId}?fields=name&access_token=${this.pageAccessToken}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json() as { name?: string };
+      return data.name ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Send a "typing_on" indicator so the user sees Sandra is composing a reply.
    * Best-effort — fire-and-forget, never throws.
    */
