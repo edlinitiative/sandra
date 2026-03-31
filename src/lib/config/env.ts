@@ -44,7 +44,7 @@ const envSchema = z.object({
 
   // Email (SendGrid)
   SENDGRID_API_KEY: z.string().optional(),
-  SENDGRID_FROM_EMAIL: z.string().email().optional(),
+  SENDGRID_FROM_EMAIL: z.string().email().optional().or(z.literal('')),
   SENDGRID_FROM_NAME: z.string().default('Sandra — EdLight'),
   SENDGRID_WEBHOOK_SECRET: z.string().optional(),
 
