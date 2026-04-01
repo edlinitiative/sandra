@@ -51,7 +51,7 @@ export function estimateMessagesTokens(messages: ChatMessage[]): number {
   // Each message has ~4 tokens of overhead (role, formatting)
   const overhead = messages.length * 4;
   const contentTokens = messages.reduce(
-    (sum, m) => sum + estimateTokens(m.content),
+    (sum, m) => sum + estimateTokens(Array.isArray(m.content) ? m.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : m.content),
     0,
   );
   return overhead + contentTokens;
@@ -139,7 +139,7 @@ export function optimizeContextWindow(params: {
     : null;
 
   const summaryTokens = summaryMessage
-    ? estimateTokens(summaryMessage.content) + 4
+    ? estimateTokens(Array.isArray(summaryMessage.content) ? summaryMessage.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : summaryMessage.content) + 4
     : 0;
   const remainingBudget = historyBudget - summaryTokens;
 
@@ -207,7 +207,7 @@ function trimMessagesToFit(
   // Walk backwards from most recent
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]!;
-    const msgTokens = estimateTokens(msg.content) + 4;
+    const msgTokens = estimateTokens(Array.isArray(msg.content) ? msg.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : msg.content) + 4;
     if (totalTokens + msgTokens > maxTokens) {
       break;
     }

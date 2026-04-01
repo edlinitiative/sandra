@@ -49,7 +49,7 @@ export async function summarizeConversation(
   // Don't summarize if conversation is short
   if (userFacing.length <= AI_SUMMARY_THRESHOLD) {
     // Fall back to rule-based summary
-    return buildConversationSummary(userFacing);
+    return buildConversationSummary(userFacing.map(m => ({ ...m, content: Array.isArray(m.content) ? m.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : m.content })));
   }
 
   // Take older messages (excluding recent ones)
@@ -68,7 +68,10 @@ export async function summarizeConversation(
   try {
     const provider = getAIProvider();
     const conversationText = toSummarize
-      .map((m) => `${m.role === 'user' ? 'User' : 'Sandra'}: ${m.content}`)
+      .map((m) => {
+        const text = Array.isArray(m.content) ? m.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : m.content;
+        return `${m.role === 'user' ? 'User' : 'Sandra'}: ${text}`;
+      })
       .join('\n');
 
     const result = await provider.chatCompletion({
@@ -98,7 +101,7 @@ export async function summarizeConversation(
   }
 
   // Fallback to rule-based summary
-  return buildConversationSummary(userFacing);
+  return buildConversationSummary(userFacing.map(m => ({ ...m, content: Array.isArray(m.content) ? m.content.map(p => p.type === 'text' ? p.text : '[image]').join(' ') : m.content })));
 }
 
 /**
