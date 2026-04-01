@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  voice-bridge:
+    build: .
+    container_name: sandra-voice-bridge
+    restart: unless-stopped
+    ports:
+      # Host port 3001 → container port 3001
+      # In production Coolify puts Caddy in front, so only 3001 needs to be open internally
+      - '3001:3001'
+    env_file:
+      - .env
+    # UDP range for WebRTC media — must match Oracle security list rules
+    # Meta's ICE candidates use ports 40012, 3478-3484
+    # Our media ports are in this range
+    ports:
+      - '3001:3001'
+      - '10000-11000:10000-11000/udp'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
