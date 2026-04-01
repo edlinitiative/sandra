@@ -23,7 +23,7 @@ const envSchema = z.object({
   GITHUB_ORG: z.string().default('edlinitiative'),
 
   // Vector Store
-  VECTOR_STORE_PROVIDER: z.enum(['memory', 'pinecone', 'qdrant', 'weaviate']).default('memory'),
+  VECTOR_STORE_PROVIDER: z.enum(['memory', 'postgres', 'pinecone', 'qdrant', 'weaviate']).default('memory'),
   VECTOR_STORE_URL: z.string().optional(),
   VECTOR_STORE_API_KEY: z.string().optional(),
 
