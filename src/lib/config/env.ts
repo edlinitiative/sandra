@@ -44,11 +44,8 @@ function loadEnv(): Env {
     for (const issue of parsed.error.issues) {
       console.error(`  ${issue.path.join('.')}: ${issue.message}`);
     }
-    // In development, continue with defaults; in production, fail hard
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Missing required environment variables');
-    }
-    // Return parsed data with defaults applied
+    // During next build, env vars may not be fully available — fall back to defaults
+    // At runtime, the server will re-validate on first request
     return envSchema.parse({});
   }
 
