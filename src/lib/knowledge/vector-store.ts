@@ -6,6 +6,7 @@ import type {
   KnowledgeSearchFilter,
 } from './types';
 import { DEFAULT_TOP_K } from '@/lib/config';
+import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
 import {
   computePathPriority,
@@ -178,11 +179,16 @@ let vectorStore: VectorStore | null = null;
  */
 export function getVectorStore(): VectorStore {
   if (!vectorStore) {
-    if (process.env.DATABASE_URL) {
+    const usePostgres =
+      env.VECTOR_STORE_PROVIDER === 'postgres' ||
+      // Safety fallback: if provider is still 'memory' but we're in production with a DB, use pgvector
+      (env.VECTOR_STORE_PROVIDER === 'memory' && !!process.env.DATABASE_URL && process.env.NODE_ENV === 'production');
+
+    if (usePostgres) {
       log.info('Initializing PgVectorStore (pgvector-backed, persistent)');
       vectorStore = new PgVectorStore();
     } else {
-      log.info('Initializing InMemoryVectorStore (volatile, no DATABASE_URL)');
+      log.info('Initializing InMemoryVectorStore (volatile)');
       vectorStore = new InMemoryVectorStore();
     }
   }

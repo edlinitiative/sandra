@@ -84,10 +84,11 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
       requestId,
     });
 
-    // Mark message as read (best-effort)
+    // Mark message as read and show typing indicator (best-effort)
     if (whatsappMessageId) {
       void adapter.markAsRead(whatsappMessageId);
     }
+    void adapter.sendTypingIndicator(phoneNumber);
 
     // Resolve or create channel identity → Sandra user (auto-creates if new phone)
     const identity = await resolveChannelIdentity({

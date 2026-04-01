@@ -247,6 +247,30 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
   }
 
   /**
+   * Send a "typing_on" indicator to show the user Sandra is composing.
+   * Best-effort — fire-and-forget, never throws.
+   */
+  async sendTypingIndicator(recipientPhone: string): Promise<void> {
+    if (!this.isConfigured()) return;
+
+    const url = `${this.apiBase}/${this.phoneNumberId}/messages`;
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: recipientPhone,
+        type: 'reaction',
+        status: 'typing_indicator',
+        recipient_type: 'individual',
+      }),
+    }).catch(() => { /* best-effort */ });
+  }
+
+  /**
    * Mark an incoming message as read (best-effort, non-throwing).
    */
   async markAsRead(messageId: string): Promise<void> {
