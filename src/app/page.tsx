@@ -44,20 +44,66 @@ export default function HomePage() {
       </div>
 
       {/* Platform cards */}
-      <div className="mt-16 grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-16 grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { name: 'EdLight Code', desc: 'Core platform' },
-          { name: 'EdLight Academy', desc: 'Learning resources' },
-          { name: 'EdLight News', desc: 'Community updates' },
-          { name: 'EdLight Initiative', desc: 'Organization hub' },
+          {
+            name: 'EdLight Code',
+            desc: 'Core platform',
+            href: 'https://code.edlight.org/',
+            icon: (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+              </svg>
+            ),
+          },
+          {
+            name: 'EdLight Academy',
+            desc: 'Learning resources',
+            href: 'https://academy.edlight.org/',
+            icon: (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 14 3 9l9-5 9 5-9 5Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 12v4c0 1 2.5 2 5 2s5-1 5-2v-4" />
+              </svg>
+            ),
+          },
+          {
+            name: 'EdLight News',
+            desc: 'Community updates',
+            href: 'https://news.edlight.org/',
+            icon: (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h16" />
+              </svg>
+            ),
+          },
+          {
+            name: 'EdLight Initiative',
+            desc: 'Organization hub',
+            href: 'https://www.edlight.org/',
+            icon: (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="9" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M12 3c2.7 2.5 4 5.5 4 9s-1.3 6.5-4 9c-2.7-2.5-4-5.5-4-9s1.3-6.5 4-9Z" />
+              </svg>
+            ),
+          },
         ].map((platform) => (
-          <div
+          <a
             key={platform.name}
-            className="rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm"
+            href={platform.href}
+            className="group rounded-2xl border border-white/80 bg-white/70 p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-300 ease-out hover:scale-105 hover:shadow-[0_16px_36px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sandra-500 focus-visible:ring-offset-2"
+            aria-label={`Open ${platform.name}`}
           >
+            <div className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sandra-50 text-sandra-600">
+              {platform.icon}
+            </div>
             <p className="text-sm font-semibold text-gray-900">{platform.name}</p>
             <p className="text-xs text-gray-500">{platform.desc}</p>
-          </div>
+            <span className="mt-3 inline-flex items-center text-xs font-medium text-sandra-600 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
+              Open {'->'}
+            </span>
+          </a>
         ))}
       </div>
 
