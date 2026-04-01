@@ -3,7 +3,7 @@ import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
 import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
-import type { ChatMessage } from '@/lib/ai/types';
+import type { ChatMessage, MessageContentPart } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
 import { getSessionStore } from '@/lib/memory/session-store';
 import {
@@ -123,11 +123,22 @@ export async function runSandraAgent(
       availableTools: toolNames,
     });
 
-    // 5. Assemble messages
+    // 5. Assemble messages — build multimodal content when image attachments are present
+    const imageAttachments = input.attachments?.filter(a => a.type === 'image') ?? [];
+    const userContent: ChatMessage['content'] = imageAttachments.length > 0
+      ? [
+          { type: 'text', text: input.message || 'What do you see in this image?' } as MessageContentPart,
+          ...imageAttachments.map(a => ({
+            type: 'image_url' as const,
+            image_url: { url: a.url, detail: 'auto' as const },
+          } as MessageContentPart)),
+        ]
+      : input.message;
+
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...historyMessages,
-      { role: 'user', content: input.message },
+      { role: 'user', content: userContent },
     ];
 
     // Save user message to session (DB-backed)
@@ -398,11 +409,23 @@ export async function* runSandraAgentStream(
       availableTools: toolNames,
     });
 
+    // Assemble messages — build multimodal content when image attachments are present
+    const imageAttachments = input.attachments?.filter(a => a.type === 'image') ?? [];
+    const userContent: ChatMessage['content'] = imageAttachments.length > 0
+      ? [
+          { type: 'text', text: input.message || 'What do you see in this image?' } as MessageContentPart,
+          ...imageAttachments.map(a => ({
+            type: 'image_url' as const,
+            image_url: { url: a.url, detail: 'auto' as const },
+          } as MessageContentPart)),
+        ]
+      : input.message;
+
     // Assemble messages
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...historyMessages,
-      { role: 'user', content: input.message },
+      { role: 'user', content: userContent },
     ];
 
     // Save user message (DB-backed)

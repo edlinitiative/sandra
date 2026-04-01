@@ -1,7 +1,21 @@
-import type { ChannelAdapter, InboundMessage, OutboundMessage } from './types';
+import type { ChannelAdapter, InboundMessage, OutboundMessage, MessageAttachment } from './types';
 import { formatForWhatsApp } from './whatsapp-formatter';
+import { transcribeAudio } from './voice';
 import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function mimeToExtension(mimeType: string): string {
+  const map: Record<string, string> = {
+    'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3',
+    'audio/aac': 'aac', 'audio/mp4': 'mp4', 'audio/wav': 'wav',
+    'audio/x-wav': 'wav', 'audio/m4a': 'm4a', 'audio/webm': 'webm',
+    'audio/flac': 'flac', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
+    'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+  };
+  return map[mimeType] ?? 'bin';
+}
 
 const log = createLogger('channels:whatsapp');
 
@@ -118,14 +132,39 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
     const contact = value.contacts?.[0];
 
     let content = '';
+    let attachments: MessageAttachment[] | undefined;
+
     if (message.type === 'text' && message.text?.body) {
       content = message.text.body;
     } else if (message.type === 'button' && message.button?.text) {
       content = message.button.text;
     } else if (message.type === 'interactive' && message.interactive?.button_reply?.title) {
       content = message.interactive.button_reply.title;
+    } else if (message.type === 'audio' && message.audio?.id) {
+      try {
+        const { buffer, mimeType } = await this.downloadMedia(message.audio.id);
+        const cleanMime = mimeType.split(';')[0]!.trim();
+        const transcript = await transcribeAudio(buffer, cleanMime, `voice.${mimeToExtension(cleanMime)}`);
+        content = `[Voice note]: ${transcript.text}`;
+        log.info('WhatsApp voice note transcribed', { chars: transcript.text.length });
+      } catch (err) {
+        log.warn('WhatsApp voice note transcription failed', { error: err instanceof Error ? err.message : 'unknown' });
+        content = '[Voice note received — transcription unavailable]';
+      }
+    } else if (message.type === 'image' && message.image?.id) {
+      try {
+        const { buffer, mimeType } = await this.downloadMedia(message.image.id);
+        const cleanMime = mimeType.split(';')[0]!.trim();
+        const base64 = buffer.toString('base64');
+        content = message.image.caption || '[Image]';
+        attachments = [{ type: 'image', url: `data:${cleanMime};base64,${base64}`, mimeType: cleanMime, data: base64 }];
+        log.info('WhatsApp image processed', { mimeType: cleanMime, bytes: buffer.length });
+      } catch (err) {
+        log.warn('WhatsApp image download failed', { error: err instanceof Error ? err.message : 'unknown' });
+        content = '[Image received — could not process]';
+      }
     } else {
-      content = `[${message.type} message received — I can only process text messages for now]`;
+      content = `[${message.type} message received — not supported yet]`;
     }
 
     return {
@@ -133,6 +172,7 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
       channelUserId: message.from,
       content,
       timestamp: new Date(parseInt(message.timestamp) * 1000),
+      attachments,
       metadata: {
         whatsappMessageId: message.id,
         phoneNumberId: value.metadata.phone_number_id,
@@ -140,6 +180,25 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
         messageType: message.type,
       },
     };
+  }
+
+  /**
+   * Download a media file from WhatsApp CDN.
+   * Step 1: GET /{media-id} → retrieve the CDN URL.
+   * Step 2: GET {url} with Bearer auth → download the bytes.
+   */
+  private async downloadMedia(mediaId: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const metaRes = await fetch(`${this.apiBase}/${mediaId}`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    if (!metaRes.ok) throw new Error(`Media metadata fetch failed: ${metaRes.status}`);
+    const meta = await metaRes.json() as { url: string; mime_type: string };
+
+    const fileRes = await fetch(meta.url, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    if (!fileRes.ok) throw new Error(`Media download failed: ${fileRes.status}`);
+    return { buffer: Buffer.from(await fileRes.arrayBuffer()), mimeType: meta.mime_type };
   }
 
   /**

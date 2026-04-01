@@ -26,6 +26,8 @@ export interface MessageAttachment {
   url: string;
   mimeType?: string;
   filename?: string;
+  /** Base64-encoded bytes — used to pass images to vision models without persisting files */
+  data?: string;
 }
 
 /** Normalized outbound response to any channel */

@@ -127,6 +127,7 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
       language,
       channel: 'whatsapp',
       senderName: displayName ?? undefined,
+      attachments: inbound.attachments,
       scopes,
       metadata: { requestId, source: 'whatsapp', phoneNumber },
     });

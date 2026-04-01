@@ -1,7 +1,19 @@
-import type { ChannelAdapter, InboundMessage, OutboundMessage } from './types';
+import type { ChannelAdapter, InboundMessage, OutboundMessage, MessageAttachment } from './types';
 import { formatForInstagram } from './instagram-formatter';
+import { transcribeAudio } from './voice';
 import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function mimeToExtension(mimeType: string): string {
+  if (mimeType.includes('ogg')) return 'ogg';
+  if (mimeType.includes('webm')) return 'webm';
+  if (mimeType.includes('mp4') || mimeType.includes('m4a')) return 'mp4';
+  if (mimeType.includes('wav')) return 'wav';
+  if (mimeType.includes('flac')) return 'flac';
+  return 'mp3';
+}
 
 const log = createLogger('channels:instagram');
 
@@ -116,14 +128,42 @@ export class InstagramChannelAdapter implements ChannelAdapter {
     }
 
     let content = '';
+    let attachments: MessageAttachment[] | undefined;
 
     if (messaging.message?.text) {
       content = messaging.message.text;
     } else if (messaging.postback?.title) {
       content = messaging.postback.title;
     } else if (messaging.message?.attachments?.length) {
-      const type = messaging.message.attachments[0]!.type;
-      content = `[${type} received — I can only process text messages for now]`;
+      const attachment = messaging.message.attachments[0]!;
+      const attachUrl = attachment.payload.url;
+
+      if (attachment.type === 'audio' && attachUrl) {
+        try {
+          const { buffer, mimeType } = await this.downloadAttachment(attachUrl);
+          const cleanMime = mimeType.split(';')[0]!.trim();
+          const transcript = await transcribeAudio(buffer, cleanMime, `voice.${mimeToExtension(cleanMime)}`);
+          content = `[Voice note]: ${transcript.text}`;
+          log.info('Instagram voice note transcribed', { chars: transcript.text.length });
+        } catch (err) {
+          log.warn('Instagram voice note transcription failed', { error: err instanceof Error ? err.message : 'unknown' });
+          content = '[Voice note received — transcription unavailable]';
+        }
+      } else if (attachment.type === 'image' && attachUrl) {
+        try {
+          const { buffer, mimeType } = await this.downloadAttachment(attachUrl);
+          const cleanMime = mimeType.split(';')[0]!.trim();
+          const base64 = buffer.toString('base64');
+          content = '[Image]';
+          attachments = [{ type: 'image', url: `data:${cleanMime};base64,${base64}`, mimeType: cleanMime, data: base64 }];
+          log.info('Instagram image processed', { mimeType: cleanMime, bytes: buffer.length });
+        } catch (err) {
+          log.warn('Instagram image download failed', { error: err instanceof Error ? err.message : 'unknown' });
+          content = '[Image received — could not process]';
+        }
+      } else {
+        content = `[${attachment.type} received — not supported yet]`;
+      }
     } else {
       throw new Error('SKIP: No processable content in messaging event');
     }
@@ -133,12 +173,24 @@ export class InstagramChannelAdapter implements ChannelAdapter {
       channelUserId: senderId,
       content,
       timestamp: new Date(messaging.timestamp),
+      attachments,
       metadata: {
         instagramMessageId: messaging.message?.mid ?? messaging.postback?.mid,
         pageId: messaging.recipient.id,
         messageType: messaging.message ? 'message' : 'postback',
       },
     };
+  }
+
+  /**
+   * Download a media file from an Instagram CDN URL.
+   * Instagram attachment URLs are public and don't require auth headers.
+   */
+  private async downloadAttachment(url: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Attachment download failed: ${res.status}`);
+    const mimeType = (res.headers.get('content-type') ?? 'audio/mpeg').split(';')[0]!.trim();
+    return { buffer: Buffer.from(await res.arrayBuffer()), mimeType };
   }
 
   /**

@@ -13,10 +13,16 @@ export interface ToolCall {
   arguments: string; // JSON string
 }
 
+/** A single part of a multimodal user message (text or image for vision) */
+export type MessageContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } };
+
 /** A single message in a conversation */
 export interface ChatMessage {
   role: MessageRole;
-  content: string;
+  /** String for all roles; content-part array only for user messages with vision attachments */
+  content: string | MessageContentPart[];
   name?: string;
   toolCallId?: string;
   toolCalls?: ToolCall[];

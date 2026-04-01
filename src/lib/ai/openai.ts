@@ -35,7 +35,7 @@ export class OpenAIProvider implements AIProvider {
         if (m.role === 'tool') {
           return {
             role: 'tool' as const,
-            content: m.content,
+            content: m.content as string,
             tool_call_id: m.toolCallId ?? '',
           };
         }
@@ -43,7 +43,7 @@ export class OpenAIProvider implements AIProvider {
         if (m.role === 'assistant') {
           return {
             role: 'assistant' as const,
-            content: m.content,
+            content: m.content as string,
             tool_calls: m.toolCalls?.map((tc) => ({
               id: tc.id,
               type: 'function' as const,
@@ -55,9 +55,21 @@ export class OpenAIProvider implements AIProvider {
           };
         }
 
+        // Support multimodal content (vision) for user messages
+        if (m.role === 'user' && Array.isArray(m.content)) {
+          return {
+            role: 'user' as const,
+            content: m.content.map(part =>
+              part.type === 'text'
+                ? { type: 'text' as const, text: part.text }
+                : { type: 'image_url' as const, image_url: { url: part.image_url.url, detail: part.image_url.detail ?? 'auto' as const } },
+            ),
+          };
+        }
+
         return {
           role: m.role as 'system' | 'user',
-          content: m.content,
+          content: m.content as string,
         };
       });
 
@@ -124,13 +136,13 @@ export class OpenAIProvider implements AIProvider {
     try {
       const messages = request.messages.map((m) => {
         if (m.role === 'tool') {
-          return { role: 'tool' as const, content: m.content, tool_call_id: m.toolCallId ?? '' };
+          return { role: 'tool' as const, content: m.content as string, tool_call_id: m.toolCallId ?? '' };
         }
 
         if (m.role === 'assistant') {
           return {
             role: 'assistant' as const,
-            content: m.content,
+            content: m.content as string,
             tool_calls: m.toolCalls?.map((tc) => ({
               id: tc.id,
               type: 'function' as const,
@@ -142,7 +154,19 @@ export class OpenAIProvider implements AIProvider {
           };
         }
 
-        return { role: m.role as 'system' | 'user', content: m.content };
+        // Support multimodal content (vision) for user messages
+        if (m.role === 'user' && Array.isArray(m.content)) {
+          return {
+            role: 'user' as const,
+            content: m.content.map(part =>
+              part.type === 'text'
+                ? { type: 'text' as const, text: part.text }
+                : { type: 'image_url' as const, image_url: { url: part.image_url.url, detail: part.image_url.detail ?? 'auto' as const } },
+            ),
+          };
+        }
+
+        return { role: m.role as 'system' | 'user', content: m.content as string };
       });
 
       const tools = request.tools?.map((t) => ({

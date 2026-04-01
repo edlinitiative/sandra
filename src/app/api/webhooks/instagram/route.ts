@@ -127,6 +127,7 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
       language,
       channel: 'instagram',
       senderName: senderName ?? undefined,
+      attachments: inbound.attachments,
       scopes,
       metadata: { requestId, source: 'instagram', psid },
     });
