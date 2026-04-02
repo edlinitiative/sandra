@@ -22,6 +22,8 @@ export interface GoogleWorkspaceConfig {
   domain: string;
   /** Admin email for domain-wide delegation (impersonation anchor) */
   adminEmail: string;
+  /** Super Admin email for Admin SDK / Directory API (requires Workspace Super Admin role) */
+  directoryAdminEmail?: string;
   /** Drive folder IDs to index for knowledge */
   driveFolderIds?: string[];
   /** Scopes granted via domain-wide delegation */

@@ -51,10 +51,10 @@ export async function listUsers(
 ): Promise<DirectorySearchResult> {
   log.info('Listing directory users', { domain: ctx.config.domain, tenantId: ctx.tenantId });
 
-  // Must impersonate an admin for directory access
+  // Must impersonate a Super Admin for directory access
   const adminCtx: GoogleWorkspaceContext = {
     ...ctx,
-    impersonateEmail: ctx.config.adminEmail,
+    impersonateEmail: ctx.config.directoryAdminEmail ?? ctx.config.adminEmail,
   };
 
   const token = await getContextToken(adminCtx, DIRECTORY_SCOPES);
