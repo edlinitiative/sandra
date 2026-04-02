@@ -65,6 +65,7 @@ model User {
   certificates   Certificate[]
   applications   ProgramApplication[]
   channelIdentities ChannelIdentity[]
+  tenantMembers  TenantMember[]
 
   @@index([email])
   @@index([externalId])
@@ -334,4 +335,74 @@ model AnalyticsEvent {
   @@index([userId])
   @@index([channel])
   @@index([createdAt])
+}
+// ── Multi-Tenant ─────────────────────────────────────────────────────────
+
+enum TenantRole {
+  basic    // View knowledge, use chat — no org-level actions
+  manager  // Manage knowledge sources, view team activity
+  admin    // Full control: connect providers, manage members, audit
+}
+
+enum ProviderType {
+  google_workspace
+  microsoft_365
+  custom_api
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String   // "EdLight", "Acme Corp"
+  slug        String   @unique // "edlight", "acme-corp"  — URL-safe identifier
+  domain      String?  @unique // "edlight.org" — for auto-matching users
+  isActive    Boolean  @default(true)
+  metadata    Json?    // Billing plan, feature flags, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     TenantMember[]
+  providers   ConnectedProvider[]
+
+  @@index([slug])
+  @@index([domain])
+}
+
+model TenantMember {
+  id         String     @id @default(cuid())
+  tenantId   String
+  userId     String
+  role       TenantRole @default(basic)
+  isActive   Boolean    @default(true)
+  metadata   Json?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId, role])
+}
+
+model ConnectedProvider {
+  id                String       @id @default(cuid())
+  tenantId          String
+  provider          ProviderType
+  label             String?      // "Google Workspace — EdLight" (human-friendly)
+  // Encrypted credentials blob (service account key, OAuth tokens, etc.)
+  credentials       Json
+  // Provider-specific configuration (Drive folder IDs, domain, scopes)
+  config            Json?
+  isActive          Boolean      @default(true)
+  lastHealthCheck   DateTime?
+  lastHealthStatus  String?      // "connected" | "disconnected" | "degraded"
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  tenant            Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+  @@index([provider])
 }

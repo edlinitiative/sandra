@@ -24,6 +24,9 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'applications:read',
     'applications:write',
     'actions:submit',
+    // Google Workspace — read-only access for basic tenant members
+    'drive:read',
+    'contacts:read',
   ],
   educator: [
     'knowledge:read',
@@ -35,6 +38,10 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'applications:read',
     'applications:write',
     'actions:submit',
+    // Google Workspace — read + draft (manager-level tenant members)
+    'drive:read',
+    'contacts:read',
+    'gmail:draft',
   ],
   admin: [
     'knowledge:read',
@@ -52,6 +59,12 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'audit:read',
     'actions:submit',
     'actions:approve',
+    // Google Workspace — full access for admin tenant members
+    'drive:read',
+    'drive:write',
+    'contacts:read',
+    'gmail:draft',
+    'gmail:send',
   ],
 };
 
@@ -96,6 +109,12 @@ export const PRIVATE_SCOPES = [
   'admin:tools',
   'actions:submit',
   'actions:approve',
+  // Google Workspace scopes are always audited
+  'drive:read',
+  'drive:write',
+  'contacts:read',
+  'gmail:draft',
+  'gmail:send',
 ] as const;
 
 /** Check if a tool's required scopes indicate it accesses private user data. */

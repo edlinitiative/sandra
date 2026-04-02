@@ -27,6 +27,12 @@ import './submit-interest-form';
 import './queue-reminder';
 import './draft-email';
 
+// Phase 12 — Google Workspace tools (multi-tenant, connector-backed)
+import './search-drive';
+import './list-contacts';
+import './send-gmail';
+import './draft-gmail';
+
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';
 export { executeTool } from './executor';
