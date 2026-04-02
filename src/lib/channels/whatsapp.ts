@@ -59,6 +59,10 @@ export interface WhatsAppMessage {
   audio?: { id: string; mime_type: string };
   button?: { text: string; payload: string };
   interactive?: { type: string; button_reply?: { id: string; title: string } };
+  /** Present when the message is from a group chat */
+  group_id?: string;
+  /** In groups, `from` is the sender; in some payloads the group context is here */
+  context?: { from?: string; id?: string; group_id?: string };
 }
 
 interface WhatsAppStatus {
@@ -167,17 +171,25 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
       content = `[${message.type} message received — not supported yet]`;
     }
 
+    // Detect group chat: group_id can be on the message or in context
+    const groupId = message.group_id ?? message.context?.group_id ?? undefined;
+    const isGroup = Boolean(groupId);
+
     return {
       channelType: 'whatsapp',
       channelUserId: message.from,
       content,
       timestamp: new Date(parseInt(message.timestamp) * 1000),
       attachments,
+      isGroup,
+      groupId,
       metadata: {
         whatsappMessageId: message.id,
         phoneNumberId: value.metadata.phone_number_id,
         displayName: contact?.profile?.name ?? null,
         messageType: message.type,
+        isGroup,
+        groupId,
       },
     };
   }

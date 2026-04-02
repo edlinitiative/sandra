@@ -8,6 +8,8 @@ import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
+import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext } from '@/lib/channels/whatsapp-group';
+import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
 
 const log = createLogger('api:webhooks:whatsapp');
 
@@ -78,16 +80,35 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
     const { channelUserId: phoneNumber, content, metadata } = inbound;
     const whatsappMessageId = metadata?.whatsappMessageId as string | undefined;
     const displayName = metadata?.displayName as string | null | undefined;
+    const isGroup = inbound.isGroup ?? false;
+    const groupId = inbound.groupId;
 
     log.info('Processing WhatsApp inbound message', {
       from: `${phoneNumber.slice(0, 4)}****`,
+      isGroup,
+      groupId: groupId ? `${groupId.slice(0, 8)}...` : undefined,
       requestId,
     });
 
-    // Mark message as read and show typing indicator (best-effort)
+    // Mark message as read (best-effort)
     if (whatsappMessageId) {
       void adapter.markAsRead(whatsappMessageId);
     }
+
+    // ── GROUP CHAT FLOW ───────────────────────────────────────────────────
+    if (isGroup && groupId) {
+      return processGroupMessage({
+        adapter,
+        inbound,
+        phoneNumber,
+        content,
+        displayName: displayName ?? undefined,
+        groupId,
+        requestId,
+      });
+    }
+
+    // ── 1:1 DM FLOW (existing) ───────────────────────────────────────────
     void adapter.sendTypingIndicator(phoneNumber);
 
     // Resolve or create channel identity → Sandra user (auto-creates if new phone)
@@ -157,4 +178,117 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
   } finally {
     clearCorrelationId();
   }
+}
+
+// ─── Group message handler ────────────────────────────────────────────────────
+
+interface GroupMessageParams {
+  adapter: ReturnType<typeof getWhatsAppAdapter>;
+  inbound: Awaited<ReturnType<ReturnType<typeof getWhatsAppAdapter>['parseInbound']>>;
+  phoneNumber: string;
+  content: string;
+  displayName: string | undefined;
+  groupId: string;
+  requestId: string;
+}
+
+async function processGroupMessage(params: GroupMessageParams): Promise<void> {
+  const { adapter, inbound, phoneNumber, content, displayName, groupId, requestId } = params;
+
+  // Resolve user identity (same as 1:1 — links phone to Sandra user)
+  const identity = await resolveChannelIdentity({
+    channel: 'whatsapp',
+    externalId: phoneNumber,
+    displayName,
+    metadata: { requestId, groupId },
+  });
+
+  const userId = identity.userId;
+
+  // Group sessions are keyed by group ID, not individual phone
+  const groupSessionId = buildGroupSessionId(groupId);
+
+  // Always store the message in the group session for context
+  // (even if Sandra isn't mentioned — she sees the full conversation)
+  await storeGroupMessage({
+    sessionId: groupSessionId,
+    groupId,
+    senderPhone: phoneNumber,
+    senderName: displayName,
+    userId,
+    content,
+  });
+
+  // Only respond if Sandra is mentioned
+  if (!isSandraMentioned(content)) {
+    log.info('Group message stored (Sandra not mentioned)', {
+      from: `${phoneNumber.slice(0, 4)}****`,
+      groupId: `${groupId.slice(0, 8)}...`,
+    });
+    return;
+  }
+
+  log.info('Sandra mentioned in group — generating response', {
+    from: `${phoneNumber.slice(0, 4)}****`,
+    groupId: `${groupId.slice(0, 8)}...`,
+  });
+
+  // Show typing indicator in the group
+  void adapter.sendTypingIndicator(groupId);
+
+  // Ensure session continuity for the group session
+  const language = resolveLanguage({ explicit: undefined });
+
+  await ensureSessionContinuity({
+    sessionId: groupSessionId,
+    channel: 'whatsapp',
+    language,
+    userId,
+  });
+
+  // Strip the mention from the message so the agent gets a clean query
+  const cleanMessage = stripMention(content);
+
+  // Build group context prefix so the agent knows who's speaking
+  const groupContext = formatGroupContext(displayName, phoneNumber, groupId);
+
+  // Check if this user has granted sharing permission
+  const sharingNote = await getGroupSharingNote(userId);
+
+  const scopes = getScopesForRole('guest');
+  const result = await runSandraAgent({
+    message: `${groupContext}\n${sharingNote}\n${cleanMessage}`,
+    sessionId: groupSessionId,
+    userId,
+    language,
+    channel: 'whatsapp',
+    senderName: displayName,
+    attachments: inbound.attachments,
+    scopes,
+    metadata: {
+      requestId,
+      source: 'whatsapp-group',
+      phoneNumber,
+      groupId,
+      isGroup: true,
+    },
+  });
+
+  // Reply to the GROUP (not the individual sender)
+  const chunks = splitForWhatsApp(result.response);
+  for (const chunk of chunks) {
+    await adapter.send({
+      channelType: 'whatsapp',
+      recipientId: groupId,
+      content: chunk,
+      language: result.language,
+    });
+  }
+
+  log.info('WhatsApp group reply sent', {
+    groupId: `${groupId.slice(0, 8)}...`,
+    mentionedBy: `${phoneNumber.slice(0, 4)}****`,
+    chunks: chunks.length,
+    toolsUsed: result.toolsUsed,
+  });
 }
