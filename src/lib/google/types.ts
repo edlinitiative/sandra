@@ -24,6 +24,8 @@ export interface GoogleWorkspaceConfig {
   adminEmail: string;
   /** Super Admin email for Admin SDK / Directory API (requires Workspace Super Admin role) */
   directoryAdminEmail?: string;
+  /** Email to impersonate for Drive access (if docs live under a shared account like info@) */
+  driveImpersonateEmail?: string;
   /** Drive folder IDs to index for knowledge */
   driveFolderIds?: string[];
   /** Scopes granted via domain-wide delegation */

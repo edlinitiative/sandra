@@ -66,7 +66,11 @@ const searchDrive: SandraTool = {
     }
 
     try {
-      const ctx = await resolveGoogleContext(tenantId);
+      const rawCtx = await resolveGoogleContext(tenantId);
+      // Use the configured Drive impersonation email (e.g. info@edlight.org) if set
+      const ctx = rawCtx.config.driveImpersonateEmail
+        ? { ...rawCtx, impersonateEmail: rawCtx.config.driveImpersonateEmail }
+        : rawCtx;
 
       const result = await searchFiles(ctx, {
         query: params.query,

@@ -59,7 +59,11 @@ export async function indexDriveFiles(options: DriveIndexOptions): Promise<Drive
   log.info('Starting Drive indexing', { tenantId, maxFiles, force });
 
   // Resolve tenant and Google context
-  const ctx = await resolveGoogleContext(tenantId);
+  const rawCtx = await resolveGoogleContext(tenantId);
+  // Use the configured Drive impersonation email if set
+  const ctx = rawCtx.config.driveImpersonateEmail
+    ? { ...rawCtx, impersonateEmail: rawCtx.config.driveImpersonateEmail }
+    : rawCtx;
   const tenant = await db.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } });
   if (!tenant) throw new Error(`Tenant ${tenantId} not found`);
 
