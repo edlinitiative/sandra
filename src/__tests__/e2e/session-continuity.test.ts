@@ -16,6 +16,11 @@ const { mockChatCompletion } = vi.hoisted(() => ({
   mockChatCompletion: vi.fn(),
 }));
 
+const { mockPrismaGetMessages, mockPrismaGetSession } = vi.hoisted(() => ({
+  mockPrismaGetMessages: vi.fn(),
+  mockPrismaGetSession: vi.fn(),
+}));
+
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 vi.mock('@/lib/ai', () => ({
@@ -29,15 +34,40 @@ vi.mock('@/lib/ai', () => ({
   }),
 }));
 
+vi.mock('@/lib/memory/session-store', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/memory/session-store')>();
+  return {
+    ...original,
+    getPrismaSessionStore: () => ({
+      getMessages: mockPrismaGetMessages,
+      getSession: mockPrismaGetSession,
+      addMessage: vi.fn().mockResolvedValue(undefined),
+      loadContext: vi.fn().mockResolvedValue([]),
+      createSession: vi.fn(),
+      updateSession: vi.fn(),
+    }),
+  };
+});
+
 vi.mock('@/lib/memory/user-memory', () => ({
   getUserMemoryStore: () => ({
     getMemorySummary: vi.fn().mockResolvedValue(''),
   }),
 }));
 
+vi.mock('@/lib/memory/session-insights', () => ({
+  getSessionContinuityContext: vi.fn().mockResolvedValue({
+    memorySummary: '',
+    conversationSummary: '',
+  }),
+  rememberConversationInsights: vi.fn().mockResolvedValue(undefined),
+  refreshConversationSummary: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/knowledge', () => ({
   retrieveContext: vi.fn().mockResolvedValue([]),
   formatRetrievalContext: vi.fn().mockReturnValue(''),
+  inferKnowledgeQueryContext: vi.fn().mockReturnValue({ minScore: 0.2 }),
   getVectorStore: vi.fn().mockReturnValue({ count: vi.fn().mockResolvedValue(0) }),
 }));
 
@@ -118,17 +148,15 @@ describe('T124: Session Continuity Verification', () => {
   it('GET /api/conversations/[sessionId] returns full history in order', async () => {
     const sessionId = crypto.randomUUID();
     const messages = [
-      { role: 'user', content: 'Hello', timestamp: new Date('2024-01-01T00:00:00Z'), metadata: null },
-      { role: 'assistant', content: 'Hi!', timestamp: new Date('2024-01-01T00:00:01Z'), metadata: null },
-      { role: 'user', content: 'Follow-up', timestamp: new Date('2024-01-01T00:00:02Z'), metadata: null },
-      { role: 'assistant', content: 'Sure!', timestamp: new Date('2024-01-01T00:00:03Z'), metadata: null },
+      { role: 'user', content: 'Hello', createdAt: new Date('2024-01-01T00:00:00Z'), metadata: null },
+      { role: 'assistant', content: 'Hi!', createdAt: new Date('2024-01-01T00:00:01Z'), metadata: null },
+      { role: 'user', content: 'Follow-up', createdAt: new Date('2024-01-01T00:00:02Z'), metadata: null },
+      { role: 'assistant', content: 'Sure!', createdAt: new Date('2024-01-01T00:00:03Z'), metadata: null },
     ];
 
-    // Set up session store mock inline
-    const mockStore = { getHistory: vi.fn().mockResolvedValue(messages) };
-
-    const { setSessionStore } = await import('@/lib/memory/session-store');
-    setSessionStore(mockStore as unknown as InMemorySessionStore);
+    // Mock getPrismaSessionStore (DB is single source of truth for conversations API)
+    mockPrismaGetMessages.mockResolvedValue(messages);
+    mockPrismaGetSession.mockResolvedValue(null);
 
     const { GET } = await import('../../app/api/conversations/[sessionId]/route');
     const request = new Request(`http://localhost/api/conversations/${sessionId}`);

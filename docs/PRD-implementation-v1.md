@@ -1,5 +1,10 @@
 # Sandra — Implementation PRD (Version 1)
 
+> Historical implementation note: this document captures the original V1 build plan.
+> Several API and status details here are now superseded by the validated release
+> docs in `docs/releases/v2.md` and
+> `docs/implementation/sandra-ai-platform/progress.md`.
+
 Organization: EdLight Initiative  
 Project: Sandra  
 Document Type: Implementation Product Requirements Document  
@@ -569,4 +574,3 @@ Sandra Version 1 will be considered successful when:
 - conversations persist during sessions
 - admins can manage repository indexing
 - the architecture supports future expansion
-

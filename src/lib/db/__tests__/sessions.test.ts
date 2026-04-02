@@ -114,5 +114,16 @@ describe('session helpers', () => {
         data: { isActive: false },
       });
     });
+
+    it('supports linking a session to a user', async () => {
+      mockPrismaClient.session.update.mockResolvedValue({});
+
+      await updateSession(prisma, 'sess_1', { userId: 'user_123' });
+
+      expect(mockPrismaClient.session.update).toHaveBeenCalledWith({
+        where: { id: 'sess_1' },
+        data: { userId: 'user_123' },
+      });
+    });
   });
 });

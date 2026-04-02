@@ -48,3 +48,5 @@ coverage/
 .dkmv/runs/
 dkmv/
 tasks/
+.vercel
+.env*.local

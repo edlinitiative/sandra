@@ -9,3 +9,19 @@ export { InMemorySessionStore, getSessionStore, setSessionStore } from './sessio
 export { InMemoryUserMemoryStore, getUserMemoryStore, setUserMemoryStore } from './user-memory';
 export { PrismaSessionStore } from './prisma-session-store';
 export { PrismaUserMemoryStore } from './prisma-user-memory-store';
+export {
+  getSessionContinuityContext,
+  rememberConversationInsights,
+  refreshConversationSummary,
+  promoteSessionInsightsToUserMemory,
+  extractSessionProfile,
+  buildConversationSummary,
+} from './session-insights';
+export { summarizeConversation, needsAISummarization } from './conversation-summarizer';
+export {
+  estimateTokens,
+  estimateMessagesTokens,
+  calculateContextBudget,
+  optimizeContextWindow,
+} from './context-manager';
+export type { ContextBudget } from './context-manager';

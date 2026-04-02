@@ -1,5 +1,9 @@
 # Phase 4: Interface Layer
 
+> Historical phase note: this phase doc was written before the current V2 contract
+> freeze. Use `docs/releases/v2_signoff.md` for the current release-checklist
+> version of the admin, chat, streaming, and health contracts.
+
 ## Prerequisites
 
 - Phase 3 complete: all agent and indexing tests pass

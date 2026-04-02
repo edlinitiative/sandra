@@ -16,10 +16,21 @@ const { mockRunSandraAgent, mockRunSandraAgentStream } = vi.hoisted(() => ({
   mockRunSandraAgentStream: vi.fn(),
 }));
 
-const { mockGetHistory, mockAddEntry, mockGetContextMessages } = vi.hoisted(() => ({
+const { mockGetHistory, mockAddEntry, mockGetContextMessages, mockGetSession } = vi.hoisted(() => ({
   mockGetHistory: vi.fn(),
   mockAddEntry: vi.fn(),
   mockGetContextMessages: vi.fn(),
+  mockGetSession: vi.fn(),
+}));
+
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
+const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+  mockGetCanonicalUserLanguage: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -35,6 +46,20 @@ vi.mock('@/lib/memory/session-store', () => ({
     addEntry: mockAddEntry,
     getContextMessages: mockGetContextMessages,
   }),
+  getPrismaSessionStore: () => ({
+    getMessages: mockGetHistory,
+    getSession: mockGetSession,
+  }),
+}));
+
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  getCanonicalUserLanguage: mockGetCanonicalUserLanguage,
+  resolveCanonicalUser: mockResolveCanonicalUser,
 }));
 
 vi.mock('@/lib/config', () => ({
@@ -42,7 +67,13 @@ vi.mock('@/lib/config', () => ({
 }));
 
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,6 +110,11 @@ describe('T120: End-to-End Chat Flow', () => {
     mockGetHistory.mockResolvedValue([]);
     mockGetContextMessages.mockResolvedValue([]);
     mockAddEntry.mockResolvedValue(undefined);
+    mockGetSession.mockResolvedValue(null);
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
+    mockGetCanonicalUserLanguage.mockResolvedValue(undefined);
   });
 
   it('POST /api/chat returns a valid sessionId and assistant response', async () => {
@@ -128,7 +164,16 @@ describe('T120: End-to-End Chat Flow', () => {
     mockRunSandraAgentStream.mockImplementation(async function* () {
       yield { type: 'token', data: 'Hello ' };
       yield { type: 'token', data: 'from Sandra!' };
-      yield { type: 'done', data: 'test-session' };
+      yield {
+        type: 'done',
+        data: {
+          sessionId: 'test-session',
+          response: 'Hello from Sandra!',
+          toolsUsed: [],
+          retrievalUsed: false,
+          suggestedFollowUps: ['What can you help with next?'],
+        },
+      };
     });
 
     const { POST } = await import('../../app/api/chat/stream/route');
@@ -160,13 +205,22 @@ describe('T120: End-to-End Chat Flow', () => {
     expect(types).toContain('token');
     expect(types).toContain('done');
     expect(types.filter((t) => t === 'token')).toHaveLength(2);
+
+    const doneEvent = (events as Array<Record<string, unknown>>).find((event) => event.type === 'done');
+    expect(doneEvent).toMatchObject({
+      sessionId: 'test-session',
+      response: 'Hello from Sandra!',
+      toolsUsed: [],
+      retrievalUsed: false,
+      suggestedFollowUps: ['What can you help with next?'],
+    });
   });
 
   it('GET /api/conversations/[sessionId] returns messages in order', async () => {
     const sessionId = crypto.randomUUID();
     mockGetHistory.mockResolvedValue([
-      { role: 'user', content: 'Hello Sandra', timestamp: new Date('2024-01-01T00:00:00Z'), metadata: null },
-      { role: 'assistant', content: 'Hi there!', timestamp: new Date('2024-01-01T00:00:01Z'), metadata: null },
+      { role: 'user', content: 'Hello Sandra', createdAt: new Date('2024-01-01T00:00:00Z'), metadata: null },
+      { role: 'assistant', content: 'Hi there!', createdAt: new Date('2024-01-01T00:00:01Z'), metadata: null },
     ]);
 
     const { GET } = await import('../../app/api/conversations/[sessionId]/route');

@@ -2,7 +2,7 @@ import type { AgentContext } from './types';
 import type { Language } from '@/lib/i18n/types';
 import { buildSandraSystemPrompt } from './prompts';
 import { getSessionStore } from '@/lib/memory/session-store';
-import { getUserMemoryStore } from '@/lib/memory/user-memory';
+import { getSessionContinuityContext } from '@/lib/memory/session-insights';
 import { toolRegistry } from '@/lib/tools';
 import { MAX_CONTEXT_MESSAGES } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
@@ -21,7 +21,6 @@ export async function assembleContext(params: {
 }): Promise<AgentContext> {
   const { sessionId, language, userId } = params;
   const sessionStore = getSessionStore();
-  const userMemoryStore = getUserMemoryStore();
 
   log.debug('Assembling context', { sessionId, language });
 
@@ -30,15 +29,17 @@ export async function assembleContext(params: {
 
   // Load user memory summary (if userId provided)
   let userMemorySummary = '';
-  if (userId) {
-    try {
-      userMemorySummary = await userMemoryStore.getMemorySummary(userId);
-    } catch (err) {
-      log.warn('Failed to load user memory', {
-        userId,
-        error: err instanceof Error ? err.message : 'unknown',
-      });
-    }
+  let conversationSummary = '';
+  try {
+    const continuity = await getSessionContinuityContext({ sessionId, userId });
+    userMemorySummary = continuity.memorySummary;
+    conversationSummary = continuity.conversationSummary;
+  } catch (err) {
+    log.warn('Failed to load session continuity context', {
+      sessionId,
+      userId,
+      error: err instanceof Error ? err.message : 'unknown',
+    });
   }
 
   // Get tool definitions
@@ -48,6 +49,7 @@ export async function assembleContext(params: {
   const systemPrompt = buildSandraSystemPrompt({
     language,
     userMemorySummary: userMemorySummary || undefined,
+    conversationSummary: conversationSummary || undefined,
     availableTools: tools.map((t) => t.name),
   });
 
@@ -56,6 +58,7 @@ export async function assembleContext(params: {
     historyLength: messageHistory.length,
     toolCount: tools.length,
     hasMemory: !!userMemorySummary,
+    hasConversationSummary: !!conversationSummary,
   });
 
   return { systemPrompt, messageHistory, tools };

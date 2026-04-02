@@ -1,5 +1,9 @@
 # Sandra AI Platform — Master Task List
 
+> Historical planning note: this task list reflects the original V1 implementation
+> plan. It is no longer the authoritative status tracker for the current release.
+> Use `progress.md` plus `docs/releases/v2.md` for current execution status.
+
 ## How to Use This Document
 
 - Tasks are numbered T001–T129 sequentially (with intentional gaps between phases)
@@ -10,11 +14,10 @@
 
 ## Progress Summary
 
-- **Total tasks:** 86
-- **Completed:** 0
-- **In progress:** 0
-- **Blocked:** 0
-- **Remaining:** 86
+- **Plan type:** Historical V1 implementation backlog
+- **Authoritative current status:** `progress.md`
+- **Authoritative current release scope:** `docs/releases/v2.md`
+- **Recommended use now:** Backlog reference only; do not use these counters as the current release status
 
 ---
 

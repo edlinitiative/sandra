@@ -2,14 +2,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const { mockQueryRaw, mockVectorStoreCount } = vi.hoisted(() => ({
+const {
+  mockQueryRaw,
+  mockRepoRegistryCount,
+  mockIndexedSourceCount,
+  mockIndexedDocumentCount,
+  mockVectorStoreCount,
+  mockGetToolNames,
+} = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
+  mockRepoRegistryCount: vi.fn(),
+  mockIndexedSourceCount: vi.fn(),
+  mockIndexedDocumentCount: vi.fn(),
   mockVectorStoreCount: vi.fn(),
+  mockGetToolNames: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({
   db: {
     $queryRaw: mockQueryRaw,
+    repoRegistry: {
+      count: mockRepoRegistryCount,
+    },
+    indexedSource: {
+      count: mockIndexedSourceCount,
+    },
+    indexedDocument: {
+      count: mockIndexedDocumentCount,
+    },
   },
 }));
 
@@ -19,11 +39,31 @@ vi.mock('@/lib/knowledge', () => ({
   }),
 }));
 
+vi.mock('@/lib/config', () => ({
+  APP_NAME: 'Sandra',
+  APP_VERSION: '1.0.0',
+}));
+
+vi.mock('@/lib/tools', () => ({
+  toolRegistry: {
+    getToolNames: mockGetToolNames,
+  },
+}));
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('GET /api/health', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRepoRegistryCount
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
+    mockIndexedSourceCount.mockResolvedValue(4);
+    mockIndexedDocumentCount.mockResolvedValue(24);
+    mockGetToolNames.mockReturnValue(['searchKnowledgeBase', 'getCourseInventory']);
   });
 
   it('returns 200 with status ok when all checks pass', async () => {
@@ -38,6 +78,22 @@ describe('GET /api/health', () => {
     expect(body.status).toBe('ok');
     expect(body.checks.database).toBe('ok');
     expect(body.checks.vectorStore).toBe('ok');
+    expect(body.summary.repos).toMatchObject({
+      total: 4,
+      active: 4,
+      indexed: 2,
+      indexing: 1,
+      error: 1,
+    });
+    expect(body.summary.tools).toMatchObject({
+      count: 2,
+      registered: ['searchKnowledgeBase', 'getCourseInventory'],
+    });
+    expect(body.summary.knowledge).toMatchObject({
+      indexedSources: 4,
+      indexedDocuments: 24,
+      vectorStoreChunks: 42,
+    });
     expect(body.timestamp).toBeDefined();
   });
 
@@ -51,8 +107,9 @@ describe('GET /api/health', () => {
 
     expect(response.status).toBe(503);
     expect(body.status).toBe('degraded');
-    expect(body.checks.database).toContain('error');
+    expect(body.checks.database).toBe('unavailable');
     expect(body.checks.vectorStore).toBe('ok');
+    expect(body.summary.repos.total).toBeNull();
   });
 
   it('returns 503 with status degraded when vector store check fails', async () => {
@@ -67,6 +124,7 @@ describe('GET /api/health', () => {
     expect(body.status).toBe('degraded');
     expect(body.checks.database).toBe('ok');
     expect(body.checks.vectorStore).toContain('error');
+    expect(body.summary.knowledge.vectorStoreChunks).toBeNull();
   });
 
   it('includes timestamp in response', async () => {

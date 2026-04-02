@@ -30,6 +30,29 @@ const envSchema = z.object({
   // Admin
   ADMIN_API_KEY: z.string().optional(),
 
+  // WhatsApp (Meta Cloud API)
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
+  WHATSAPP_API_VERSION: z.string().default('v19.0'),
+
+  // Instagram (Meta Graph API)
+  INSTAGRAM_PAGE_ACCESS_TOKEN: z.string().optional(),
+  INSTAGRAM_APP_SECRET: z.string().optional(),
+  INSTAGRAM_VERIFY_TOKEN: z.string().optional(),
+  INSTAGRAM_API_VERSION: z.string().default('v19.0'),
+
+  // Email (SendGrid)
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().email().optional().or(z.literal('')),
+  SENDGRID_FROM_NAME: z.string().default('Sandra — EdLight'),
+  SENDGRID_WEBHOOK_SECRET: z.string().optional(),
+
+  // Voice (OpenAI Whisper STT + TTS — reuses OPENAI_API_KEY)
+  OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),
+  OPENAI_TTS_MODEL: z.string().default('tts-1'),
+  OPENAI_TTS_VOICE: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).default('alloy'),
+
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });

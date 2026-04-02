@@ -62,12 +62,26 @@ describe('searchKnowledgeBase tool', () => {
     expect(data.results[0]?.score).toBe(0.92);
   });
 
-  it('calls retrieveContext with query and topK', async () => {
+  it('passes retrieval filters through to retrieveContext', async () => {
     mockRetrieve.mockResolvedValue([]);
 
-    await searchKnowledgeBase.handler({ query: 'hello', topK: 3 }, baseContext);
+    await searchKnowledgeBase.handler({
+      query: 'hello',
+      topK: 3,
+      platform: 'academy',
+      contentType: 'course',
+      preferPaths: ['docs/', 'courses/'],
+    }, baseContext);
 
-    expect(mockRetrieve).toHaveBeenCalledWith('hello', { topK: 3 });
+    expect(mockRetrieve).toHaveBeenCalledWith('hello', {
+      topK: 3,
+      filter: {
+        platform: 'academy',
+        repo: undefined,
+        contentType: 'course',
+        preferPaths: ['docs/', 'courses/'],
+      },
+    });
   });
 });
 
@@ -124,12 +138,12 @@ describe('getEdLightInitiatives tool', () => {
     expect(getEdLightInitiatives.requiredScopes).toContain('repos:read');
   });
 
-  it('returns all 4 initiatives when no category filter', async () => {
+  it('returns all 6 initiatives when no category filter', async () => {
     const result = await getEdLightInitiatives.handler({}, baseContext);
 
     expect(result.success).toBe(true);
     const data = result.data as { initiatives: Array<{ name: string }> };
-    expect(data.initiatives).toHaveLength(4);
+    expect(data.initiatives).toHaveLength(6);
   });
 
   it('filters by category: coding', async () => {
@@ -158,6 +172,6 @@ describe('getEdLightInitiatives tool', () => {
   it('includes totalPlatforms in response', async () => {
     const result = await getEdLightInitiatives.handler({}, baseContext);
     const data = result.data as { totalPlatforms: number };
-    expect(data.totalPlatforms).toBe(4);
+    expect(data.totalPlatforms).toBe(7);
   });
 });

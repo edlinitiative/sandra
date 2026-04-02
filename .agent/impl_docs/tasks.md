@@ -11,10 +11,10 @@
 ## Progress Summary
 
 - **Total tasks:** 86
-- **Completed:** 40
+- **Completed:** 39
 - **In progress:** 0
 - **Blocked:** 0
-- **Remaining:** 46
+- **Remaining:** 47
 
 ---
 
@@ -106,25 +106,25 @@
 
 ### Task 3.1: Sandra Agent Runtime (F2)
 
-- [x] T060 [P] Channel message types (InboundMessage, OutboundMessage, ChannelAdapter) (depends: nothing)
-- [x] T061 System prompt builder (persona + language + tools + guidelines) (depends: T028, T035)
-- [x] T062 Context assembly module (history + memory + tools → AgentContext) (depends: T032, T033, T061)
-- [x] T063 ReAct agent loop core (input → context → LLM → tool calls → response) (depends: T062, T036, T021)
-- [x] T064 Tool call execution within agent loop (parse, invoke, format results) (depends: T063, T036)
-- [x] T065 Max-iteration guard and error recovery (depends: T063)
-- [x] T066 Agent streaming support (async generator yielding token events) (depends: T063, T022)
-- [x] T067 Agent runtime unit tests (depends: T063, T064, T065, T002)
-- [x] T068 Agent integration test (full pipeline with mock LLM) (depends: T063, T064, T065, T066, T060)
+- [ ] T060 [P] Channel message types (InboundMessage, OutboundMessage, ChannelAdapter) (depends: nothing)
+- [ ] T061 System prompt builder (persona + language + tools + guidelines) (depends: T028, T035)
+- [ ] T062 Context assembly module (history + memory + tools → AgentContext) (depends: T032, T033, T061)
+- [ ] T063 ReAct agent loop core (input → context → LLM → tool calls → response) (depends: T062, T036, T021)
+- [ ] T064 Tool call execution within agent loop (parse, invoke, format results) (depends: T063, T036)
+- [ ] T065 Max-iteration guard and error recovery (depends: T063)
+- [ ] T066 Agent streaming support (async generator yielding token events) (depends: T063, T022)
+- [ ] T067 Agent runtime unit tests (depends: T063, T064, T065, T002)
+- [ ] T068 Agent integration test (full pipeline with mock LLM) (depends: T063, T064, T065, T066, T060)
 
 ### Task 3.2: Repository Indexing System (F4)
 
-- [x] T069 GitHub API client (authenticated requests, rate limit handling) (depends: T016)
-- [x] T070 Repository content fetcher (README + docs .md files) (depends: T069, T013)
-- [x] T071 [P] Content hash and change detection (SHA-256) (depends: T013)
-- [x] T072 Indexing orchestrator (fetch → hash check → RAG pipeline → track records) (depends: T070, T071, T045)
-- [x] T073 IndexedSource and IndexedDocument management (depends: T072)
-- [x] T074 [P] Indexing job status tracking (IndexingResult type) (depends: T072)
-- [x] T075 Repository indexing unit tests (depends: T069, T070, T071, T072, T073, T074, T002)
+- [ ] T069 GitHub API client (authenticated requests, rate limit handling) (depends: T016)
+- [ ] T070 Repository content fetcher (README + docs .md files) (depends: T069, T013)
+- [ ] T071 [P] Content hash and change detection (SHA-256) (depends: T013)
+- [ ] T072 Indexing orchestrator (fetch → hash check → RAG pipeline → track records) (depends: T070, T071, T045)
+- [ ] T073 IndexedSource and IndexedDocument management (depends: T072)
+- [ ] T074 [P] Indexing job status tracking (IndexingResult type) (depends: T072)
+- [ ] T075 Repository indexing unit tests (depends: T069, T070, T071, T072, T073, T074, T002)
 
 ---
 
@@ -182,3 +182,54 @@
 - [ ] T127 Full test suite execution (all tests pass, coverage report) (depends: T120, T121, T122, T123, T124, T125, T126)
 - [ ] T128 [P] Performance baseline (health < 500ms, chat < 1s, search < 500ms) (depends: T091, T094)
 - [ ] T129 Final integration smoke test (dev server starts, UI renders, all gates green) (depends: T125, T126, T127, T128)
+
+---
+
+## V2 — Sandra V2 Scope
+
+> Docs: `docs/releases/v2.md`, `docs/releases/v2_tasks.md`
+> Phase docs: `phase1_tool_routing_and_accuracy.md`, `phase2_streaming_and_tool_continuity.md`, `phase3_grounded_platform_knowledge.md`, `phase4_eval_and_release_readiness.md`
+
+**V2 does NOT include:** WhatsApp, Instagram, Email, Voice, autonomous agent actions, complex auth flows.
+
+### V2 Phase 0 — Scope Alignment
+
+- [x] V2-P0 Review roadmap and confirm V2 priorities
+- [x] V2-P0 Verify V2 phase docs align with v2.md and v2_tasks.md
+- [x] V2-P0 Commit V2 phase docs to .agent/impl_docs/
+
+### V2 Phase 1 — Tool Routing and Response Accuracy
+
+> Detailed spec: `phase1_tool_routing_and_accuracy.md`
+
+- [x] V2-P1-A Route Academy/Code course questions to getCourseInventory (not getEdLightInitiatives)
+- [x] V2-P1-B Add benchmark prompts for tool routing verification
+- [x] V2-P1-C Add/update tests for routing behavior
+- [x] V2-P1-D Validate: npm test, tsc --noEmit, npm run build
+
+### V2 Phase 2 — Streaming and Tool Continuity
+
+> Detailed spec: `phase2_streaming_and_tool_continuity.md`
+
+- [ ] V2-P2-A Preserve assistant tool_calls message before tool result messages in streaming
+- [ ] V2-P2-B Ensure follow-up model call includes valid assistant tool_calls context
+- [ ] V2-P2-C Add regression tests for streaming tool-call continuity
+- [ ] V2-P2-D Validate: npm test, tsc --noEmit, npm run build
+
+### V2 Phase 3 — Grounded Platform Knowledge
+
+> Detailed spec: `phase3_grounded_platform_knowledge.md`
+
+- [x] V2-P3-A Improve course inventory coverage (Academy, Code)
+- [x] V2-P3-B Improve repository-backed answers for News and Initiative
+- [x] V2-P3-C Ensure Academy/Code/News/Initiative answers are clearly differentiated
+- [x] V2-P3-D Validate benchmark prompts return grounded answers
+
+### V2 Phase 4 — Evaluation and Release Readiness
+
+> Detailed spec: `phase4_eval_and_release_readiness.md`
+
+- [ ] V2-P4-A Run full benchmark suite against core EdLight prompts
+- [ ] V2-P4-B Verify tool routing correctness across all prompt categories
+- [ ] V2-P4-C Verify streaming stability post-tool-call
+- [ ] V2-P4-D Final gate: npm test, tsc --noEmit, npm run build all pass

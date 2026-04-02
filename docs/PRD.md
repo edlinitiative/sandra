@@ -1,5 +1,11 @@
 # Sandra — Product Requirements Document
 
+> Current delivery note: this document describes the product direction, but the current
+> shipped state is beyond the original `v0.1 scaffold` language below. Sandra now has
+> a validated stable web/admin release candidate plus the V2 grounding/routing pass.
+> Use `docs/releases/v2.md` and
+> `docs/implementation/sandra-ai-platform/progress.md` for current release status.
+
 ## Vision
 
 Sandra is the unified AI assistant for the EdLight ecosystem. She serves as the primary conversational interface for all EdLight initiatives, helping users navigate platforms, access documentation, and get answers to their questions.
@@ -80,11 +86,17 @@ Sandra is the unified AI assistant for the EdLight ecosystem. She serves as the 
 - The agent loop successfully uses tools when appropriate
 - The codebase is clean, documented, and ready for iteration
 
+## Current Release State
+
+- Stable web chat and admin operator flows are the active release surface
+- V2 focus is accuracy, tool routing, retrieval grounding, and streaming continuity
+- WhatsApp, Instagram, email, voice, and autonomous actions remain intentionally out of scope
+- The next product phase after V2 signoff is memory, continuity, and authenticated foundations
+
 ## Timeline
 
-- **v0.1** (current) — Foundation scaffold with working web chat and agent loop
-- **v0.2** — Database-backed memory, production vector store, GitHub webhook indexing
-- **v0.3** — WhatsApp integration, improved RAG quality
-- **v0.4** — Instagram and email channels, user authentication
-- **v0.5** — Voice support, advanced agent capabilities
-- **v1.0** — Production-ready multi-channel AI assistant
+- **Stable V1** — Working web/admin release with repo indexing, multilingual chat, and operator controls
+- **V2** (current release candidate) — Grounded platform answers, improved routing, retrieval quality, and stable streaming
+- **Next** — Database-backed memory, stronger continuity, production vector layer, and indexing automation
+- **Later** — Authenticated user features and private-data tools
+- **Later still** — WhatsApp first, then email/Instagram, then voice and broader agentic actions

@@ -21,6 +21,7 @@ export const mockPrismaClient = {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     delete: vi.fn(),
     count: vi.fn(),
   },
@@ -78,17 +79,31 @@ export const mockPrismaClient = {
   $connect: vi.fn(),
   $disconnect: vi.fn(),
   $transaction: vi.fn(),
+  $executeRawUnsafe: vi.fn().mockResolvedValue(0),
+  $queryRawUnsafe: vi.fn().mockResolvedValue([]),
+  $queryRaw: vi.fn().mockResolvedValue([]),
+  $executeRaw: vi.fn().mockResolvedValue(0),
 };
 
 /** Reset all mock function call history between tests */
 export function resetPrismaMocks(): void {
-  for (const model of Object.values(mockPrismaClient)) {
-    if (typeof model === 'object' && model !== null) {
-      for (const fn of Object.values(model)) {
+  for (const [, value] of Object.entries(mockPrismaClient)) {
+    // Top-level mock functions ($executeRawUnsafe, $queryRawUnsafe, etc.)
+    if (typeof value === 'function' && 'mockReset' in value) {
+      (value as ReturnType<typeof vi.fn>).mockReset();
+    }
+    // Model sub-objects with mock methods
+    if (typeof value === 'object' && value !== null) {
+      for (const fn of Object.values(value)) {
         if (typeof fn === 'function' && 'mockReset' in fn) {
           (fn as ReturnType<typeof vi.fn>).mockReset();
         }
       }
     }
   }
+  // Re-apply default resolved values for raw query mocks
+  mockPrismaClient.$executeRawUnsafe.mockResolvedValue(0);
+  mockPrismaClient.$queryRawUnsafe.mockResolvedValue([]);
+  mockPrismaClient.$queryRaw.mockResolvedValue([]);
+  mockPrismaClient.$executeRaw.mockResolvedValue(0);
 }

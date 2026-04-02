@@ -18,8 +18,19 @@ const { mockRunSandraAgent } = vi.hoisted(() => ({
   mockRunSandraAgent: vi.fn(),
 }));
 
-const { mockGetHistory } = vi.hoisted(() => ({
+const { mockGetHistory, mockGetSession } = vi.hoisted(() => ({
   mockGetHistory: vi.fn(),
+  mockGetSession: vi.fn(),
+}));
+
+const { mockGetSessionLanguage, mockEnsureSessionContinuity } = vi.hoisted(() => ({
+  mockGetSessionLanguage: vi.fn(),
+  mockEnsureSessionContinuity: vi.fn(),
+}));
+
+const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(() => ({
+  mockResolveCanonicalUser: vi.fn(),
+  mockGetCanonicalUserLanguage: vi.fn(),
 }));
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -35,14 +46,34 @@ vi.mock('@/lib/memory/session-store', () => ({
     addEntry: vi.fn(),
     getContextMessages: vi.fn().mockResolvedValue([]),
   }),
+  getPrismaSessionStore: () => ({
+    getMessages: mockGetHistory,
+    getSession: mockGetSession,
+  }),
 }));
 
 vi.mock('@/lib/config', () => ({
   env: { OPENAI_API_KEY: 'sk-test-validkeyfortesting' },
 }));
 
+vi.mock('@/lib/memory/session-continuity', () => ({
+  getSessionLanguage: mockGetSessionLanguage,
+  ensureSessionContinuity: mockEnsureSessionContinuity,
+}));
+
+vi.mock('@/lib/users/canonical-user', () => ({
+  getCanonicalUserLanguage: mockGetCanonicalUserLanguage,
+  resolveCanonicalUser: mockResolveCanonicalUser,
+}));
+
 vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: ({ explicit }: { explicit?: string }) => explicit ?? 'en',
+  resolveLanguage: ({
+    explicit,
+    sessionLanguage,
+  }: {
+    explicit?: string;
+    sessionLanguage?: string;
+  }) => explicit ?? sessionLanguage ?? 'en',
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,6 +92,11 @@ describe('T123: Error Handling Verification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetHistory.mockResolvedValue([]);
+    mockGetSession.mockResolvedValue(null);
+    mockGetSessionLanguage.mockResolvedValue(undefined);
+    mockEnsureSessionContinuity.mockResolvedValue(undefined);
+    mockResolveCanonicalUser.mockResolvedValue({});
+    mockGetCanonicalUserLanguage.mockResolvedValue(undefined);
   });
 
   describe('POST /api/chat error cases', () => {

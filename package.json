@@ -5,6 +5,7 @@
   "description": "Sandra — AI assistant for the EdLight ecosystem",
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.0",
+    "@vercel/functions": "^3.4.3",
     "lucide-react": "^0.469.0",
     "next": "^15.1.0",
     "openai": "^4.77.0",

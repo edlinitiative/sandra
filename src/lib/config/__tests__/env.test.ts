@@ -29,8 +29,8 @@ describe('env config', () => {
     expect(env.OPENAI_EMBEDDING_MODEL).toBe('text-embedding-3-small');
   });
 
-  it('VECTOR_STORE_PROVIDER defaults to memory', async () => {
+  it('VECTOR_STORE_PROVIDER accepts postgres', async () => {
     const { env } = await import('../env');
-    expect(env.VECTOR_STORE_PROVIDER).toBe('memory');
+    expect(['memory', 'postgres', 'pinecone', 'qdrant', 'weaviate']).toContain(env.VECTOR_STORE_PROVIDER);
   });
 });

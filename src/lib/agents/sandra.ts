@@ -1,13 +1,19 @@
 import type { AgentInput, AgentOutput, AgentConfig, AgentState, AgentStreamEvent } from './types';
 import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
+import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
-import type { ChatMessage } from '@/lib/ai/types';
+import type { ChatMessage, MessageContentPart } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
 import { getSessionStore } from '@/lib/memory/session-store';
-import { getUserMemoryStore } from '@/lib/memory/user-memory';
-import { retrieveContext, formatRetrievalContext } from '@/lib/knowledge';
+import {
+  getSessionContinuityContext,
+  rememberConversationInsights,
+  refreshConversationSummary,
+} from '@/lib/memory/session-insights';
+import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 const log = createLogger('agents:sandra');
 
@@ -30,7 +36,6 @@ export async function runSandraAgent(
   const cfg = { ...DEFAULT_AGENT_CONFIG, ...config };
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
-  const userMemoryStore = getUserMemoryStore();
 
   log.info(`Agent invoked`, {
     sessionId: input.sessionId,
@@ -39,21 +44,61 @@ export async function runSandraAgent(
     messageLength: input.message.length,
   });
 
+  const agentStartMs = Date.now();
+
+  trackEvent({
+    eventType: 'session_started',
+    sessionId: input.sessionId,
+    userId: input.userId,
+    channel: input.channel,
+    language: input.language,
+    data: { channel: input.channel ?? 'web', language: input.language, isNewSession: false },
+  });
+
+  trackEvent({
+    eventType: 'message_sent',
+    sessionId: input.sessionId,
+    userId: input.userId,
+    channel: input.channel,
+    language: input.language,
+    data: { messageLength: input.message.length, channel: input.channel ?? 'web', language: input.language },
+  });
+
   try {
-    // 1. Load conversation history
+    // 1. Load conversation history (DB is single source of truth)
     const historyMessages = await sessionStore.getContextMessages(input.sessionId);
 
     // 2. Load user memory
     let userMemorySummary = '';
-    if (input.userId) {
-      userMemorySummary = await userMemoryStore.getMemorySummary(input.userId);
+    let conversationSummary = '';
+    try {
+      const continuity = await getSessionContinuityContext({
+        sessionId: input.sessionId,
+        userId: input.userId,
+      });
+      userMemorySummary = continuity.memorySummary;
+      conversationSummary = continuity.conversationSummary;
+    } catch (error) {
+      log.warn('Failed to load continuity context', {
+        sessionId: input.sessionId,
+        error: error instanceof Error ? error.message : 'unknown',
+      });
     }
 
     // 3. Retrieval: search knowledge base for context
     let retrievalContextStr = '';
     if (cfg.enableRetrieval) {
       try {
-        const results = await retrieveContext(input.message, { topK: 3, minScore: 0.5 });
+        const inferredContext = inferKnowledgeQueryContext(input.message);
+        const results = await retrieveContext(input.message, {
+          topK: 4,
+          minScore: inferredContext.minScore,
+          filter: {
+            platform: inferredContext.platform,
+            contentType: inferredContext.contentType,
+            preferPaths: inferredContext.preferPaths,
+          },
+        });
         if (results.length > 0) {
           retrievalContextStr = formatRetrievalContext(results);
         }
@@ -70,24 +115,45 @@ export async function runSandraAgent(
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
+      channel: input.channel,
+      senderName: input.senderName,
       userMemorySummary,
+      conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
     });
 
-    // 5. Assemble messages
+    // 5. Assemble messages — build multimodal content when image attachments are present
+    const imageAttachments = input.attachments?.filter(a => a.type === 'image') ?? [];
+    const userContent: ChatMessage['content'] = imageAttachments.length > 0
+      ? [
+          { type: 'text', text: input.message || 'What do you see in this image?' } as MessageContentPart,
+          ...imageAttachments.map(a => ({
+            type: 'image_url' as const,
+            image_url: { url: a.url, detail: 'auto' as const },
+          } as MessageContentPart)),
+        ]
+      : input.message;
+
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...historyMessages,
-      { role: 'user', content: input.message },
+      { role: 'user', content: userContent },
     ];
 
-    // Save user message to session
+    // Save user message to session (DB-backed)
     await sessionStore.addEntry(input.sessionId, {
       role: 'user',
       content: input.message,
       timestamp: new Date(),
     });
+
+    await rememberConversationInsights({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
+    }).catch(() => { /* best-effort */ });
 
     // 6. Agent loop (handles tool calls)
     const state: AgentState = {
@@ -124,12 +190,14 @@ export async function runSandraAgent(
       if (response.toolCalls.length === 0 || response.finishReason !== 'tool_calls') {
         const content = response.content ?? 'I apologize, but I was unable to generate a response. Please try again.';
 
-        // Save assistant response to session
+        // Save assistant response to session (DB-backed)
         await sessionStore.addEntry(input.sessionId, {
           role: 'assistant',
           content,
           timestamp: new Date(),
         });
+
+        await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
 
         log.info(`Agent turn complete`, {
           sessionId: input.sessionId,
@@ -138,11 +206,21 @@ export async function runSandraAgent(
           totalTokens: totalUsage.totalTokens,
         });
 
+        trackEvent({
+          eventType: 'response_generated',
+          sessionId: input.sessionId,
+          userId: input.userId,
+          channel: input.channel,
+          language: input.language,
+          data: { latencyMs: Date.now() - agentStartMs, responseLength: content.length, toolsUsed, model: 'gpt-4o', cacheHit: false },
+        });
+
         return {
           response: content,
           language: input.language,
           toolsUsed,
           retrievalUsed: retrievalContextStr.length > 0,
+          suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
           tokenUsage: totalUsage,
         };
       }
@@ -159,7 +237,10 @@ export async function runSandraAgent(
         log.info(`Executing tool: ${toolCall.name}`, { id: toolCall.id, sessionId: input.sessionId });
         toolsUsed.push(toolCall.name);
 
+        const toolStartMs = Date.now();
         let resultStr: string;
+        let toolSuccess = true;
+        let toolError: string | undefined;
         try {
           const parsedArgs = JSON.parse(toolCall.arguments) as unknown;
           const result = await executeTool(toolCall.name, parsedArgs, {
@@ -170,15 +251,28 @@ export async function runSandraAgent(
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})
             : `Tool call failed: ${result.error ?? 'unknown error'}`;
+          if (!result.success) { toolSuccess = false; toolError = result.error ?? undefined; }
         } catch (err) {
+          toolSuccess = false;
           if (err instanceof SyntaxError) {
             resultStr = 'Tool call failed: invalid arguments (could not parse JSON)';
+            toolError = 'invalid arguments';
             log.warn(`Invalid tool call arguments for ${toolCall.name}`, { id: toolCall.id });
           } else {
             resultStr = `Tool call failed: ${err instanceof Error ? err.message : 'unknown error'}`;
+            toolError = err instanceof Error ? err.message : 'unknown error';
             log.error(`Tool execution error for ${toolCall.name}`, { id: toolCall.id, err });
           }
         }
+
+        trackEvent({
+          eventType: 'tool_executed',
+          sessionId: input.sessionId,
+          userId: input.userId,
+          channel: input.channel,
+          language: input.language,
+          data: { toolName: toolCall.name, latencyMs: Date.now() - toolStartMs, success: toolSuccess, errorMessage: toolError },
+        });
 
         // Feed tool result back to LLM
         state.messages.push({
@@ -203,11 +297,14 @@ export async function runSandraAgent(
       timestamp: new Date(),
     });
 
+    await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
+
     return {
       response: fallback,
       language: input.language,
       toolsUsed,
       retrievalUsed: retrievalContextStr.length > 0,
+      suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
       tokenUsage: totalUsage,
     };
   } catch (err) {
@@ -255,25 +352,41 @@ export async function* runSandraAgentStream(
   const cfg = { ...DEFAULT_AGENT_CONFIG, ...config };
   const provider = getAIProvider();
   const sessionStore = getSessionStore();
-  const userMemoryStore = getUserMemoryStore();
 
   log.info('Streaming agent invoked', { sessionId: input.sessionId });
 
   try {
-    // Load conversation history
+    // Load conversation history (DB is single source of truth)
     const historyMessages = await sessionStore.getContextMessages(input.sessionId);
 
     // Load user memory
     let userMemorySummary = '';
-    if (input.userId) {
-      userMemorySummary = await userMemoryStore.getMemorySummary(input.userId);
+    let conversationSummary = '';
+    try {
+      const continuity = await getSessionContinuityContext({
+        sessionId: input.sessionId,
+        userId: input.userId,
+      });
+      userMemorySummary = continuity.memorySummary;
+      conversationSummary = continuity.conversationSummary;
+    } catch {
+      // Continue without continuity context
     }
 
     // Retrieval
     let retrievalContextStr = '';
     if (cfg.enableRetrieval) {
       try {
-        const results = await retrieveContext(input.message, { topK: 3, minScore: 0.5 });
+        const inferredContext = inferKnowledgeQueryContext(input.message);
+        const results = await retrieveContext(input.message, {
+          topK: 4,
+          minScore: inferredContext.minScore,
+          filter: {
+            platform: inferredContext.platform,
+            contentType: inferredContext.contentType,
+            preferPaths: inferredContext.preferPaths,
+          },
+        });
         if (results.length > 0) {
           retrievalContextStr = formatRetrievalContext(results);
         }
@@ -288,26 +401,49 @@ export async function* runSandraAgentStream(
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
+      channel: input.channel,
+      senderName: input.senderName,
       userMemorySummary,
+      conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
     });
+
+    // Assemble messages — build multimodal content when image attachments are present
+    const imageAttachments = input.attachments?.filter(a => a.type === 'image') ?? [];
+    const userContent: ChatMessage['content'] = imageAttachments.length > 0
+      ? [
+          { type: 'text', text: input.message || 'What do you see in this image?' } as MessageContentPart,
+          ...imageAttachments.map(a => ({
+            type: 'image_url' as const,
+            image_url: { url: a.url, detail: 'auto' as const },
+          } as MessageContentPart)),
+        ]
+      : input.message;
 
     // Assemble messages
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...historyMessages,
-      { role: 'user', content: input.message },
+      { role: 'user', content: userContent },
     ];
 
-    // Save user message
+    // Save user message (DB-backed)
     await sessionStore.addEntry(input.sessionId, {
       role: 'user',
       content: input.message,
       timestamp: new Date(),
     });
 
+    await rememberConversationInsights({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
+    }).catch(() => { /* best-effort */ });
+
     let iterations = 0;
+    const toolsUsed: string[] = [];
 
     while (iterations < cfg.maxIterations) {
       iterations++;
@@ -335,20 +471,56 @@ export async function* runSandraAgentStream(
 
       // If no tool calls, streaming is done
       if (!toolCallsFromStream || toolCallsFromStream.length === 0) {
+        const response =
+          fullContent || 'I apologize, but I was unable to generate a response. Please try again.';
+
         await sessionStore.addEntry(input.sessionId, {
           role: 'assistant',
-          content: fullContent,
+          content: response,
           timestamp: new Date(),
         });
 
-        yield { type: 'done', data: input.sessionId };
+        await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
+
+        yield {
+          type: 'done',
+          data: {
+            sessionId: input.sessionId,
+            response,
+            toolsUsed,
+            retrievalUsed: retrievalContextStr.length > 0,
+            suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
+          },
+        };
         return;
       }
 
       // Tool calls detected — execute them
-      messages.push({ role: 'assistant', content: fullContent });
+      messages.push({
+        role: 'assistant',
+        content: fullContent,
+        toolCalls: toolCallsFromStream,
+      });
+
+      log.info('Streaming assistant tool calls captured', {
+        sessionId: input.sessionId,
+        toolCallsFromStream,
+        fullContent,
+      });
+
+      log.info('Messages before tool execution', {
+        sessionId: input.sessionId,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          toolCallId: 'toolCallId' in m ? m.toolCallId : undefined,
+          toolCalls: 'toolCalls' in m ? m.toolCalls : undefined,
+          name: 'name' in m ? m.name : undefined,
+        })),
+      });
 
       for (const toolCall of toolCallsFromStream) {
+        toolsUsed.push(toolCall.name);
         yield { type: 'tool_call', data: toolCall.name };
 
         let resultStr: string;
@@ -370,6 +542,12 @@ export async function* runSandraAgentStream(
 
         yield { type: 'tool_result', data: resultStr };
 
+        log.info('Pushing tool result message', {
+          sessionId: input.sessionId,
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+        });
+
         messages.push({
           role: 'tool',
           content: resultStr,
@@ -387,8 +565,19 @@ export async function* runSandraAgentStream(
       timestamp: new Date(),
     });
 
+    await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
+
     yield { type: 'token', data: fallback };
-    yield { type: 'done', data: input.sessionId };
+    yield {
+      type: 'done',
+      data: {
+        sessionId: input.sessionId,
+        response: fallback,
+        toolsUsed,
+        retrievalUsed: retrievalContextStr.length > 0,
+        suggestedFollowUps: generateFollowUps(toolsUsed, input.language),
+      },
+    };
   } catch (err) {
     log.error('Streaming agent failed', {
       sessionId: input.sessionId,

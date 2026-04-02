@@ -6,6 +6,12 @@ import { ingestDocuments, removeSource } from '@/lib/knowledge';
 import { createLogger } from '@/lib/utils';
 import { db } from '@/lib/db/client';
 import {
+  computePathPriority,
+  deriveContentType,
+  displayNameForPlatform,
+  platformFromRepo,
+} from '@/lib/knowledge/platform-metadata';
+import {
   getRepoById,
   updateRepoSyncStatus,
   createOrUpdateSource,
@@ -89,6 +95,7 @@ export async function indexRepository(repoId: string): Promise<IndexingResult> {
     isActive: repoRecord.isActive,
   };
   const repoFullName = `${repoRecord.owner}/${repoRecord.name}`;
+  const platform = platformFromRepo(repoRecord.name, repoRecord.displayName);
 
   log.info(`Starting indexing for ${repoFullName}`, { repoId });
 
@@ -146,6 +153,7 @@ export async function indexRepository(repoId: string): Promise<IndexingResult> {
       try {
         const changed = await hasContentChanged(source.id, file.path, hash);
         if (changed) {
+          const contentType = deriveContentType(file.path, file.content, platform);
           changedDocuments.push({
             sourceId: repoFullName, // Use human-readable ID for vector store
             title: `${repoRecord.displayName} — ${file.name}`,
@@ -156,6 +164,10 @@ export async function indexRepository(repoId: string): Promise<IndexingResult> {
               sha: file.sha,
               url: file.url,
               platform: repoRecord.displayName,
+              platformKey: platform,
+              platformDisplayName: platform ? displayNameForPlatform(platform) : repoRecord.displayName,
+              contentType,
+              pathPriority: computePathPriority(file.path, contentType),
               contentHash: hash,
             },
           });
@@ -165,12 +177,21 @@ export async function indexRepository(repoId: string): Promise<IndexingResult> {
         }
       } catch (e) {
         log.warn(`Failed hash check for ${file.path}`, { error: e instanceof Error ? e.message : 'unknown' });
+        const contentType = deriveContentType(file.path, file.content, platform);
         changedDocuments.push({
           sourceId: repoFullName,
           title: `${repoRecord.displayName} — ${file.name}`,
           path: file.path,
           content: file.content,
-          metadata: { repo: repoFullName, url: file.url },
+          metadata: {
+            repo: repoFullName,
+            url: file.url,
+            platform: repoRecord.displayName,
+            platformKey: platform,
+            platformDisplayName: platform ? displayNameForPlatform(platform) : repoRecord.displayName,
+            contentType,
+            pathPriority: computePathPriority(file.path, contentType),
+          },
         });
         processed++;
       }
@@ -302,6 +323,7 @@ export async function indexRepositoriesByConfig(repos: RepoConfig[]): Promise<In
     const repoFullName = `${repo.owner}/${repo.name}`;
     const startedAt = new Date();
     const startTime = Date.now();
+    const platform = platformFromRepo(repo.name, repo.displayName);
 
     try {
       await removeSource(repoFullName);
@@ -311,7 +333,18 @@ export async function indexRepositoriesByConfig(repos: RepoConfig[]): Promise<In
         title: `${repo.displayName} — ${file.name}`,
         path: file.path,
         content: file.content,
-        metadata: { repo: repoFullName, url: file.url },
+        metadata: {
+          repo: repoFullName,
+          url: file.url,
+          platform: repo.displayName,
+          platformKey: platform,
+          platformDisplayName: platform ? displayNameForPlatform(platform) : repo.displayName,
+          contentType: deriveContentType(file.path, file.content, platform),
+          pathPriority: computePathPriority(
+            file.path,
+            deriveContentType(file.path, file.content, platform),
+          ),
+        },
       }));
 
       const ingestResult = files.length > 0 ? await ingestDocuments(documents) : { totalChunks: 0 };

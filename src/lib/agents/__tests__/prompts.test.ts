@@ -48,6 +48,15 @@ describe('buildSandraSystemPrompt', () => {
     expect(prompt).toContain('From EdLight Academy:');
   });
 
+  it('includes conversation summary when provided', () => {
+    const prompt = buildSandraSystemPrompt({
+      language: 'en',
+      conversationSummary: 'Earlier conversation summary:\n- Earlier user questions/goals: Learn Python',
+    });
+    expect(prompt).toContain('Earlier conversation summary');
+    expect(prompt).toContain('Learn Python');
+  });
+
   it('includes behavioral guidelines', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Guidelines');
@@ -86,5 +95,61 @@ describe('getSandraSystemPrompt', () => {
   it('includes behavioral guidelines', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Guidelines');
+  });
+});
+
+// Phase 6: tool routing and course accuracy
+describe('Phase 6 — course routing in buildSandraSystemPrompt', () => {
+  it('directs course questions to getCourseInventory', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getCourseInventory');
+  });
+
+  it('distinguishes getCourseInventory from getEdLightInitiatives', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getCourseInventory');
+    expect(prompt).toContain('getEdLightInitiatives');
+    // Prompt should restrict getEdLightInitiatives from course listing use
+    expect(prompt).toMatch(/getEdLightInitiatives.*Do NOT use.*course/i);
+  });
+
+  it('lists course-related keywords that should trigger getCourseInventory', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt.toLowerCase()).toContain('python');
+    expect(prompt.toLowerCase()).toContain('sql');
+    expect(prompt.toLowerCase()).toContain('math');
+  });
+
+  it('instructs Sandra to name concrete courses instead of generic summaries', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toMatch(/name.*course|course.*name/i);
+  });
+
+  it('instructs Sandra to be honest when course data is unavailable', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt.toLowerCase()).toContain('unavailable');
+  });
+});
+
+describe('Phase 6 — course routing in getSandraSystemPrompt', () => {
+  it('directs course questions to getCourseInventory', () => {
+    const prompt = getSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getCourseInventory');
+  });
+
+  it('distinguishes getCourseInventory from getEdLightInitiatives', () => {
+    const prompt = getSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('getCourseInventory');
+    expect(prompt).toContain('getEdLightInitiatives');
+  });
+
+  it('instructs Sandra to name concrete courses', () => {
+    const prompt = getSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toMatch(/name.*course|course.*name/i);
+  });
+
+  it('instructs Sandra to admit when course data is unavailable', () => {
+    const prompt = getSandraSystemPrompt({ language: 'en' });
+    expect(prompt.toLowerCase()).toContain('unavailable');
   });
 });

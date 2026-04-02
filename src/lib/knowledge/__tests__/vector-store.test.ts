@@ -2,15 +2,23 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { InMemoryVectorStore } from '../vector-store';
 import type { EmbeddedChunk } from '../types';
 
-function makeChunk(content: string, embedding: number[], sourceId = 'src_1'): EmbeddedChunk {
+function makeChunk(
+  content: string,
+  embedding: number[],
+  sourceId = 'src_1',
+  overrides: Partial<EmbeddedChunk> = {},
+): EmbeddedChunk {
   return {
     sourceId,
     title: 'Test',
+    path: 'README.md',
     content,
     chunkIndex: 0,
     chunkTotal: 1,
     contentHash: content.slice(0, 8).replace(/\s/g, '_'),
     embedding,
+    metadata: {},
+    ...overrides,
   };
 }
 
@@ -39,9 +47,9 @@ describe('InMemoryVectorStore', () => {
 
   it('search returns results sorted by similarity descending', async () => {
     await store.upsert([
-      makeChunk('most similar', [1, 0, 0]),
-      makeChunk('less similar', [0, 1, 0]),
-      makeChunk('not similar', [0, 0, 1]),
+      makeChunk('most similar', [1, 0, 0], 'src_1', { path: 'plain.txt', metadata: { pathPriority: 0 } }),
+      makeChunk('less similar', [0, 1, 0], 'src_1', { path: 'plain.txt', metadata: { pathPriority: 0 } }),
+      makeChunk('not similar', [0, 0, 1], 'src_1', { path: 'plain.txt', metadata: { pathPriority: 0 } }),
     ]);
 
     const results = await store.search([1, 0, 0], 3);
@@ -54,8 +62,8 @@ describe('InMemoryVectorStore', () => {
 
   it('cosine similarity: [1,0,0] most similar to [1,0,0], less to [0,1,0]', async () => {
     await store.upsert([
-      makeChunk('a', [1, 0, 0]),
-      makeChunk('b', [0, 1, 0]),
+      makeChunk('a', [1, 0, 0], 'src_1', { path: 'plain.txt', metadata: { pathPriority: 0 } }),
+      makeChunk('b', [0, 1, 0], 'src_1', { path: 'plain.txt', metadata: { pathPriority: 0 } }),
     ]);
 
     const results = await store.search([1, 0, 0], 2);
@@ -104,5 +112,65 @@ describe('InMemoryVectorStore', () => {
 
   it('isReady() returns true', async () => {
     expect(await store.isReady()).toBe(true);
+  });
+
+  it('filters search results by repo, platform, and content type metadata', async () => {
+    await store.upsert([
+      makeChunk('Academy course', [1, 0, 0], 'academy-src', {
+        path: 'courses/math.md',
+        metadata: {
+          repo: 'edlinitiative/EdLight-Academy',
+          platform: 'academy',
+          contentType: 'course',
+        },
+      }),
+      makeChunk('Initiative program', [1, 0, 0], 'initiative-src', {
+        path: 'programs/leadership.md',
+        metadata: {
+          repo: 'edlinitiative/EdLight-Initiative',
+          platform: 'initiative',
+          contentType: 'program',
+        },
+      }),
+    ]);
+
+    const results = await store.search([1, 0, 0], 5, {
+      repo: 'edlinitiative/EdLight-Academy',
+      platform: 'academy',
+      contentType: 'course',
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.chunk.content).toBe('Academy course');
+  });
+
+  it('boosts preferred paths so course/docs matches outrank generic matches', async () => {
+    await store.upsert([
+      makeChunk('Generic overview', [1, 0, 0], 'repo', {
+        path: 'notes/overview.txt',
+        metadata: {
+          repo: 'edlinitiative/EdLight-Code',
+          platform: 'code',
+          contentType: 'general',
+          pathPriority: 1,
+        },
+      }),
+      makeChunk('Course documentation', [1, 0, 0], 'repo', {
+        path: 'docs/courses/python.md',
+        metadata: {
+          repo: 'edlinitiative/EdLight-Code',
+          platform: 'code',
+          contentType: 'course',
+          pathPriority: 6,
+        },
+      }),
+    ]);
+
+    const results = await store.search([1, 0, 0], 2, {
+      preferPaths: ['docs/', 'courses/'],
+    });
+
+    expect(results[0]?.chunk.content).toBe('Course documentation');
+    expect(results[0]!.score).toBeGreaterThan(results[1]!.score);
   });
 });

@@ -35,7 +35,7 @@ export class OpenAIProvider implements AIProvider {
         if (m.role === 'tool') {
           return {
             role: 'tool' as const,
-            content: m.content,
+            content: m.content as string,
             tool_call_id: m.toolCallId ?? '',
           };
         }
@@ -43,7 +43,7 @@ export class OpenAIProvider implements AIProvider {
         if (m.role === 'assistant') {
           return {
             role: 'assistant' as const,
-            content: m.content,
+            content: m.content as string,
             tool_calls: m.toolCalls?.map((tc) => ({
               id: tc.id,
               type: 'function' as const,
@@ -55,9 +55,21 @@ export class OpenAIProvider implements AIProvider {
           };
         }
 
+        // Support multimodal content (vision) for user messages
+        if (m.role === 'user' && Array.isArray(m.content)) {
+          return {
+            role: 'user' as const,
+            content: m.content.map(part =>
+              part.type === 'text'
+                ? { type: 'text' as const, text: part.text }
+                : { type: 'image_url' as const, image_url: { url: part.image_url.url, detail: part.image_url.detail ?? 'auto' as const } },
+            ),
+          };
+        }
+
         return {
           role: m.role as 'system' | 'user',
-          content: m.content,
+          content: m.content as string,
         };
       });
 
@@ -124,13 +136,13 @@ export class OpenAIProvider implements AIProvider {
     try {
       const messages = request.messages.map((m) => {
         if (m.role === 'tool') {
-          return { role: 'tool' as const, content: m.content, tool_call_id: m.toolCallId ?? '' };
+          return { role: 'tool' as const, content: m.content as string, tool_call_id: m.toolCallId ?? '' };
         }
 
         if (m.role === 'assistant') {
           return {
             role: 'assistant' as const,
-            content: m.content,
+            content: m.content as string,
             tool_calls: m.toolCalls?.map((tc) => ({
               id: tc.id,
               type: 'function' as const,
@@ -142,7 +154,19 @@ export class OpenAIProvider implements AIProvider {
           };
         }
 
-        return { role: m.role as 'system' | 'user', content: m.content };
+        // Support multimodal content (vision) for user messages
+        if (m.role === 'user' && Array.isArray(m.content)) {
+          return {
+            role: 'user' as const,
+            content: m.content.map(part =>
+              part.type === 'text'
+                ? { type: 'text' as const, text: part.text }
+                : { type: 'image_url' as const, image_url: { url: part.image_url.url, detail: part.image_url.detail ?? 'auto' as const } },
+            ),
+          };
+        }
+
+        return { role: m.role as 'system' | 'user', content: m.content as string };
       });
 
       const tools = request.tools?.map((t) => ({
@@ -171,7 +195,11 @@ export class OpenAIProvider implements AIProvider {
           for (const tc of delta.tool_calls) {
             const idx = tc.index;
             if (!toolCallAccumulator[idx]) {
-              toolCallAccumulator[idx] = { id: tc.id ?? '', name: tc.function?.name ?? '', arguments: '' };
+              toolCallAccumulator[idx] = {
+                id: tc.id ?? `toolcall_${idx}`,
+                name: tc.function?.name ?? '',
+                arguments: '',
+              };
             }
             if (tc.function?.arguments) {
               toolCallAccumulator[idx].arguments += tc.function.arguments;
@@ -186,6 +214,11 @@ export class OpenAIProvider implements AIProvider {
         }
 
         if (chunk.choices[0]?.finish_reason) {
+          log.info('OpenAI streaming tool call accumulator', {
+            model,
+            toolCallAccumulator,
+          });
+
           const toolCalls: ToolCall[] = Object.values(toolCallAccumulator).map((tc) => ({
             id: tc.id,
             name: tc.name,
@@ -198,7 +231,7 @@ export class OpenAIProvider implements AIProvider {
       if (error instanceof ProviderError) throw error;
       const msg = error instanceof Error ? error.message : 'Unknown OpenAI error';
       log.error('Stream chat completion failed', { error: msg, model });
-      yield { content: `Error: ${msg}`, toolCalls: null, done: true };
+      throw new ProviderError('openai', msg);
     }
   }
 
