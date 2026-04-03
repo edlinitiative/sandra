@@ -51,12 +51,17 @@ const inputSchema = z.object({
     .optional()
     .default(false)
     .describe('Whether to email invitations to attendees. Default false.'),
+  addGoogleMeet: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('Attach a Google Meet video link to the event. Set true when the user asks for a video call, online meeting, or Zoom-style link.'),
 });
 
 const createCalendarEventTool: SandraTool = {
   name: 'createCalendarEvent',
   description:
-    "Create an event on the user's Google Calendar. Use when the user asks to schedule, add, book, or create a meeting, class, appointment, reminder, or any event. Extract the date, time, title, and any attendees from the message. If the user says 'today' or 'tomorrow', resolve the date relative to today's date. If no end time is given, default to 1 hour after the start.",
+    "Create an event on the user's Google Calendar. Use when the user asks to schedule, add, book, or create a meeting, class, appointment, reminder, or any event. Extract the date, time, title, and any attendees from the message. If the user says 'today' or 'tomorrow', resolve the date relative to today's date. If no end time is given, default to 1 hour after the start. If the user mentions inviting people or attendees, include their emails in 'attendees' and set 'sendNotifications' to true so they receive email invitations. If the user asks for a video call, Zoom link, Google Meet, or online meeting, set 'addGoogleMeet' to true to attach a Google Meet link.",
   parameters: {
     type: 'object',
     properties: {
@@ -95,6 +100,10 @@ const createCalendarEventTool: SandraTool = {
       sendNotifications: {
         type: 'boolean',
         description: 'Send email invitations to attendees. Default false.',
+      },
+      addGoogleMeet: {
+        type: 'boolean',
+        description: 'Attach a Google Meet video conference link. Set true when user asks for a video call, online meeting, or Zoom-style link.',
       },
     },
     required: ['summary', 'startDateTime', 'endDateTime'],
@@ -142,6 +151,7 @@ const createCalendarEventTool: SandraTool = {
         location: params.location,
         attendees: params.attendees,
         sendNotifications: params.sendNotifications ?? false,
+        addGoogleMeet: params.addGoogleMeet ?? false,
       });
 
       await logAuditEvent({
@@ -181,10 +191,15 @@ const createCalendarEventTool: SandraTool = {
         }
       })();
 
+      const attendeeLine = params.attendees?.length
+        ? ` Invites sent to: ${params.attendees.join(', ')}.`
+        : '';
+      const meetLine = result.meetLink ? ` Google Meet: ${result.meetLink}` : '';
+
       return {
         success: true,
         data: {
-          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}. Open it here: ${eventLink}`,
+          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}.${attendeeLine}${meetLine} Open it here: ${eventLink}`,
           eventLink,
           eventId: result.eventId,
           htmlLink: result.htmlLink,

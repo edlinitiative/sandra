@@ -35,6 +35,8 @@ export interface CalendarEventInput {
   attendees?: string[];
   /** Whether to send invite notifications to attendees. Default: false */
   sendNotifications?: boolean;
+  /** Attach a Google Meet video conference to the event */
+  addGoogleMeet?: boolean;
   /** Calendar ID to create the event on. Default: 'primary' */
   calendarId?: string;
 }
@@ -42,6 +44,8 @@ export interface CalendarEventInput {
 export interface CalendarEventResult {
   eventId: string;
   htmlLink: string;
+  /** Google Meet join URL, present only when addGoogleMeet was true */
+  meetLink?: string;
   summary: string;
   startDateTime: string;
   endDateTime: string;
@@ -89,10 +93,23 @@ export async function createCalendarEvent(
   if (input.attendees?.length) {
     body.attendees = input.attendees.map((email) => ({ email }));
   }
+  if (input.addGoogleMeet) {
+    // Request a new Google Meet conference — Google generates the join link
+    body.conferenceData = {
+      createRequest: {
+        requestId: `sandra-meet-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    };
+  }
 
   const url = new URL(`${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`);
   if (input.sendNotifications) {
     url.searchParams.set('sendUpdates', 'all');
+  }
+  if (input.addGoogleMeet) {
+    // Required for Google to actually generate the Meet link
+    url.searchParams.set('conferenceDataVersion', '1');
   }
 
   const res = await fetch(url.toString(), {
@@ -116,13 +133,21 @@ export async function createCalendarEvent(
     summary: string;
     start: { dateTime: string };
     end: { dateTime: string };
+    conferenceData?: {
+      entryPoints?: Array<{ entryPointType: string; uri: string }>;
+    };
   };
 
-  log.info('Calendar event created', { eventId: data.id, summary: data.summary });
+  const meetLink = data.conferenceData?.entryPoints?.find(
+    (ep) => ep.entryPointType === 'video',
+  )?.uri;
+
+  log.info('Calendar event created', { eventId: data.id, summary: data.summary, meetLink });
 
   return {
     eventId: data.id,
     htmlLink: data.htmlLink,
+    meetLink,
     summary: data.summary,
     startDateTime: data.start.dateTime,
     endDateTime: data.end.dateTime,
