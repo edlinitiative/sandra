@@ -17,6 +17,12 @@ export type {
   DirectoryUser,
   DirectorySearchOptions,
   DirectorySearchResult,
+  FormInput,
+  FormQuestionItem,
+  FormQuestionType,
+  FormResult,
+  FormResponse,
+  FormResponsesResult,
 } from './types';
 
 // Auth
@@ -57,3 +63,6 @@ export { resolveGoogleContext, resolveTenantForUser, getTenantRole } from './con
 // Drive indexer (knowledge pipeline integration)
 export { indexDriveFiles } from './drive-indexer';
 export type { DriveIndexOptions, DriveIndexResult } from './drive-indexer';
+
+// Forms
+export { createForm, getForm, getFormResponses } from './forms';

@@ -96,6 +96,8 @@ export const GOOGLE_SCOPES = {
   CALENDAR: 'https://www.googleapis.com/auth/calendar',
   CALENDAR_EVENTS: 'https://www.googleapis.com/auth/calendar.events',
   TASKS: 'https://www.googleapis.com/auth/tasks',
+  FORMS_BODY: 'https://www.googleapis.com/auth/forms.body',
+  FORMS_RESPONSES_READONLY: 'https://www.googleapis.com/auth/forms.responses.readonly',
 } as const;
 
 /**

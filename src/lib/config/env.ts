@@ -63,6 +63,9 @@ const envSchema = z.object({
   GOOGLE_SERVICE_ACCOUNT_KEY: z.string().optional(), // base64-encoded PEM private key
   GOOGLE_WORKSPACE_DOMAIN: z.string().optional(),    // e.g. "edlight.org"
   GOOGLE_DELEGATED_ADMIN_EMAIL: z.string().email().optional(), // admin for impersonation
+
+  // Web Search (Brave Search API — optional; enables the webSearch tool)
+  BRAVE_SEARCH_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

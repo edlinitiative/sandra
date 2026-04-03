@@ -33,6 +33,13 @@ import './list-contacts';
 import './send-gmail';
 import './draft-gmail';
 import './create-calendar-event';
+import './create-google-form';
+import './get-form-responses';
+
+// Phase 13 — WhatsApp Groups (requires Official Business Account)
+import './create-whatsapp-group';
+import './get-whatsapp-groups';
+import './send-whatsapp-group-invite';
 import './create-task';
 import './create-zoom-meeting';
 

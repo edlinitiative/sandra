@@ -60,6 +60,190 @@ export interface CalendarEventResult {
  * @param ctx - Google Workspace context (impersonates the calendar owner)
  * @param input - Event details
  */
+// ─── List / Update / Delete ──────────────────────────────────────────────────
+
+export interface CalendarListOptions {
+  /** Calendar ID — defaults to 'primary' */
+  calendarId?: string;
+  /** Return at most this many events */
+  maxResults?: number;
+  /** RFC 3339 lower bound (inclusive) for event start times */
+  timeMin?: string;
+  /** RFC 3339 upper bound (exclusive) for event end times */
+  timeMax?: string;
+  /** 'startTime' or 'updated' — only valid when singleEvents=true */
+  orderBy?: 'startTime' | 'updated';
+  /** Expand recurring events into single instances */
+  singleEvents?: boolean;
+  /** Free-text query to filter events */
+  q?: string;
+}
+
+export interface CalendarEvent {
+  eventId: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  startDateTime: string;
+  endDateTime: string;
+  htmlLink: string;
+  organizer?: string;
+  attendees?: Array<{ email: string; displayName?: string; responseStatus?: string }>;
+  meetLink?: string;
+  status?: string;
+}
+
+/**
+ * List events from a user's Google Calendar.
+ */
+export async function listCalendarEvents(
+  ctx: GoogleWorkspaceContext,
+  options: CalendarListOptions = {},
+): Promise<{ events: CalendarEvent[]; nextPageToken?: string }> {
+  const calendarId = options.calendarId ?? 'primary';
+
+  log.info('Listing calendar events', { calendarId, impersonating: ctx.impersonateEmail });
+
+  const token = await getContextToken(ctx, CALENDAR_SCOPES);
+  const url = new URL(`${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`);
+  if (options.maxResults) url.searchParams.set('maxResults', String(options.maxResults));
+  if (options.timeMin) url.searchParams.set('timeMin', options.timeMin);
+  if (options.timeMax) url.searchParams.set('timeMax', options.timeMax);
+  if (options.orderBy) url.searchParams.set('orderBy', options.orderBy);
+  if (options.singleEvents !== false) url.searchParams.set('singleEvents', 'true');
+  if (options.q) url.searchParams.set('q', options.q);
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Calendar list failed: ${res.status} — ${body}`);
+  }
+
+  const data = await res.json() as {
+    items?: Array<{
+      id: string;
+      summary?: string;
+      description?: string;
+      location?: string;
+      status?: string;
+      htmlLink: string;
+      organizer?: { email?: string };
+      start: { dateTime?: string; date?: string };
+      end: { dateTime?: string; date?: string };
+      attendees?: Array<{ email: string; displayName?: string; responseStatus?: string }>;
+      conferenceData?: { entryPoints?: Array<{ entryPointType: string; uri: string }> };
+    }>;
+    nextPageToken?: string;
+  };
+
+  const events: CalendarEvent[] = (data.items ?? []).map((item) => ({
+    eventId: item.id,
+    summary: item.summary ?? '(No title)',
+    description: item.description,
+    location: item.location,
+    status: item.status,
+    startDateTime: item.start.dateTime ?? item.start.date ?? '',
+    endDateTime: item.end.dateTime ?? item.end.date ?? '',
+    htmlLink: item.htmlLink,
+    organizer: item.organizer?.email,
+    attendees: item.attendees,
+    meetLink: item.conferenceData?.entryPoints?.find((e) => e.entryPointType === 'video')?.uri,
+  }));
+
+  return { events, nextPageToken: data.nextPageToken };
+}
+
+/**
+ * Update an existing calendar event (patch — only supplied fields are changed).
+ */
+export async function updateCalendarEvent(
+  ctx: GoogleWorkspaceContext,
+  eventId: string,
+  input: Partial<CalendarEventInput>,
+): Promise<CalendarEventResult> {
+  const calendarId = input.calendarId ?? 'primary';
+  const timeZone = input.timeZone ?? 'UTC';
+
+  log.info('Updating calendar event', { eventId, calendarId, impersonating: ctx.impersonateEmail });
+
+  const token = await getContextToken(ctx, CALENDAR_SCOPES);
+
+  const body: Record<string, unknown> = {};
+  if (input.summary) body.summary = input.summary;
+  if (input.description !== undefined) body.description = input.description;
+  if (input.location !== undefined) body.location = input.location;
+  if (input.startDateTime) body.start = { dateTime: input.startDateTime, timeZone };
+  if (input.endDateTime) body.end = { dateTime: input.endDateTime, timeZone };
+  if (input.attendees?.length) body.attendees = input.attendees.map((e) => ({ email: e }));
+
+  const url = new URL(
+    `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+  );
+  if (input.sendNotifications) url.searchParams.set('sendUpdates', 'all');
+
+  const res = await fetch(url.toString(), {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Calendar update failed: ${res.status} — ${errBody}`);
+  }
+
+  const data = await res.json() as {
+    id: string;
+    htmlLink: string;
+    summary: string;
+    start: { dateTime: string };
+    end: { dateTime: string };
+    conferenceData?: { entryPoints?: Array<{ entryPointType: string; uri: string }> };
+  };
+
+  const meetLink = data.conferenceData?.entryPoints?.find((ep) => ep.entryPointType === 'video')?.uri;
+  return {
+    eventId: data.id,
+    htmlLink: data.htmlLink,
+    meetLink,
+    summary: data.summary,
+    startDateTime: data.start.dateTime,
+    endDateTime: data.end.dateTime,
+    calendarId,
+  };
+}
+
+/**
+ * Delete (cancel) a calendar event.
+ */
+export async function deleteCalendarEvent(
+  ctx: GoogleWorkspaceContext,
+  eventId: string,
+  calendarId = 'primary',
+): Promise<void> {
+  log.info('Deleting calendar event', { eventId, calendarId, impersonating: ctx.impersonateEmail });
+
+  const token = await getContextToken(ctx, CALENDAR_SCOPES);
+  const res = await fetch(
+    `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok && res.status !== 204 && res.status !== 410) {
+    const errBody = await res.text();
+    throw new Error(`Calendar delete failed: ${res.status} — ${errBody}`);
+  }
+  log.info('Calendar event deleted', { eventId });
+}
+
+// ─── Create ───────────────────────────────────────────────────────────────────
+
 export async function createCalendarEvent(
   ctx: GoogleWorkspaceContext,
   input: CalendarEventInput,

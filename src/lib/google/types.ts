@@ -131,6 +131,61 @@ export interface DirectorySearchResult {
   nextPageToken?: string;
 }
 
+// ─── Google Forms ─────────────────────────────────────────────────────────────
+
+export type FormQuestionType =
+  | 'short_answer'
+  | 'paragraph'
+  | 'multiple_choice'
+  | 'checkbox'
+  | 'dropdown'
+  | 'date'
+  | 'section_header';
+
+export interface FormQuestionItem {
+  /** Question prompt / section title */
+  title: string;
+  /** Optional helper text shown below the title */
+  description?: string;
+  type: FormQuestionType;
+  /** Whether a response is required. Default false. */
+  required?: boolean;
+  /** Choices for multiple_choice, checkbox, dropdown */
+  options?: string[];
+}
+
+export interface FormInput {
+  title: string;
+  description?: string;
+  questions: FormQuestionItem[];
+}
+
+export interface FormResult {
+  formId: string;
+  title: string;
+  description?: string;
+  /** Public link respondents use to fill in the form */
+  responderUri: string;
+  /** Editor link (owner only) */
+  editUrl: string;
+  questionCount: number;
+}
+
+export interface FormResponse {
+  responseId: string;
+  submittedAt: string;
+  respondentEmail?: string;
+  /** Map of question title → answer text (or array for multi-select) */
+  answers: Record<string, string | string[]>;
+}
+
+export interface FormResponsesResult {
+  formId: string;
+  formTitle: string;
+  totalResponses: number;
+  responses: FormResponse[];
+}
+
 // ─── Tenant Context ──────────────────────────────────────────────────────────
 
 /**

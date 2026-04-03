@@ -30,6 +30,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'calendar:write',
     'gmail:draft',
     'tasks:write',
+    'forms:read',
   ],
   educator: [
     'knowledge:read',
@@ -47,6 +48,8 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'gmail:draft',
     'calendar:write',
     'tasks:write',
+    'forms:read',
+    'forms:write',
   ],
   admin: [
     'knowledge:read',
@@ -73,6 +76,10 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'calendar:write',
     'tasks:write',
     'zoom:meeting',
+    'forms:read',
+    'forms:write',
+    // WhatsApp Groups API (requires Official Business Account)
+    'whatsapp:groups',
   ],
 };
 

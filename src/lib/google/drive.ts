@@ -22,7 +22,10 @@ import type {
 const log = createLogger('google:drive');
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
+const DOCS_API = 'https://docs.googleapis.com/v1';
+const SHEETS_API = 'https://sheets.googleapis.com/v4';
 const DRIVE_SCOPES = [GOOGLE_SCOPES.DRIVE_READONLY];
+const DRIVE_WRITE_SCOPES = [GOOGLE_SCOPES.DRIVE_FILE];
 
 // ─── MIME type mappings ──────────────────────────────────────────────────────
 
@@ -290,4 +293,157 @@ export async function getFilesContent(
     }
   }
   return results;
+}
+
+// ─── Create / Share / Get ────────────────────────────────────────────────────
+
+/**
+ * Get metadata for a Drive file by ID.
+ */
+export async function getFileById(
+  ctx: GoogleWorkspaceContext,
+  fileId: string,
+): Promise<DriveFile> {
+  log.info('Getting Drive file by ID', { fileId, tenantId: ctx.tenantId });
+  const token = await getContextToken(ctx, DRIVE_SCOPES);
+  const url = new URL(`${DRIVE_API}/files/${fileId}`);
+  url.searchParams.set('fields', 'id,name,mimeType,modifiedTime,size,webViewLink,parents');
+
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Drive getFileById failed: ${res.status} — ${body}`);
+  }
+  return toDriveFile(await res.json() as Record<string, unknown>);
+}
+
+/**
+ * Create a new Google Doc in the user's Drive.
+ */
+export async function createGoogleDoc(
+  ctx: GoogleWorkspaceContext,
+  title: string,
+  content?: string,
+): Promise<DriveFile> {
+  log.info('Creating Google Doc', { title, tenantId: ctx.tenantId });
+
+  const token = await getContextToken(ctx, DRIVE_WRITE_SCOPES);
+
+  // Create the file stub in Drive
+  const fileRes = await fetch(`${DRIVE_API}/files`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: title,
+      mimeType: 'application/vnd.google-apps.document',
+    }),
+  });
+
+  if (!fileRes.ok) {
+    const body = await fileRes.text();
+    throw new Error(`Drive createDoc failed: ${fileRes.status} — ${body}`);
+  }
+
+  const file = toDriveFile(await fileRes.json() as Record<string, unknown>);
+
+  // If initial content provided, write it via the Docs API
+  if (content) {
+    const docsToken = await getContextToken(ctx, ['https://www.googleapis.com/auth/documents']);
+    const docsRes = await fetch(`${DOCS_API}/documents/${file.id}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${docsToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{ insertText: { location: { index: 1 }, text: content } }],
+      }),
+    });
+    if (!docsRes.ok) {
+      log.warn('Docs API content write failed', { fileId: file.id, status: docsRes.status });
+    }
+  }
+
+  log.info('Google Doc created', { fileId: file.id, title });
+  return file;
+}
+
+/**
+ * Create a new Google Sheet in the user's Drive.
+ */
+export async function createGoogleSheet(
+  ctx: GoogleWorkspaceContext,
+  title: string,
+  initialRows?: string[][],
+): Promise<DriveFile> {
+  log.info('Creating Google Sheet', { title, tenantId: ctx.tenantId });
+
+  const token = await getContextToken(ctx, DRIVE_WRITE_SCOPES);
+
+  const fileRes = await fetch(`${DRIVE_API}/files`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: title,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+    }),
+  });
+
+  if (!fileRes.ok) {
+    const body = await fileRes.text();
+    throw new Error(`Drive createSheet failed: ${fileRes.status} — ${body}`);
+  }
+
+  const file = toDriveFile(await fileRes.json() as Record<string, unknown>);
+
+  // If initial rows provided, write them via the Sheets API
+  if (initialRows?.length) {
+    const sheetsToken = await getContextToken(ctx, ['https://www.googleapis.com/auth/spreadsheets']);
+    const range = `Sheet1!A1:${String.fromCharCode(64 + (initialRows[0]?.length ?? 1))}${initialRows.length}`;
+    const sheetsRes = await fetch(
+      `${SHEETS_API}/spreadsheets/${file.id}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+      {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${sheetsToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ range, majorDimension: 'ROWS', values: initialRows }),
+      },
+    );
+    if (!sheetsRes.ok) {
+      log.warn('Sheets API write failed', { fileId: file.id, status: sheetsRes.status });
+    }
+  }
+
+  log.info('Google Sheet created', { fileId: file.id, title });
+  return file;
+}
+
+export type DriveShareRole = 'reader' | 'commenter' | 'writer' | 'fileOrganizer';
+
+/**
+ * Share a Drive file or folder with a specific user.
+ */
+export async function shareFile(
+  ctx: GoogleWorkspaceContext,
+  fileId: string,
+  email: string,
+  role: DriveShareRole = 'reader',
+  sendNotification = true,
+): Promise<{ permissionId: string; email: string; role: string }> {
+  log.info('Sharing Drive file', { fileId, email, role, tenantId: ctx.tenantId });
+
+  const token = await getContextToken(ctx, DRIVE_WRITE_SCOPES);
+  const url = new URL(`${DRIVE_API}/files/${fileId}/permissions`);
+  if (!sendNotification) url.searchParams.set('sendNotificationEmail', 'false');
+
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'user', role, emailAddress: email }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Drive shareFile failed: ${res.status} — ${body}`);
+  }
+
+  const data = await res.json() as { id: string; emailAddress: string; role: string };
+  log.info('File shared', { fileId, permissionId: data.id, email, role });
+  return { permissionId: data.id, email: data.emailAddress ?? email, role: data.role ?? role };
 }
