@@ -23,7 +23,11 @@ const DIRECTORY_SCOPES = [GOOGLE_SCOPES.DIRECTORY_READONLY];
 
 function toDirectoryUser(item: Record<string, unknown>): DirectoryUser {
   const name = item.name as Record<string, string> | undefined;
-  const phones = item.phones as Array<{ value: string }> | undefined;
+  const phones = item.phones as Array<{ value: string; type?: string }> | undefined;
+  const recoveryPhone = item.recoveryPhone as string | undefined;
+
+  // Prefer a work/mobile phone, fall back to recovery phone
+  const phone = phones?.[0]?.value ?? recoveryPhone ?? undefined;
 
   return {
     id: item.id as string,
@@ -33,7 +37,7 @@ function toDirectoryUser(item: Record<string, unknown>): DirectoryUser {
     familyName: name?.familyName,
     department: (item.orgUnitPath as string) ?? undefined,
     title: undefined, // Available in organizations array if configured
-    phone: phones?.[0]?.value,
+    phone,
     photoUrl: (item.thumbnailPhotoUrl as string) ?? undefined,
     isAdmin: (item.isAdmin as boolean) ?? false,
     suspended: (item.suspended as boolean) ?? false,
@@ -62,7 +66,7 @@ export async function listUsers(
     domain: ctx.config.domain,
     maxResults: String(options.maxResults ?? 50),
     orderBy: 'email',
-    projection: 'basic',
+    projection: 'full',
   };
 
   if (options.query) {
@@ -111,7 +115,7 @@ export async function getUserByEmail(
   };
 
   const token = await getContextToken(adminCtx, DIRECTORY_SCOPES);
-  const url = `${DIRECTORY_API}/users/${encodeURIComponent(email)}?projection=basic`;
+  const url = `${DIRECTORY_API}/users/${encodeURIComponent(email)}?projection=full`;
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },

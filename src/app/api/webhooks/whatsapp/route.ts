@@ -10,6 +10,7 @@ import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
+import { tryAutoLink, getWorkspaceIdentity } from '@/lib/channels/identity-linker';
 
 const log = createLogger('api:webhooks:whatsapp');
 
@@ -121,6 +122,13 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
 
     const userId = identity.userId;
 
+    // Try to auto-link WhatsApp user to their Workspace identity (best-effort)
+    const wsIdentity = await tryAutoLink(userId, phoneNumber).catch(() => null);
+    const resolvedName = wsIdentity?.name ?? displayName ?? undefined;
+    if (wsIdentity) {
+      log.info('Workspace identity linked', { userId, email: wsIdentity.email });
+    }
+
     // Resolve session for this channel user
     const session = await getOrCreateSessionForChannel({
       channel: 'whatsapp',
@@ -148,10 +156,10 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
       userId,
       language,
       channel: 'whatsapp',
-      senderName: displayName ?? undefined,
+      senderName: resolvedName,
       attachments: inbound.attachments,
       scopes,
-      metadata: { requestId, source: 'whatsapp', phoneNumber },
+      metadata: { requestId, source: 'whatsapp', phoneNumber, workspaceEmail: wsIdentity?.email },
     });
 
     // Send reply — split into chunks if needed
@@ -205,6 +213,10 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
 
   const userId = identity.userId;
 
+  // Try to auto-link to Workspace identity (best-effort)
+  const wsIdentity = await tryAutoLink(userId, phoneNumber).catch(() => null);
+  const resolvedName = wsIdentity?.name ?? displayName;
+
   // Group sessions are keyed by group ID, not individual phone
   const groupSessionId = buildGroupSessionId(groupId);
 
@@ -214,7 +226,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
     sessionId: groupSessionId,
     groupId,
     senderPhone: phoneNumber,
-    senderName: displayName,
+    senderName: resolvedName,
     userId,
     content,
   });
@@ -250,7 +262,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
   const cleanMessage = stripMention(content);
 
   // Build group context prefix so the agent knows who's speaking
-  const groupContext = formatGroupContext(displayName, phoneNumber, groupId);
+  const groupContext = formatGroupContext(resolvedName, phoneNumber, groupId);
 
   // Check if this user has granted sharing permission
   const sharingNote = await getGroupSharingNote(userId);
@@ -262,7 +274,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
     userId,
     language,
     channel: 'whatsapp',
-    senderName: displayName,
+    senderName: resolvedName,
     attachments: inbound.attachments,
     scopes,
     metadata: {
@@ -271,6 +283,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
       phoneNumber,
       groupId,
       isGroup: true,
+      workspaceEmail: wsIdentity?.email,
     },
   });
 
