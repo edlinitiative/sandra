@@ -4,17 +4,15 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { loadServiceAccount } from '../scripts/load-sa';
 
 const db = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding EdLight tenant...');
 
-  // Read service account JSON from disk
-  const saPath = resolve(__dirname, '..', 'sandra_ai_service_acccount_json');
-  const saJson = JSON.parse(readFileSync(saPath, 'utf-8'));
+  // Load service account from GOOGLE_SA_JSON env var
+  const saJson = loadServiceAccount();
   console.log(`📄 Loaded service account: ${saJson.client_email}`);
 
   // 1. Create EdLight tenant (tenant zero)

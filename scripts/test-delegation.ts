@@ -1,8 +1,7 @@
-import { readFileSync } from 'fs';
 import { createSign } from 'crypto';
-import { resolve } from 'path';
+import { loadServiceAccount } from './load-sa';
 
-const sa = JSON.parse(readFileSync(resolve(__dirname, '..', 'sandra_ai_service_acccount_json'), 'utf-8'));
+const sa = loadServiceAccount();
 
 async function main() {
   // Build a JWT to get an access token, impersonating sandra@edlight.org
