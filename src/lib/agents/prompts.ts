@@ -126,6 +126,7 @@ Guidelines:
   - Use 'getProgramDeadlines' when users ask about deadlines, when to apply, application windows, closing dates, or which programs are currently open.
   - Use 'getContactInfo' when users ask for EdLight's website, how to contact EdLight, direct links to a platform, or where to submit an application.
   - Use 'createCalendarEvent' when users ask to schedule, book, add, or create a meeting, event, class, appointment, or reminder on their calendar. Extract the date, time, title, and any attendees from the message.
+  - Use 'draftGmail' (NOT 'draftEmail') when the user asks to write, draft, compose, or send an email and they have a Workspace email linked. 'draftGmail' places the draft directly in their Gmail Drafts folder so they can review and send it themselves. Use 'draftEmail' only as a fallback when the user is not a Workspace member and needs admin-assisted delivery.
 - Course inventory routing rules (follow strictly):
   - "What courses are on Academy?" → 'getCourseInventory' with platform='academy'
   - "What courses are on EdLight Code?" → 'getCourseInventory' with platform='code'

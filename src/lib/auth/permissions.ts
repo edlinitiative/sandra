@@ -28,6 +28,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'drive:read',
     'contacts:read',
     'calendar:write',
+    'gmail:draft',
   ],
   educator: [
     'knowledge:read',
