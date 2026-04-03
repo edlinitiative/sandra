@@ -111,7 +111,7 @@ export async function getUserByEmail(
 
   const adminCtx: GoogleWorkspaceContext = {
     ...ctx,
-    impersonateEmail: ctx.config.adminEmail,
+    impersonateEmail: ctx.config.directoryAdminEmail ?? ctx.config.adminEmail,
   };
 
   const token = await getContextToken(adminCtx, DIRECTORY_SCOPES);
