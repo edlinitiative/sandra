@@ -10,7 +10,13 @@ import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
-import { tryAutoLink, getWorkspaceIdentity } from '@/lib/channels/identity-linker';
+import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
+import {
+  hasPendingVerification,
+  verifyCode,
+  startEmailVerification,
+  extractVerificationCode,
+} from '@/lib/channels/email-verification';
 
 const log = createLogger('api:webhooks:whatsapp');
 
@@ -124,10 +130,68 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
 
     // Try to auto-link WhatsApp user to their Workspace identity (best-effort)
     const wsIdentity = await tryAutoLink(userId, phoneNumber).catch(() => null);
-    const resolvedName = wsIdentity?.name ?? displayName ?? undefined;
+    let resolvedName = wsIdentity?.name ?? displayName ?? undefined;
     if (wsIdentity) {
       log.info('Workspace identity linked', { userId, email: wsIdentity.email });
     }
+
+    // ── EMAIL VERIFICATION INTERCEPTORS ──────────────────────────────────
+
+    // 1. If user has a pending verification, check if this message is a code
+    const pendingVerification = await hasPendingVerification(userId);
+    if (pendingVerification) {
+      const codeCandidate = extractVerificationCode(content);
+      if (codeCandidate) {
+        const result = await verifyCode(userId, codeCandidate);
+        if (result.success) {
+          resolvedName = result.name ?? resolvedName;
+          await adapter.send({
+            channelType: 'whatsapp',
+            recipientId: phoneNumber,
+            content: `✅ Verified! You're linked as *${result.name}* (${result.email}). I'll remember you from now on.`,
+            language: 'en',
+          });
+        } else {
+          await adapter.send({
+            channelType: 'whatsapp',
+            recipientId: phoneNumber,
+            content: result.error ?? 'Verification failed.',
+            language: 'en',
+          });
+        }
+        return; // Don't process further — this was a verification interaction
+      }
+      // Not a code — fall through to normal processing (they might be chatting normally)
+    }
+
+    // 2. Check if message contains an email claim → start verification flow
+    if (!wsIdentity) {
+      const claimedEmail = detectEmailClaim(content);
+      if (claimedEmail) {
+        log.info('Email claim detected, starting verification', { userId, claimedEmail });
+        const result = await startEmailVerification(userId, claimedEmail);
+        if (result.success) {
+          await adapter.send({
+            channelType: 'whatsapp',
+            recipientId: phoneNumber,
+            content: `I sent a verification code to *${result.maskedEmail}*. Reply with the 6-digit code to link your account.`,
+            language: 'en',
+          });
+        } else {
+          await adapter.send({
+            channelType: 'whatsapp',
+            recipientId: phoneNumber,
+            content: result.error ?? 'Could not start verification.',
+            language: 'en',
+          });
+        }
+        return; // Don't process further
+      }
+    }
+
+    // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
+    const role = wsIdentity ? 'student' : 'guest';
+    const scopes = getScopesForRole(role);
 
     // Resolve session for this channel user
     const session = await getOrCreateSessionForChannel({
@@ -149,7 +213,6 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
     });
 
     // Run Sandra agent
-    const scopes = getScopesForRole('guest');
     const result = await runSandraAgent({
       message: content,
       sessionId,
@@ -267,7 +330,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
   // Check if this user has granted sharing permission
   const sharingNote = await getGroupSharingNote(userId);
 
-  const scopes = getScopesForRole('guest');
+  const scopes = getScopesForRole(wsIdentity ? 'student' : 'guest');
   const result = await runSandraAgent({
     message: `${groupContext}\n${sharingNote}\n${cleanMessage}`,
     sessionId: groupSessionId,

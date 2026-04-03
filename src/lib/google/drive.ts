@@ -145,6 +145,39 @@ export async function listFolderRecursive(
 }
 
 /**
+ * List ALL non-folder files in the user's Drive (paginated).
+ * Used for whole-Drive indexing when no specific folder IDs are configured.
+ */
+export async function listAllFiles(
+  ctx: GoogleWorkspaceContext,
+  maxFiles = 500,
+): Promise<DriveFile[]> {
+  log.info('Listing all Drive files', { tenantId: ctx.tenantId, maxFiles });
+
+  const allFiles: DriveFile[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const data = await driveGet<{
+      files: Record<string, unknown>[];
+      nextPageToken?: string;
+    }>(ctx, '/files', {
+      q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",
+      fields: 'files(id,name,mimeType,modifiedTime,size,webViewLink,parents),nextPageToken',
+      pageSize: '100',
+      orderBy: 'modifiedTime desc',
+      ...(pageToken ? { pageToken } : {}),
+    });
+
+    allFiles.push(...data.files.map(toDriveFile));
+    pageToken = data.nextPageToken;
+  } while (pageToken && allFiles.length < maxFiles);
+
+  log.info(`Listed ${allFiles.length} files from Drive`, { tenantId: ctx.tenantId });
+  return allFiles.slice(0, maxFiles);
+}
+
+/**
  * Search for files across Drive (or within specific folders).
  */
 export async function searchFiles(

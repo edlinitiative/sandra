@@ -11,7 +11,7 @@
 
 import { createLogger } from '@/lib/utils';
 import { resolveGoogleContext } from '@/lib/google/context';
-import { listFolderRecursive, getFileContent } from '@/lib/google/drive';
+import { listFolderRecursive, listAllFiles, getFileContent } from '@/lib/google/drive';
 import { chunkDocument } from '@/lib/knowledge/chunker';
 import { embedChunks } from '@/lib/knowledge/embeddings';
 import { getVectorStore } from '@/lib/knowledge/vector-store';
@@ -70,19 +70,25 @@ export async function indexDriveFiles(options: DriveIndexOptions): Promise<Drive
   const sourceId = `drive:${tenant.slug}`;
   const folderIds = options.folderIds ?? ctx.config.driveFolderIds ?? [];
 
-  if (folderIds.length === 0) {
-    log.warn('No Drive folder IDs configured for indexing', { tenantId });
-    return { tenantId, filesScanned: 0, filesIndexed: 0, chunksCreated: 0, errors: [], durationMs: Date.now() - start };
-  }
-
-  // 1. Collect all files from all folders
+  // 1. Collect files — from specific folders, or entire Drive if none configured
   const allFiles: DriveFile[] = [];
-  for (const folderId of folderIds) {
+  if (folderIds.length > 0) {
+    for (const folderId of folderIds) {
+      try {
+        const files = await listFolderRecursive(ctx, folderId);
+        allFiles.push(...files);
+      } catch (error) {
+        log.error('Failed to list folder', { folderId, error: (error as Error).message });
+      }
+    }
+  } else {
+    // No specific folders — index the entire Drive
+    log.info('No folder IDs configured, indexing entire Drive', { tenantId });
     try {
-      const files = await listFolderRecursive(ctx, folderId);
+      const files = await listAllFiles(ctx, maxFiles);
       allFiles.push(...files);
     } catch (error) {
-      log.error('Failed to list folder', { folderId, error: (error as Error).message });
+      log.error('Failed to list all Drive files', { error: (error as Error).message });
     }
   }
 

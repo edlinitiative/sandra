@@ -32,6 +32,7 @@ export {
 export {
   listFolder,
   listFolderRecursive,
+  listAllFiles,
   searchFiles,
   getFileContent,
   getFilesContent,
