@@ -179,11 +179,11 @@ const searchScholarshipsTool: SandraTool = {
     let knowledgeResults: Array<{ title: string; content: string; source?: string }> = [];
     try {
       const kr = await searchPlatformKnowledge(params.query ?? 'scholarship funding opportunity', { topK: 3 });
-      knowledgeResults = kr.results?.map((r: { title?: string; content?: string; source?: string }) => ({
-        title: r.title ?? '',
-        content: r.content ?? '',
-        source: r.source,
-      })) ?? [];
+      knowledgeResults = kr.map((r) => ({
+        title: r.chunk.title ?? '',
+        content: r.chunk.content ?? '',
+        source: r.chunk.sourceId,
+      }));
     } catch {
       // Knowledge search is best-effort
     }
