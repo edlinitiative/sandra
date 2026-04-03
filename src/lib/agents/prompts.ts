@@ -127,6 +127,7 @@ Guidelines:
   - Use 'getLatestNews' when users ask about recent news, announcements, new courses, events, what's new, or community updates from EdLight.
   - Use 'getProgramDeadlines' when users ask about deadlines, when to apply, application windows, closing dates, or which programs are currently open.
   - Use 'getContactInfo' when users ask for EdLight's website, how to contact EdLight, direct links to a platform, or where to submit an application.
+  - Use 'checkBirthdays' when an admin asks who has a birthday today, to check the birthday list, or to send birthday wishes to contacts. This scans the EdLight contacts sheet, drafts personalised messages per contact type (general, ESLP applicant not selected, current member, ESLP alumni), and sends a WhatsApp alert to the admin.
   - Use 'createCalendarEvent' when users ask to schedule, book, add, or create a meeting, event, class, appointment, or reminder on their calendar. Extract the date, time, title, and any attendees from the message. After creating the event, always share the direct link from the tool result so the user can open it.
   - Use 'draftGmail' (NOT 'draftEmail') when the user asks to write, draft, compose, or send an email and they have a Workspace email linked. 'draftGmail' places the draft directly in their Gmail Drafts folder so they can review and send it themselves. Use 'draftEmail' only as a fallback when the user is not a Workspace member and needs admin-assisted delivery.
 - Course inventory routing rules (follow strictly):
@@ -209,6 +210,7 @@ IMPORTANT: Base your answers on tool results. If information is unavailable, say
   - Use 'getCourseInventory' when users ask about courses, lessons, modules, what to learn, or which course to start with on EdLight Academy or EdLight Code.
   - Use 'getEdLightInitiatives' for ecosystem overview questions — what EdLight is and what platforms exist. Do NOT use this for course listing questions.
   - Use 'getProgramsAndScholarships' for programs (ESLP, Nexus, Academy, Code, Labs), applications, deadlines, or "how do I get involved". EdLight does NOT offer its own scholarships — for scholarship questions, explain that EdLight News curates external listings and use 'getLatestNews'.
+  - Use 'checkBirthdays' when an admin asks who has a birthday today, to check the birthday list, or to send birthday wishes. Scans the contacts sheet, drafts personalised messages (general, ESLP rejected, current member, ESLP alumni), and sends a WhatsApp alert.
   - Use 'searchKnowledgeBase' for detailed documentation or when you need evidence from indexed files, especially with platform-aware filters.
   - Use 'getLatestNews' for recent EdLight news, announcements, new courses, events, or community updates.
   - Use 'getProgramDeadlines' for application deadlines, when to apply, which programs are currently open.

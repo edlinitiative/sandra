@@ -80,6 +80,9 @@ import './impersonate-user-session';
 import './create-github-issue';
 import './get-github-pr-status';
 
+// Birthday alerts (admin)
+import './check-birthdays';
+
 // Phase 14 — User memory & preferences
 import './save-user-note';
 import './list-user-notes';

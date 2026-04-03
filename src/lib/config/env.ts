@@ -66,6 +66,10 @@ const envSchema = z.object({
 
   // Web Search (Brave Search API — optional; enables the webSearch tool)
   BRAVE_SEARCH_API_KEY: z.string().optional(),
+
+  // Birthday alerts (optional; enables the checkBirthdays tool)
+  BIRTHDAY_CONTACTS_SHEET_ID: z.string().optional(), // Google Sheets file ID for the contacts+birthday list
+  BIRTHDAY_ADMIN_PHONE: z.string().optional(),       // WhatsApp number to notify, e.g. "50938001234"
 });
 
 export type Env = z.infer<typeof envSchema>;

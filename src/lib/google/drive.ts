@@ -414,6 +414,41 @@ export async function createGoogleSheet(
   return file;
 }
 
+// ─── Sheets Read ─────────────────────────────────────────────────────────────
+
+const SHEETS_READONLY_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+/**
+ * Read all rows from a Google Spreadsheet tab via the Sheets API v4.
+ *
+ * @param ctx            - Google Workspace context (service account, tenant)
+ * @param spreadsheetId  - The Sheets file ID (from the URL)
+ * @param range          - A1-notation range, e.g. "Sheet1!A:G" or "Contacts!A:H".
+ *                         Defaults to the entire first visible sheet ("Sheet1").
+ * @returns              - 2-D array of string cell values (rows × columns).
+ *                         The first row is typically the header row.
+ */
+export async function readSheetRows(
+  ctx: GoogleWorkspaceContext,
+  spreadsheetId: string,
+  range = 'Sheet1',
+): Promise<string[][]> {
+  log.info('Reading sheet rows', { spreadsheetId, range, tenantId: ctx.tenantId });
+
+  const token = await getContextToken(ctx, [SHEETS_READONLY_SCOPE]);
+  const url = `${SHEETS_API}/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Sheets API readRows failed (${res.status}): ${body}`);
+  }
+
+  const data = (await res.json()) as { values?: string[][] };
+  return data.values ?? [];
+}
+
 export type DriveShareRole = 'reader' | 'commenter' | 'writer' | 'fileOrganizer';
 
 /**

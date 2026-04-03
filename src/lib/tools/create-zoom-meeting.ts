@@ -117,17 +117,39 @@ const createZoomMeetingTool: SandraTool = {
 
     const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
 
+    // Try to use the requesting user as host; fall back to account default
+    // if they haven't been added to the Zoom account yet.
+    const preferredHost = user?.email ?? zoomCtx.config.defaultHostEmail;
+
     try {
-      const result = await createZoomMeeting(zoomCtx, {
-        topic: params.topic,
-        startDateTime: params.startDateTime,
-        durationMinutes: params.durationMinutes ?? 60,
-        timeZone: params.timeZone ?? 'America/New_York',
-        agenda: params.agenda,
-        attendees: params.attendees,
-        // If the requesting user is in the org, try to make them the host
-        hostEmail: user?.email ?? undefined,
-      });
+      let result;
+      try {
+        result = await createZoomMeeting(zoomCtx, {
+          topic: params.topic,
+          startDateTime: params.startDateTime,
+          durationMinutes: params.durationMinutes ?? 60,
+          timeZone: params.timeZone ?? 'America/New_York',
+          agenda: params.agenda,
+          attendees: params.attendees,
+          hostEmail: preferredHost,
+        });
+      } catch (firstErr) {
+        const msg = firstErr instanceof Error ? firstErr.message : '';
+        // Zoom error 1001 = user not in account — retry with the default host
+        if (msg.includes('1001') && preferredHost !== zoomCtx.config.defaultHostEmail) {
+          result = await createZoomMeeting(zoomCtx, {
+            topic: params.topic,
+            startDateTime: params.startDateTime,
+            durationMinutes: params.durationMinutes ?? 60,
+            timeZone: params.timeZone ?? 'America/New_York',
+            agenda: params.agenda,
+            attendees: params.attendees,
+            hostEmail: zoomCtx.config.defaultHostEmail,
+          });
+        } else {
+          throw firstErr;
+        }
+      }
 
       await logAuditEvent({
         userId,

@@ -91,6 +91,7 @@ const listTasksTool: SandraTool = {
         success: true,
         data: {
           message: `You have ${tasks.length} task(s).`,
+          count: tasks.length,
           tasks,
         },
       };

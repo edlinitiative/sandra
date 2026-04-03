@@ -13,7 +13,8 @@ const inputSchema = z.object({
   program: z
     .string()
     .min(1)
-    .describe("EdLight program name or abbreviation, e.g. 'ESLP', 'Nexus', 'Academy', 'Code', 'Labs', 'scholarship'"),
+    .optional()
+    .describe("EdLight program name or abbreviation, e.g. 'ESLP', 'Nexus', 'Academy', 'Code', 'Labs', 'scholarship'. Omit to list all deadlines."),
 });
 
 type DeadlineInfo = {
@@ -133,13 +134,25 @@ const checkApplicationDeadlineTool: SandraTool = {
         description: "Program name or abbreviation: 'ESLP', 'Nexus', 'Academy', 'Code', 'Labs'",
       },
     },
-    required: ['program'],
+    required: [],
   },
   inputSchema,
   requiredScopes: [],
 
   async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
+
+    // No program specified — return all deadlines
+    if (!params.program) {
+      const allDeadlines = PROGRAM_DEADLINES.map(enrichWithDaysRemaining);
+      return {
+        success: true,
+        data: {
+          message: 'Here are all EdLight program deadlines:',
+          deadlines: allDeadlines,
+        },
+      };
+    }
 
     const match = matchProgram(params.program);
 
@@ -164,6 +177,7 @@ const checkApplicationDeadlineTool: SandraTool = {
     return {
       success: true,
       data: {
+        deadlines: [enriched],
         program: enriched.program,
         abbreviation: enriched.abbreviation,
         status: enriched.status,
