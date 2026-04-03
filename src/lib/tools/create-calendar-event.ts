@@ -173,7 +173,7 @@ const createCalendarEventTool: SandraTool = {
       return {
         success: true,
         data: {
-          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}.`,
+          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}. Open it here: ${result.htmlLink}`,
           eventId: result.eventId,
           htmlLink: result.htmlLink,
           summary: params.summary,
