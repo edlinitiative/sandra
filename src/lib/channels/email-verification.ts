@@ -307,7 +307,7 @@ export function extractVerificationCode(text: string): string | null {
 
   // Also try to find 6 digits anywhere in the message
   const anywhere = text.replace(/\s/g, '').match(/(\d{6})/);
-  if (anywhere) return anywhere[1];
+  if (anywhere?.[1]) return anywhere[1];
 
   return null;
 }
