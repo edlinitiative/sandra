@@ -11,6 +11,7 @@ import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext, isReplyToSandra } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
 import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
+import { db } from '@/lib/db';
 import {
   hasPendingVerification,
   verifyCode,
@@ -190,7 +191,16 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
     }
 
     // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
-    const role = wsIdentity ? 'student' : 'guest';
+    // Look up the user's actual TenantMember role so admins get gmail:send etc.
+    let role: 'guest' | 'student' | 'educator' | 'admin' = wsIdentity ? 'student' : 'guest';
+    if (wsIdentity) {
+      const membership = await db.tenantMember.findFirst({
+        where: { userId, isActive: true },
+        select: { role: true },
+      });
+      if (membership?.role === 'admin') role = 'admin';
+      else if (membership?.role === 'manager') role = 'educator';
+    }
     const scopes = getScopesForRole(role);
 
     // Resolve session for this channel user

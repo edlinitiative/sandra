@@ -1,11 +1,8 @@
 /**
- * sendGmail — send an email from the user's Gmail (via domain-wide delegation).
+ * sendGmail — send an email directly from the user's Gmail (via domain-wide delegation).
  *
- * Queued with requiresApproval = true — admin must approve before delivery.
- * This is the human-in-the-loop safeguard for outbound email via the user's real mailbox.
- *
- * Resend remains the system/platform email transport.
- * This tool is ONLY for sending as the authenticated domain user.
+ * Sends immediately — no approval queue. Only available to users with gmail:send scope (admin role).
+ * Rate-limited to 3 sends per user per 10 minutes as a safeguard.
  *
  * Required scopes: gmail:send
  */
@@ -13,8 +10,8 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveTenantForUser } from '@/lib/google/context';
-import { enqueueAction } from '@/lib/actions/queue';
+import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { sendEmail } from '@/lib/google/gmail';
 import { actionRateLimiter } from '@/lib/actions/rate-limiter';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -49,7 +46,7 @@ const inputSchema = z.object({
 const sendGmail: SandraTool = {
   name: 'sendGmail',
   description:
-    "Send an email from the user's work Gmail account. The email will be queued for admin approval before being sent — it will NOT send immediately. Use when the user explicitly asks Sandra to send an email from their work account to a specific person.",
+    "Send an email directly and immediately from the user's work Gmail account via domain-wide delegation. Use when the user explicitly says 'send' rather than 'draft'. Only available to users with the admin role.",
   parameters: {
     type: 'object',
     properties: {
@@ -98,44 +95,40 @@ const sendGmail: SandraTool = {
       return { success: false, data: null, error: 'No email address associated with your account.' };
     }
 
-    // Enqueue with approval required
-    const result = await enqueueAction({
-      userId,
-      sessionId: context.sessionId,
-      channel: 'web',
-      tool: 'sendGmail',
-      input: {
+    try {
+      const ctx = await resolveGoogleContext(tenantId, senderEmail);
+
+      const result = await sendEmail(ctx, {
         from: senderEmail,
         to: params.to,
         cc: params.cc,
         subject: params.subject,
         body: params.body,
-        context: params.context,
-        tenantId,
-      },
-      requiresApproval: true,
-      metadata: { draftedAt: new Date().toISOString(), senderName: user?.name },
-    });
+      });
 
-    await logAuditEvent({
-      userId,
-      sessionId: context.sessionId,
-      action: 'admin_action',
-      resource: 'sendGmail',
-      details: { to: params.to, subject: params.subject, actionRequestId: result.actionId, tenantId },
-      success: true,
-    }).catch(() => {});
+      await logAuditEvent({
+        userId,
+        sessionId: context.sessionId,
+        action: 'admin_action',
+        resource: 'sendGmail',
+        details: { to: params.to, subject: params.subject, messageId: result.messageId, tenantId },
+        success: true,
+      }).catch(() => {});
 
-    return {
-      success: true,
-      data: {
-        message: `Email draft queued for admin approval. It will be sent from ${senderEmail} once approved.`,
-        actionRequestId: result.actionId,
-        from: senderEmail,
-        to: params.to,
-        subject: params.subject,
-      },
-    };
+      return {
+        success: true,
+        data: {
+          message: `Email sent from ${senderEmail} to ${params.to.join(', ')}.`,
+          messageId: result.messageId,
+          from: senderEmail,
+          to: params.to,
+          subject: params.subject,
+        },
+      };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to send email';
+      return { success: false, data: null, error: msg };
+    }
   },
 };
 

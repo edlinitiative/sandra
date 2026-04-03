@@ -9,6 +9,7 @@ import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForInstagram } from '@/lib/channels/instagram-formatter';
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
+import { db } from '@/lib/db';
 import {
   hasPendingVerification,
   verifyCode,
@@ -191,7 +192,16 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     }
 
     // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
-    const role = wsIdentity ? 'student' : 'guest';
+    // Look up the user's actual TenantMember role so admins get gmail:send etc.
+    let role: 'guest' | 'student' | 'educator' | 'admin' = wsIdentity ? 'student' : 'guest';
+    if (wsIdentity) {
+      const membership = await db.tenantMember.findFirst({
+        where: { userId, isActive: true },
+        select: { role: true },
+      });
+      if (membership?.role === 'admin') role = 'admin';
+      else if (membership?.role === 'manager') role = 'educator';
+    }
     const scopes = getScopesForRole(role);
 
     // Resolve session
