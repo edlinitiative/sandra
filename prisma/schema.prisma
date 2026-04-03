@@ -347,6 +347,7 @@ enum TenantRole {
 enum ProviderType {
   google_workspace
   microsoft_365
+  zoom
   custom_api
 }
 

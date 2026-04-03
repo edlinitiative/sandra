@@ -33,6 +33,8 @@ import './list-contacts';
 import './send-gmail';
 import './draft-gmail';
 import './create-calendar-event';
+import './create-task';
+import './create-zoom-meeting';
 
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';

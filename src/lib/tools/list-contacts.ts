@@ -37,7 +37,7 @@ const inputSchema = z.object({
 const listContacts: SandraTool = {
   name: 'listContacts',
   description:
-    "Search or list people in the organization's directory. Returns names, emails, departments, and titles. Use when users ask about team members, colleagues, or who works in a department.",
+    "Search or list real people in the organization's directory. Returns names, emails, departments, and titles. ONLY returns actual user accounts — NOT distribution lists, mailing groups, or aliases like info@, eslp@, or support@. Use this before creating calendar events or Zoom meetings when the user mentions 'the team', a department, or a person by name, so you have their real email address.",
   parameters: {
     type: 'object',
     properties: {
@@ -95,6 +95,10 @@ const listContacts: SandraTool = {
 
       const contacts = result.users
         .filter((u) => !u.suspended)
+        // Google Directory only returns real user accounts, not Groups.
+        // Extra safety: skip obviously non-personal prefixes that sometimes
+        // appear as shared accounts (noreply, info, support, etc.)
+        .filter((u) => !/^(info|support|noreply|no-reply|hello|contact|admin|billing|eslp|help|team|hr|it|ops|notifications?)@/i.test(u.email))
         .map((u) => ({
           name: u.name,
           email: u.email,

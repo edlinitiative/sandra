@@ -29,6 +29,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'contacts:read',
     'calendar:write',
     'gmail:draft',
+    'tasks:write',
   ],
   educator: [
     'knowledge:read',
@@ -45,6 +46,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'contacts:read',
     'gmail:draft',
     'calendar:write',
+    'tasks:write',
   ],
   admin: [
     'knowledge:read',
@@ -69,6 +71,8 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'gmail:draft',
     'gmail:send',
     'calendar:write',
+    'tasks:write',
+    'zoom:meeting',
   ],
 };
 
@@ -120,6 +124,8 @@ export const PRIVATE_SCOPES = [
   'gmail:draft',
   'gmail:send',
   'calendar:write',
+  'tasks:write',
+  'zoom:meeting',
 ] as const;
 
 /** Check if a tool's required scopes indicate it accesses private user data. */
