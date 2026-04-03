@@ -32,6 +32,7 @@ import './search-drive';
 import './list-contacts';
 import './send-gmail';
 import './draft-gmail';
+import './create-calendar-event';
 
 export type { SandraTool, ToolResult, ToolInfo, ToolContext } from './types';
 export { toolRegistry, getToolRegistry } from './registry';

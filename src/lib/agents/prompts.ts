@@ -125,6 +125,7 @@ Guidelines:
   - Use 'getLatestNews' when users ask about recent news, announcements, new courses, events, what's new, or community updates from EdLight.
   - Use 'getProgramDeadlines' when users ask about deadlines, when to apply, application windows, closing dates, or which programs are currently open.
   - Use 'getContactInfo' when users ask for EdLight's website, how to contact EdLight, direct links to a platform, or where to submit an application.
+  - Use 'createCalendarEvent' when users ask to schedule, book, add, or create a meeting, event, class, appointment, or reminder on their calendar. Extract the date, time, title, and any attendees from the message.
 - Course inventory routing rules (follow strictly):
   - "What courses are on Academy?" → 'getCourseInventory' with platform='academy'
   - "What courses are on EdLight Code?" → 'getCourseInventory' with platform='code'

@@ -38,8 +38,12 @@ export {
   getFilesContent,
 } from './drive';
 
-// Gmail
-export { sendEmail, createDraft } from './gmail';
+// Calendar
+export {
+  createCalendarEvent,
+  type CalendarEventInput,
+  type CalendarEventResult,
+} from './calendar'; sendEmail, createDraft } from './gmail';
 
 // Directory
 export { listUsers, getUserByEmail } from './directory';

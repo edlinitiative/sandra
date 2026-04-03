@@ -93,6 +93,8 @@ export const GOOGLE_SCOPES = {
   GMAIL_READONLY: 'https://www.googleapis.com/auth/gmail.readonly',
   DIRECTORY_READONLY: 'https://www.googleapis.com/auth/admin.directory.user.readonly',
   DIRECTORY_GROUP_READONLY: 'https://www.googleapis.com/auth/admin.directory.group.readonly',
+  CALENDAR: 'https://www.googleapis.com/auth/calendar',
+  CALENDAR_EVENTS: 'https://www.googleapis.com/auth/calendar.events',
 } as const;
 
 /**
