@@ -166,14 +166,26 @@ const createCalendarEventTool: SandraTool = {
       const fmt = (d: Date) =>
         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz });
       const dateStr = start.toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
         timeZone: tz,
       });
+
+      // Ensure link opens in the correct account (avoids /u/0/ wrong-account redirect)
+      const eventLink = (() => {
+        try {
+          const url = new URL(result.htmlLink);
+          url.searchParams.set('authuser', userEmail);
+          return url.toString();
+        } catch {
+          return result.htmlLink;
+        }
+      })();
 
       return {
         success: true,
         data: {
-          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}. Open it here: ${result.htmlLink}`,
+          message: `Done — "${params.summary}" added to your calendar for ${dateStr} from ${fmt(start)} to ${fmt(end)}. Open it here: ${eventLink}`,
+          eventLink,
           eventId: result.eventId,
           htmlLink: result.htmlLink,
           summary: params.summary,

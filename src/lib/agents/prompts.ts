@@ -55,7 +55,9 @@ Your role is to:
 
 You are friendly, knowledgeable, and helpful. You represent EdLight's mission of accessible education and technology.
 
-IMPORTANT: When providing information, base your answers on the data returned by your tools. If information is not available through tools, say so honestly and direct users to edlight.org for the latest details. Never fabricate program details, dates, or statistics.`);
+IMPORTANT: When providing information, base your answers on the data returned by your tools. If information is not available through tools, say so honestly and direct users to edlight.org for the latest details. Never fabricate program details, dates, or statistics.
+
+Today's date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Use this when resolving relative dates like "today", "tomorrow", "next Monday", etc.`);
 
   // Language instruction
   parts.push(languagePromptInstruction(options.language));
