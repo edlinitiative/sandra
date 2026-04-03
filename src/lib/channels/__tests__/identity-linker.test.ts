@@ -32,6 +32,12 @@ vi.mock('@/lib/db', () => ({
     user: {
       update: vi.fn().mockResolvedValue({}),
     },
+    tenant: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'tenant-1' }),
+    },
+    tenantMember: {
+      upsert: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 
@@ -220,6 +226,29 @@ describe('linkWorkspaceIdentity', () => {
     );
     expect(linkedCall).toBeTruthy();
     expect((linkedCall![1] as { value: string }).value).toBe('true');
+  });
+
+  it('upserts a TenantMember record after linking', async () => {
+    const { db } = await import('@/lib/db');
+    const user = makeUser({ email: 'rony@edlight.org', name: 'Rony Francillon' });
+    await linkWorkspaceIdentity('user-1', user);
+
+    expect((db.tenant.findFirst as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { domain: 'edlight.org' } }),
+    );
+    expect((db.tenantMember.upsert as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ userId: 'user-1', role: 'basic', isActive: true }),
+        update: { isActive: true },
+      }),
+    );
+  });
+
+  it('does not throw if tenant is not found', async () => {
+    const { db } = await import('@/lib/db');
+    (db.tenant.findFirst as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+    const user = makeUser({ email: 'rony@edlight.org', name: 'Rony Francillon' });
+    await expect(linkWorkspaceIdentity('user-1', user)).resolves.toBeUndefined();
   });
 });
 

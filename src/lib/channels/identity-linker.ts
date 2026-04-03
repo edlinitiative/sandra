@@ -218,6 +218,29 @@ export async function linkWorkspaceIdentity(
     log.warn('Failed to update user email', { userId, error: err instanceof Error ? err.message : 'unknown' });
   });
 
+  // Ensure the user has a TenantMember record so they can use Workspace tools.
+  // Look up the tenant by the email domain (e.g. rony@edlight.org → edlight.org).
+  const domain = workspaceUser.email.split('@')[1];
+  if (domain) {
+    const tenant = await db.tenant.findFirst({
+      where: { domain },
+      select: { id: true },
+    }).catch(() => null);
+
+    if (tenant) {
+      await db.tenantMember.upsert({
+        where: { tenantId_userId: { tenantId: tenant.id, userId } },
+        create: { tenantId: tenant.id, userId, role: 'basic', isActive: true },
+        update: { isActive: true },
+      }).catch((err) => {
+        log.warn('Failed to upsert tenant membership', { userId, tenantId: tenant.id, error: err instanceof Error ? err.message : 'unknown' });
+      });
+      log.info('Ensured tenant membership', { userId, tenantId: tenant.id, domain });
+    } else {
+      log.warn('No tenant found for domain — Workspace tools may be unavailable', { userId, domain });
+    }
+  }
+
   log.info('Linked Workspace identity', {
     userId,
     email: workspaceUser.email,
