@@ -186,10 +186,13 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
       metadata: {
         whatsappMessageId: message.id,
         phoneNumberId: value.metadata.phone_number_id,
+        businessPhoneNumber: value.metadata.display_phone_number,
         displayName: contact?.profile?.name ?? null,
         messageType: message.type,
         isGroup,
         groupId,
+        contextFrom: message.context?.from ?? null,
+        contextMessageId: message.context?.id ?? null,
       },
     };
   }

@@ -93,4 +93,33 @@ export function buildGroupSessionId(groupId: string): string {
   return `whatsapp-group:${groupId}`;
 }
 
+// ─── Reply Detection ─────────────────────────────────────────────────────────
+
+/**
+ * Check whether a group message is a reply to a message Sandra sent.
+ *
+ * WhatsApp includes `context.from` (the phone number of the original sender)
+ * when someone replies to a specific message. If that matches Sandra's business
+ * phone number, the user is replying directly to Sandra.
+ */
+export function isReplyToSandra(metadata: Record<string, unknown> | undefined): boolean {
+  if (!metadata) return false;
+
+  const contextFrom = metadata.contextFrom as string | null | undefined;
+  const businessPhone = metadata.businessPhoneNumber as string | null | undefined;
+
+  if (!contextFrom || !businessPhone) return false;
+
+  // Normalize to digits-only for comparison
+  const normContext = contextFrom.replace(/[^\d]/g, '');
+  const normBusiness = businessPhone.replace(/[^\d]/g, '');
+
+  if (!normContext || !normBusiness) return false;
+
+  // Exact or suffix match (handles country code differences)
+  return normContext === normBusiness
+    || normContext.endsWith(normBusiness)
+    || normBusiness.endsWith(normContext);
+}
+
 log.info('WhatsApp group chat module loaded');

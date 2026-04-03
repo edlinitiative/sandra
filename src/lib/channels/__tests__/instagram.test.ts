@@ -191,6 +191,55 @@ describe('InstagramChannelAdapter', () => {
       ).rejects.toThrow('Instagram API error: Invalid recipient');
     });
   });
+
+  describe('fetchSenderProfile()', () => {
+    it('returns name and username from Graph API', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ name: 'Ted Jacquet', username: 'tedjacquet' }),
+      });
+
+      const profile = await adapter.fetchSenderProfile('psid-12345');
+      expect(profile).toEqual({ name: 'Ted Jacquet', username: 'tedjacquet' });
+      expect(mockFetch).toHaveBeenCalledOnce();
+      const [url] = mockFetch.mock.calls[0]! as [string];
+      expect(url).toContain('fields=name,username');
+    });
+
+    it('returns null values when API returns partial data', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ name: 'Ted' }),
+      });
+
+      const profile = await adapter.fetchSenderProfile('psid-12345');
+      expect(profile).toEqual({ name: 'Ted', username: null });
+    });
+
+    it('returns null values on API error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 400 });
+
+      const profile = await adapter.fetchSenderProfile('psid-12345');
+      expect(profile).toEqual({ name: null, username: null });
+    });
+
+    it('returns null values on network error', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const profile = await adapter.fetchSenderProfile('psid-12345');
+      expect(profile).toEqual({ name: null, username: null });
+    });
+
+    it('fetchSenderName delegates to fetchSenderProfile', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ name: 'Rony', username: 'ronyf' }),
+      });
+
+      const name = await adapter.fetchSenderName('psid-99');
+      expect(name).toBe('Rony');
+    });
+  });
 });
 
 describe('extractInstagramMessaging', () => {

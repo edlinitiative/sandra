@@ -8,7 +8,7 @@ import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
-import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext } from '@/lib/channels/whatsapp-group';
+import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext, isReplyToSandra } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
 import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import {
@@ -294,18 +294,22 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
     content,
   });
 
-  // Only respond if Sandra is mentioned
-  if (!isSandraMentioned(content)) {
-    log.info('Group message stored (Sandra not mentioned)', {
+// Respond if Sandra is mentioned OR if the message is a reply to Sandra
+    const mentioned = isSandraMentioned(content);
+    const repliedToSandra = isReplyToSandra(inbound.metadata);
+
+    if (!mentioned && !repliedToSandra) {
+      log.info('Group message stored (Sandra not mentioned/replied-to)', {
+        from: `${phoneNumber.slice(0, 4)}****`,
+        groupId: `${groupId.slice(0, 8)}...`,
+      });
+      return;
+    }
+
+    log.info('Sandra triggered in group — generating response', {
       from: `${phoneNumber.slice(0, 4)}****`,
       groupId: `${groupId.slice(0, 8)}...`,
-    });
-    return;
-  }
-
-  log.info('Sandra mentioned in group — generating response', {
-    from: `${phoneNumber.slice(0, 4)}****`,
-    groupId: `${groupId.slice(0, 8)}...`,
+      trigger: mentioned ? 'mention' : 'reply',
   });
 
   // Show typing indicator in the group

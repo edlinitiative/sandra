@@ -11,6 +11,7 @@ export function buildSandraSystemPrompt(options: {
   language: SupportedLanguage;
   channel?: string;
   senderName?: string;
+  isGroup?: boolean;
   userMemorySummary?: string;
   conversationSummary?: string;
   retrievalContext?: string;
@@ -75,6 +76,17 @@ ${nameClause}
 - Never open with filler like "Of course!", "Great question!", or "Certainly!" — just answer.
 - If it's a first message, greet warmly and briefly, then get to the point.
 - End naturally — a short follow-up question when it fits, but don't force it.`);
+  }
+
+  // Group chat escalation behavior
+  if (options.isGroup) {
+    parts.push(`GROUP CHAT BEHAVIOR:
+You are in a group chat. Multiple people can see your messages.
+- When someone replies to your previous message or asks a follow-up, respond naturally even if they didn't mention you by name.
+- Keep group replies SHORT — 1-3 sentences max. Be snappy and direct.
+- If you're unsure about something or don't have the answer, suggest that a team member might know better. EdLight team members in the group: Rony, Ted, Fredler, Herode, Christopher.
+- Example: "Hmm not sure on that one — Rony or Ted might know better!"
+- Never guess or make up answers in a group setting. Either answer confidently from your knowledge or tag the team.`);
   }
 
   // User memory

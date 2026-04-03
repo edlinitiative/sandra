@@ -74,6 +74,7 @@ export interface VerificationStartResult {
 export async function startEmailVerification(
   userId: string,
   claimedEmail: string,
+  channel: 'whatsapp' | 'instagram' = 'whatsapp',
 ): Promise<VerificationStartResult> {
   const email = claimedEmail.toLowerCase().trim();
   log.info('Starting email verification', { userId, email });
@@ -111,7 +112,7 @@ export async function startEmailVerification(
         '',
         `Your verification code is: ${code}`,
         '',
-        'Enter this code in your WhatsApp chat with Sandra to link your account.',
+        `Enter this code in your ${channel === 'instagram' ? 'Instagram' : 'WhatsApp'} chat with Sandra to link your account.`,
         '',
         'This code expires in 10 minutes.',
         '',

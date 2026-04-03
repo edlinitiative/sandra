@@ -8,6 +8,14 @@ import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { splitForInstagram } from '@/lib/channels/instagram-formatter';
+import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
+import {
+  hasPendingVerification,
+  verifyCode,
+  startEmailVerification,
+  extractVerificationCode,
+} from '@/lib/channels/email-verification';
+import { getUserMemoryStore } from '@/lib/memory/user-memory';
 
 const log = createLogger('api:webhooks:instagram');
 
@@ -86,12 +94,15 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     const { channelUserId: psid, content, metadata } = inbound;
     const pageId = metadata?.pageId as string | undefined;
 
-    // Fetch sender's name for personalised responses (best-effort)
-    const senderName = await adapter.fetchSenderName(psid);
+    // Fetch sender's profile (name + username) for personalised responses
+    const profile = await adapter.fetchSenderProfile(psid);
+    const senderName = profile.name;
+    const igUsername = profile.username;
 
     log.info('Processing Instagram inbound DM', {
       from: `${psid.slice(0, 4)}****`,
       senderName: senderName ?? 'unknown',
+      igUsername: igUsername ?? 'unknown',
       requestId,
     });
 
@@ -102,10 +113,86 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     const identity = await resolveChannelIdentity({
       channel: 'instagram',
       externalId: psid,
-      metadata: { requestId },
+      displayName: senderName ?? igUsername ?? undefined,
+      metadata: { requestId, igUsername },
     });
 
     const userId = identity.userId;
+
+    // Save Instagram username to user memory (best-effort)
+    if (igUsername) {
+      void saveInstagramUsername(userId, igUsername);
+    }
+
+    // Check if this IG user is already linked to a Workspace identity
+    const wsIdentity = await getWorkspaceIdentity(userId).catch(() => null);
+    let resolvedName = wsIdentity?.name ?? senderName ?? igUsername ?? undefined;
+
+    if (wsIdentity) {
+      log.info('Workspace identity linked (Instagram)', { userId, email: wsIdentity.email });
+    }
+
+    // ── EMAIL VERIFICATION INTERCEPTORS ──────────────────────────────────
+
+    // 1. If user has a pending verification, check if this message is a code
+    const pendingVerification = await hasPendingVerification(userId);
+    if (pendingVerification) {
+      const codeCandidate = extractVerificationCode(content);
+      if (codeCandidate) {
+        const result = await verifyCode(userId, codeCandidate);
+        if (result.success) {
+          resolvedName = result.name ?? resolvedName;
+          await adapter.send({
+            channelType: 'instagram',
+            recipientId: psid,
+            content: `✅ Verified! You're linked as ${result.name} (${result.email}). I'll remember you from now on.`,
+            language: 'en',
+            metadata: { pageId },
+          });
+        } else {
+          await adapter.send({
+            channelType: 'instagram',
+            recipientId: psid,
+            content: result.error ?? 'Verification failed.',
+            language: 'en',
+            metadata: { pageId },
+          });
+        }
+        return; // Don't process further — this was a verification interaction
+      }
+      // Not a code — fall through to normal processing
+    }
+
+    // 2. Check if message contains an email claim → start verification flow
+    if (!wsIdentity) {
+      const claimedEmail = detectEmailClaim(content);
+      if (claimedEmail) {
+        log.info('Email claim detected on Instagram, starting verification', { userId, claimedEmail });
+        const result = await startEmailVerification(userId, claimedEmail, 'instagram');
+        if (result.success) {
+          await adapter.send({
+            channelType: 'instagram',
+            recipientId: psid,
+            content: `I sent a verification code to ${result.maskedEmail}. Reply with the 6-digit code to link your account.`,
+            language: 'en',
+            metadata: { pageId },
+          });
+        } else {
+          await adapter.send({
+            channelType: 'instagram',
+            recipientId: psid,
+            content: result.error ?? 'Could not start verification.',
+            language: 'en',
+            metadata: { pageId },
+          });
+        }
+        return; // Don't process further
+      }
+    }
+
+    // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
+    const role = wsIdentity ? 'student' : 'guest';
+    const scopes = getScopesForRole(role);
 
     // Resolve session
     const session = await getOrCreateSessionForChannel({
@@ -119,17 +206,16 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
 
     await ensureSessionContinuity({ sessionId, channel: 'instagram', language, userId });
 
-    const scopes = getScopesForRole('guest');
     const result = await runSandraAgent({
       message: content,
       sessionId,
       userId,
       language,
       channel: 'instagram',
-      senderName: senderName ?? undefined,
+      senderName: resolvedName,
       attachments: inbound.attachments,
       scopes,
-      metadata: { requestId, source: 'instagram', psid },
+      metadata: { requestId, source: 'instagram', psid, igUsername, workspaceEmail: wsIdentity?.email },
     });
 
     // Send reply — split into 1000-char chunks
@@ -156,5 +242,27 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     });
   } finally {
     clearCorrelationId();
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const IG_USERNAME_KEY = 'instagram_username';
+
+/**
+ * Save the Instagram username to user memory for future reference.
+ */
+async function saveInstagramUsername(userId: string, username: string): Promise<void> {
+  try {
+    const store = getUserMemoryStore();
+    await store.saveMemory(userId, {
+      key: IG_USERNAME_KEY,
+      value: username,
+      source: 'instagram_profile',
+      confidence: 1.0,
+      updatedAt: new Date(),
+    });
+  } catch {
+    // best-effort — don't break the flow
   }
 }
