@@ -32,6 +32,15 @@ const config: Config = {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
+      animation: {
+        soundwave: 'soundwave 1.2s ease-in-out infinite',
+      },
+      keyframes: {
+        soundwave: {
+          '0%, 100%': { transform: 'scaleY(0.2)' },
+          '50%':       { transform: 'scaleY(1)'   },
+        },
+      },
     },
   },
   plugins: [typography],

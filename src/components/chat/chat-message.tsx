@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
@@ -7,6 +9,10 @@ interface ChatMessageProps {
   isLoading?: boolean;
   followUps?: string[];
   onFollowUp?: (message: string) => void;
+  /** Client-assigned UUID for this response — used to link feedback */
+  messageId?: string;
+  /** Callback when user rates this response */
+  onFeedback?: (messageId: string, rating: 'up' | 'down') => void;
 }
 
 /**
@@ -32,7 +38,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       nodes.push(
         <pre
           key={i}
-          className="my-2 overflow-x-auto rounded-lg bg-gray-800 px-4 py-3 text-xs text-green-300"
+          className="my-2 overflow-x-auto rounded-lg border border-white/[0.07] bg-black/60 px-4 py-3 text-xs text-green-400"
         >
           <code>{codeLines.join('\n')}</code>
         </pre>,
@@ -97,7 +103,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     // Horizontal rule
     if (line.match(/^---+$/)) {
-      nodes.push(<hr key={i} className="my-2 border-gray-300" />);
+      nodes.push(<hr key={i} className="my-2 border-white/10" />);
       i++;
       continue;
     }
@@ -135,14 +141,14 @@ function inlineMarkdown(text: string): React.ReactNode {
       parts.push(<em key={match.index}>{match[3]}</em>);
     } else if (match[4]) {
       parts.push(
-        <code key={match.index} className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs text-gray-800">
+        <code key={match.index} className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-sandra-300 border border-white/[0.08]">
           {match[4]}
         </code>,
       );
     } else if (match[5] && match[6]) {
       parts.push(
         <a key={match.index} href={match[6]} target="_blank" rel="noopener noreferrer"
-          className="underline decoration-dotted hover:decoration-solid">
+          className="text-sandra-400 underline decoration-dotted hover:decoration-solid">
           {match[5]}
         </a>,
       );
@@ -160,9 +166,18 @@ export function ChatMessage({
   isLoading,
   followUps,
   onFollowUp,
+  messageId,
+  onFeedback,
 }: ChatMessageProps) {
   const isUser = role === 'user';
   const showFollowUps = !isUser && followUps && followUps.length > 0 && !isLoading;
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+
+  function handleFeedback(rating: 'up' | 'down') {
+    if (feedback || !messageId || !onFeedback) return;
+    setFeedback(rating);
+    onFeedback(messageId, rating);
+  }
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -170,8 +185,8 @@ export function ChatMessage({
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
           isUser
-            ? 'bg-gray-200 text-gray-600'
-            : 'bg-gradient-to-br from-sandra-500 to-sandra-700 text-white'
+            ? 'bg-slate-700 text-slate-300'
+            : 'bg-gradient-to-br from-sandra-500 to-sandra-700 text-white glow-blue-sm animate-glow-pulse'
         }`}
       >
         {isUser ? 'U' : 'S'}
@@ -182,15 +197,15 @@ export function ChatMessage({
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             isUser
-              ? 'bg-sandra-600 text-white rounded-br-md'
-              : 'bg-gray-100 text-gray-900 rounded-bl-md'
+              ? 'rounded-br-sm bg-white/[0.08] border border-white/[0.10] text-slate-100'
+              : 'rounded-bl-sm glass border-l-2 border-l-sandra-500/50 text-slate-200'
           }`}
         >
           {isLoading ? (
             <div className="flex items-center gap-1 py-1">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '150ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '300ms' }} />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '0ms' }} />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '150ms' }} />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '300ms' }} />
             </div>
           ) : isUser ? (
             <div className="whitespace-pre-wrap">{content}</div>
@@ -200,9 +215,45 @@ export function ChatMessage({
         </div>
 
         {timestamp && (
-          <p className={`text-xs text-gray-400 ${isUser ? 'text-right' : ''}`}>
+          <p className={`text-xs text-slate-600 ${isUser ? 'text-right' : ''}`}>
             {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
+        )}
+
+        {/* Feedback thumbs — only on non-loading assistant messages */}
+        {!isUser && !isLoading && messageId && onFeedback && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleFeedback('up')}
+              disabled={!!feedback}
+              title="Helpful"
+              aria-label="Mark as helpful"
+              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                feedback === 'up'
+                  ? 'border-green-300 bg-green-50 text-green-700'
+                  : feedback
+                    ? 'cursor-default border-gray-100 text-gray-300'
+                    : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'
+              }`}
+            >
+              👍{feedback === 'up' && <span className="ml-0.5">Thanks!</span>}
+            </button>
+            <button
+              onClick={() => handleFeedback('down')}
+              disabled={!!feedback}
+              title="Not helpful"
+              aria-label="Mark as not helpful"
+              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                feedback === 'down'
+                  ? 'border-red-200 bg-red-50 text-red-600'
+                  : feedback
+                    ? 'cursor-default border-gray-100 text-gray-300'
+                    : 'border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-500'
+              }`}
+            >
+              👎{feedback === 'down' && <span className="ml-0.5">Noted!</span>}
+            </button>
+          </div>
         )}
 
         {/* Follow-up suggestion chips */}
@@ -212,7 +263,7 @@ export function ChatMessage({
               <button
                 key={q}
                 onClick={() => onFollowUp?.(q)}
-                className="rounded-full border border-sandra-200 bg-white px-3 py-1 text-xs text-sandra-700 shadow-sm transition-all hover:border-sandra-400 hover:bg-sandra-50 active:scale-95"
+                className="rounded-full border border-sandra-500/30 bg-white/[0.03] px-3 py-1 text-xs text-sandra-400 shadow-sm transition-all hover:border-sandra-400/60 hover:bg-sandra-500/10 hover:text-sandra-300 active:scale-95"
               >
                 {q}
               </button>

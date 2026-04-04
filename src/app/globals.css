@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --background: #ffffff;
-    --foreground: #111827;
+    --background: #030b14;
+    --foreground: #e2e8f0;
   }
 
   html {
@@ -19,22 +19,108 @@
   }
 }
 
+/* ── Keyframes ─────────────────────────────────────────────── */
+
+@keyframes soundwave {
+  0%, 100% { transform: scaleY(0.2); }
+  50%       { transform: scaleY(1);   }
+}
+
+@keyframes ring-out {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.8); opacity: 0;   }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(56, 157, 246, 0.3),
+                0 0 24px rgba(56, 157, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(56, 157, 246, 0.7),
+                0 0 56px rgba(56, 157, 246, 0.3);
+  }
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-8px); }
+}
+
+/* ── Utilities ─────────────────────────────────────────────── */
+
 @layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent;
+  /* Cyber grid background */
+  .cyber-grid {
+    background-image:
+      linear-gradient(rgba(56, 157, 246, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 157, 246, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-    border-radius: 3px;
+  /* Neon glow */
+  .glow-blue-sm {
+    box-shadow: 0 0 12px rgba(56, 157, 246, 0.45);
   }
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(56, 157, 246, 0.55),
+                0 0 40px rgba(56, 157, 246, 0.2);
+  }
+  .glow-blue-lg {
+    box-shadow: 0 0 40px rgba(56, 157, 246, 0.65),
+                0 0 80px rgba(56, 157, 246, 0.3);
+  }
+  .glow-green {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
+                0 0 40px rgba(34, 197, 94, 0.2);
+  }
+  .glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5),
+                0 0 40px rgba(239, 68, 68, 0.2);
+  }
+
+  /* Custom animations */
+  .animate-glow-pulse    { animation: glow-pulse  2s   ease-in-out infinite; }
+  .animate-orb-float     { animation: orb-float   6s   ease-in-out infinite; }
+  .animate-ring-out      { animation: ring-out    2.2s ease-out     infinite; }
+  .animate-ring-out-delayed {
+    animation: ring-out 2.2s ease-out 0.85s infinite;
+  }
+
+  /* Soundwave bar — use with inline animationDelay style */
+  .soundwave-bar {
+    transform-origin: center;
+    animation: soundwave 1.2s ease-in-out infinite;
+  }
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 157, 246, 0.2) transparent;
+}
+*::-webkit-scrollbar       { width: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(56, 157, 246, 0.2);
+  border-radius: 2px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 157, 246, 0.4);
 }

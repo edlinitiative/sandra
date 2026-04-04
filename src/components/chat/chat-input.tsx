@@ -122,11 +122,11 @@ export function ChatInput({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
+    <div className="glass border-t border-white/[0.06] px-3 py-3 sm:px-4 sm:py-4">
       {voiceError && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-1.5 text-xs text-red-600">
+        <div className="mb-2 flex items-center justify-between rounded-lg bg-red-900/20 border border-red-500/20 px-3 py-1.5 text-xs text-red-400">
           <span>{voiceError}</span>
-          <button type="button" onClick={() => setVoiceError(null)} className="ml-2 text-red-400 hover:text-red-600">✕</button>
+          <button type="button" onClick={() => setVoiceError(null)} className="ml-2 text-red-500 hover:text-red-300">✕</button>
         </div>
       )}
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
@@ -138,7 +138,7 @@ export function ChatInput({
             placeholder={isRecording ? '🔴 Recording… tap ■ to stop' : (placeholder ?? 'Message Sandra…')}
             rows={1}
             disabled={isLoading || isRecording || isVoiceLoading}
-            className="w-full resize-none rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-400 focus:border-sandra-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sandra-500/20 disabled:opacity-50"
+            className="w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 pr-12 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sandra-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-sandra-500/20 disabled:opacity-40"
             style={{ maxHeight: '120px' }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -155,12 +155,12 @@ export function ChatInput({
             onClick={handleMicClick}
             disabled={isLoading || isVoiceLoading}
             title={isRecording ? 'Stop recording' : 'Record voice message'}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all disabled:opacity-50 ${
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all disabled:opacity-40 ${
               isRecording
-                ? 'animate-pulse bg-red-500 text-white hover:bg-red-600'
+                ? 'animate-pulse bg-red-500/90 text-white glow-red'
                 : isVoiceLoading
-                ? 'cursor-wait bg-gray-100 text-gray-400'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'cursor-wait bg-white/[0.04] text-slate-600'
+                : 'bg-white/[0.06] text-slate-400 hover:bg-white/[0.1] hover:text-slate-200'
             }`}
           >
             {isVoiceLoading ? (
@@ -186,7 +186,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={!input.trim() || isLoading || isRecording || isVoiceLoading}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sandra-600 text-white shadow-sm transition-all hover:bg-sandra-700 disabled:opacity-50 disabled:hover:bg-sandra-600"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sandra-500 to-sandra-700 text-white shadow-sm transition-all glow-blue-sm hover:glow-blue disabled:opacity-40 disabled:hover:glow-blue-sm"
         >
           {isLoading ? (
             <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">

@@ -2,14 +2,14 @@
 
 /** Map internal tool names to user-friendly labels */
 const TOOL_LABELS: Record<string, string> = {
-  searchKnowledgeBase: 'Searching knowledge base',
-  getEdLightInitiatives: 'Looking up EdLight platforms',
-  lookupRepoInfo: 'Looking up repositories',
-  getCourseInventory: 'Looking up courses',
-  getProgramsAndScholarships: 'Looking up programs',
-  getLatestNews: 'Checking latest news',
-  getProgramDeadlines: 'Checking deadlines',
-  getContactInfo: 'Looking up contact info',
+  searchKnowledgeBase:       'Searching knowledge base',
+  getEdLightInitiatives:     'Looking up EdLight platforms',
+  lookupRepoInfo:            'Looking up repositories',
+  getCourseInventory:        'Looking up courses',
+  getProgramsAndScholarships:'Looking up programs',
+  getLatestNews:             'Checking latest news',
+  getProgramDeadlines:       'Checking deadlines',
+  getContactInfo:            'Looking up contact info',
 };
 
 interface StreamingMessageProps {
@@ -19,30 +19,52 @@ interface StreamingMessageProps {
 
 export function StreamingMessage({ content, activeToolCall }: StreamingMessageProps) {
   const toolLabel = activeToolCall ? (TOOL_LABELS[activeToolCall] ?? 'Working') : null;
+  const DELAYS = [0, 120, 240, 120, 0];
+  const MINI_DELAYS = [0, 150, 300];
 
   return (
     <div className="flex gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700 text-xs font-bold text-white">
+      {/* Sandra orb avatar */}
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700 text-xs font-bold text-white glow-blue-sm animate-glow-pulse">
         S
       </div>
+
       <div className="max-w-[80%] items-start">
+        {/* Tool call status with mini soundwave */}
         {toolLabel && (
-          <div className="mb-1.5 flex items-center gap-1.5 text-xs text-sandra-600">
-            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+          <div className="mb-1.5 flex items-center gap-2 text-xs text-sandra-400">
+            <div className="flex h-3 items-center gap-[2px]">
+              {MINI_DELAYS.map((delay, i) => (
+                <div
+                  key={i}
+                  className="w-[2px] h-full rounded-full bg-sandra-400 soundwave-bar"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </div>
             <span>{toolLabel}…</span>
           </div>
         )}
-        <div className="rounded-2xl rounded-bl-md bg-gray-100 px-4 py-2.5 text-sm leading-relaxed text-gray-900">
+
+        {/* Message bubble */}
+        <div className="rounded-2xl rounded-bl-sm glass border-l-2 border-l-sandra-500/50 px-4 py-2.5 text-sm leading-relaxed text-slate-200">
           {content ? (
             <>
               <span className="whitespace-pre-wrap">{content}</span>
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-gray-500 align-middle" />
+              {/* Neon blinking cursor */}
+              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-sandra-400 align-middle" />
             </>
           ) : (
-            <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-gray-500 align-middle" />
+            /* Soundwave when waiting for content */
+            <div className="flex h-5 items-center gap-[3px]">
+              {DELAYS.map((delay, i) => (
+                <div
+                  key={i}
+                  className="w-[3px] h-full rounded-full bg-sandra-500/70 soundwave-bar"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>

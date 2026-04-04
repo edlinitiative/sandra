@@ -7,6 +7,7 @@ export type {
   ResponseGeneratedEvent,
   SessionStartedEvent,
   CacheHitEvent,
+  ResponseFeedbackEvent,
   AnalyticsSummary,
 } from './types';
 

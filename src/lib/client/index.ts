@@ -1,2 +1,2 @@
-export { sendMessage, streamMessage, getConversation } from './chat-api';
-export type { ChatMessage, SendMessageParams, SendMessageResult, StreamMessageParams, StreamMessageResult } from './chat-api';
+export { sendMessage, streamMessage, getConversation, submitFeedback } from './chat-api';
+export type { ChatMessage, SendMessageParams, SendMessageResult, StreamMessageParams, StreamMessageResult, FeedbackParams } from './chat-api';

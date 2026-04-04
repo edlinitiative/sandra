@@ -39,6 +39,13 @@ export interface StreamMessageResult {
   suggestedFollowUps: string[];
 }
 
+export interface FeedbackParams {
+  sessionId: string;
+  messageRef: string;
+  rating: 'up' | 'down';
+  comment?: string;
+}
+
 /**
  * Send a message via the non-streaming /api/chat endpoint.
  */
@@ -176,4 +183,26 @@ export async function getConversation(sessionId: string): Promise<{
   }
 
   return json.data as { sessionId: string; language?: string | null; messages: ChatMessage[] };
+}
+export interface FeedbackParams {
+  sessionId: string;
+  messageRef: string;
+  rating: 'up' | 'down';
+  comment?: string;
+}
+
+/**
+ * Submit a thumbs-up or thumbs-down rating for a Sandra response.
+ * Fire-and-forget: errors are swallowed — feedback must never break the UI.
+ */
+export async function submitFeedback(params: FeedbackParams): Promise<void> {
+  try {
+    await fetch('/api/chat/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+  } catch {
+    // Feedback is best-effort — never throw
+  }
 }

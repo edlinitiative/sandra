@@ -10,7 +10,7 @@ import { LanguageSelector } from './language-selector';
 import { VoiceConversation } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
-import { streamMessage, getConversation } from '@/lib/client';
+import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
 
 type Language = 'en' | 'fr' | 'ht';
 
@@ -90,6 +90,10 @@ export function ChatContainer() {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const handleFeedback = useCallback((messageId: string, rating: 'up' | 'down') => {
+    void submitFeedback({ sessionId, messageRef: messageId, rating });
+  }, [sessionId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -212,9 +216,13 @@ export function ChatContainer() {
   }, []);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#030b14] cyber-grid">
+      {/* Ambient glow overlays */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_-5%,rgba(56,157,246,0.08),transparent)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_90%_90%,rgba(34,211,238,0.04),transparent)]" />
+
       {/* Header bar — language selector + live voice button */}
-      <div className="flex items-center justify-between border-b border-gray-100 bg-white/80 px-4 py-2 backdrop-blur">
+      <div className="relative z-10 flex items-center justify-between border-b border-white/[0.06] glass px-4 py-2.5">
         <VoiceConversation
           sessionId={storedSessionId ?? undefined}
           language={language}
@@ -225,11 +233,11 @@ export function ChatContainer() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative z-10 flex-1 overflow-y-auto">
         {messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} />
         ) : (
-          <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+          <div className="mx-auto max-w-3xl space-y-5 px-3 py-5 sm:px-4 sm:py-6">
             {messages.map((msg) => (
               <ChatMessage
                 key={msg.id}
@@ -238,6 +246,8 @@ export function ChatContainer() {
                 timestamp={msg.timestamp}
                 followUps={msg.followUps}
                 onFollowUp={handleSend}
+                messageId={msg.role === 'assistant' ? msg.id : undefined}
+                onFeedback={msg.role === 'assistant' ? handleFeedback : undefined}
               />
             ))}
             {isLoading && streamingContent === null && !activeToolCall && <TypingIndicator />}
@@ -251,13 +261,13 @@ export function ChatContainer() {
 
       {/* Error banner */}
       {error && (
-        <div className="border-t border-red-200 bg-red-50 px-4 py-2 text-center text-sm text-red-700">
+        <div className="relative z-10 border-t border-red-500/20 bg-red-900/20 px-4 py-2 text-center text-sm text-red-400">
           {error}
         </div>
       )}
 
       {/* Input area */}
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="relative z-10 mx-auto w-full max-w-3xl">
         <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
       </div>
     </div>

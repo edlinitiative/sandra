@@ -318,6 +318,24 @@ model ChannelIdentity {
   @@index([channel])
 }
 
+// ── Response Feedback ─────────────────────────────────────────────────────────
+
+model MessageFeedback {
+  id          String   @id @default(cuid())
+  sessionId   String
+  userId      String?
+  messageRef  String   // Client-assigned UUID for the response message
+  rating      String   // 'up' | 'down'
+  comment     String?  // Optional free-text from user
+  metadata    Json?    // e.g. toolsUsed, retrievalUsed, responseSnippet
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
 // ── Analytics Events ─────────────────────────────────────────────────────────
 
 model AnalyticsEvent {

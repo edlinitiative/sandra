@@ -8,7 +8,8 @@ export type AnalyticsEventType =
   | 'tool_executed'
   | 'retrieval_completed'
   | 'response_generated'
-  | 'cache_hit';
+  | 'cache_hit'
+  | 'response_feedback';
 
 /** Base shape shared by all events */
 export interface BaseAnalyticsEvent {
@@ -83,13 +84,24 @@ export interface CacheHitEvent extends BaseAnalyticsEvent {
   };
 }
 
+/** User rated a Sandra response as helpful or not */
+export interface ResponseFeedbackEvent extends BaseAnalyticsEvent {
+  eventType: 'response_feedback';
+  data: {
+    rating: 'up' | 'down';
+    hasComment: boolean;
+    messageRef: string;
+  };
+}
+
 export type AnalyticsEvent =
   | MessageSentEvent
   | ToolExecutedEvent
   | RetrievalCompletedEvent
   | ResponseGeneratedEvent
   | SessionStartedEvent
-  | CacheHitEvent;
+  | CacheHitEvent
+  | ResponseFeedbackEvent;
 
 // ─── Query result types ───────────────────────────────────────────────────────
 
