@@ -57,3 +57,13 @@ export async function rejectCall(callId: string): Promise<void> {
     action: 'reject',
   })
 }
+
+/** Send a plain-text WhatsApp message to a phone number. */
+export async function sendWhatsAppMessage(to: string, text: string): Promise<void> {
+  await post(`/${config.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'text',
+    text: { body: text },
+  })
+}

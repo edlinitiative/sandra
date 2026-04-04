@@ -27,8 +27,16 @@ const schema = z.object({
         'You speak warmly and naturally on phone calls. ' +
         'Help callers with questions about EdLight programs, enrollment, coaching, and services. ' +
         'Be concise — this is a live phone call. Keep answers under 3 sentences unless more detail is truly needed. ' +
-        'Never mention you are an AI unless directly asked.',
+        'Never mention you are an AI unless directly asked. ' +
+        'If the caller asks to speak with a real person, wants human help, or has a complex issue you cannot resolve, ' +
+        'use the escalate_to_human function. Provide a brief summary of the conversation and the reason for escalation. ' +
+        'After escalating, tell the caller someone from the team will reach out shortly, then say goodbye.',
     ),
+
+  // ── Escalation ──────────────────────────────────────────────
+  // Comma-separated list of WhatsApp phone numbers (with country code, no +)
+  // that receive escalation notifications when a caller requests a human.
+  ESCALATION_PHONE_NUMBERS: z.string().default(''),
 
   LOG_LEVEL: z.string().default('info'),
 })

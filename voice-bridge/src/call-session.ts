@@ -1,6 +1,6 @@
 import { RTCPeerConnection, MediaStreamTrack, RtpPacket, RtpHeader } from 'werift'
 import { OpenAIRealtimeClient } from './openai-realtime'
-import { preAcceptCall, acceptCall, terminateCall } from './meta-client'
+import { preAcceptCall, acceptCall, terminateCall, sendWhatsAppMessage } from './meta-client'
 import { config } from './config'
 import { log, warn } from './logger'
 
@@ -15,6 +15,7 @@ import { log, warn } from './logger'
  */
 export class CallSession {
   private readonly callId: string
+  private readonly callerPhone: string
   private pc: RTCPeerConnection
   private openai: OpenAIRealtimeClient
   private answerSdp = ''
@@ -23,8 +24,9 @@ export class CallSession {
   private connected = false
   private closed = false
 
-  constructor(callId: string) {
+  constructor(callId: string, callerPhone: string = 'unknown') {
     this.callId = callId
+    this.callerPhone = callerPhone
 
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -37,6 +39,7 @@ export class CallSession {
       instructions: config.SANDRA_INSTRUCTIONS,
       onAudio: (base64Chunk) => this.sendAudioToMeta(base64Chunk),
       onEnd: () => void this.hangup(),
+      onEscalate: (args) => this.handleEscalation(args),
     })
   }
 
@@ -201,6 +204,43 @@ export class CallSession {
         reject(new Error('ICE connection timeout (30 s)'))
       }, 30000)
     })
+  }
+
+  /**
+   * Handle escalation — notify staff via WhatsApp, then hang up after
+   * a short delay so Sandra can say goodbye first.
+   */
+  private async handleEscalation(args: { reason: string; summary: string }): Promise<void> {
+    const phones = config.ESCALATION_PHONE_NUMBERS
+      .split(',')
+      .map((n) => n.trim())
+      .filter(Boolean)
+
+    if (phones.length === 0) {
+      warn(`[Call ${this.callId}] Escalation requested but no ESCALATION_PHONE_NUMBERS configured`)
+      return
+    }
+
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' })
+    const message =
+      `📞 *Call Escalation Request*\n\n` +
+      `*Caller:* ${this.callerPhone}\n` +
+      `*Time:* ${timestamp}\n` +
+      `*Reason:* ${args.reason}\n\n` +
+      `*Conversation summary:*\n${args.summary}\n\n` +
+      `Please call this person back on WhatsApp.`
+
+    for (const phone of phones) {
+      try {
+        await sendWhatsAppMessage(phone, message)
+        log(`[Call ${this.callId}] Escalation sent to ${phone.slice(0, 4)}****`)
+      } catch (e) {
+        warn(`[Call ${this.callId}] Failed to send escalation to ${phone}:`, e)
+      }
+    }
+
+    // Give Sandra 8 seconds to say goodbye, then hang up
+    setTimeout(() => void this.hangup(), 8000)
   }
 
   private async cleanup(): Promise<void> {

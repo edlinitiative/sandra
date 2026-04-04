@@ -9,6 +9,7 @@ export interface RealtimeClientOptions {
   instructions: string
   onAudio: (base64Chunk: string) => void
   onEnd: () => void
+  onEscalate?: (args: { reason: string; summary: string }) => Promise<void>
 }
 
 /**
@@ -59,6 +60,29 @@ export class OpenAIRealtimeClient {
               prefix_padding_ms: 300,
               silence_duration_ms: 600,
             },
+            tools: [
+              {
+                type: 'function',
+                name: 'escalate_to_human',
+                description:
+                  'Transfer the call to a real person. Use when the caller explicitly asks for a human, ' +
+                  'or when you cannot resolve their issue. A team member will be notified to call them back.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    reason: {
+                      type: 'string',
+                      description: 'Why the caller wants a human (e.g. "billing dispute", "wants to speak to a manager")',
+                    },
+                    summary: {
+                      type: 'string',
+                      description: 'Brief summary of the conversation so far so the human agent has context',
+                    },
+                  },
+                  required: ['reason', 'summary'],
+                },
+              },
+            ],
           },
         })
         resolve()
@@ -107,7 +131,7 @@ export class OpenAIRealtimeClient {
     this.ws?.close()
   }
 
-  private handleEvent(event: Record<string, unknown>): void {
+  private async handleEvent(event: Record<string, unknown>): Promise<void> {
     const type = event.type as string
 
     switch (type) {
@@ -138,6 +162,39 @@ export class OpenAIRealtimeClient {
       case 'conversation.item.input_audio_transcription.completed':
         log('[OpenAI] Transcript:', (event.transcript as string)?.slice(0, 80))
         break
+
+      case 'response.function_call_arguments.done': {
+        const fnName = event.name as string
+        const callId = event.call_id as string
+        const argsStr = event.arguments as string
+
+        if (fnName === 'escalate_to_human') {
+          log('[OpenAI] Escalation function called')
+          try {
+            const args = JSON.parse(argsStr) as { reason: string; summary: string }
+
+            // Notify staff via WhatsApp
+            if (this.opts.onEscalate) {
+              await this.opts.onEscalate(args)
+            }
+
+            // Send function result back to OpenAI so it can say goodbye
+            this.sendEvent({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: callId,
+                output: JSON.stringify({ status: 'ok', message: 'Team has been notified. Tell the caller someone will reach out shortly.' }),
+              },
+            })
+            // Trigger a response so Sandra says goodbye
+            this.sendEvent({ type: 'response.create' })
+          } catch (e) {
+            log('[OpenAI] Escalation error:', e)
+          }
+        }
+        break
+      }
 
       case 'error': {
         const err = event.error as Record<string, unknown> | undefined

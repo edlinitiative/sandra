@@ -75,7 +75,8 @@ async function handleCallObject(call: Record<string, unknown>): Promise<void> {
       }
 
       const offerSdp = session.sdp as string
-      const callSession = new CallSession(callId)
+      const callerPhone = (call.from as string) ?? 'unknown'
+      const callSession = new CallSession(callId, callerPhone)
       sessions.set(callId, callSession)
 
       try {
