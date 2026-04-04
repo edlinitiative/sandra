@@ -6,3 +6,4 @@ export { validate, sanitizeInput, chatInputSchema, indexInputSchema, sessionIdSc
 export { generateRequestId, successResponse, apiErrorResponse } from './api-helpers';
 export type { SuccessEnvelope, ErrorEnvelope } from './api-helpers';
 export { verifyMetaSignature } from './webhook-signature';
+export { isDuplicate } from './message-dedup';

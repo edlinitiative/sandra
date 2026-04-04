@@ -89,7 +89,7 @@ const INITIATIVES = [
 const getEdLightInitiatives: SandraTool = {
   name: 'getEdLightInitiatives',
   description:
-    'Get information about EdLight initiatives and platforms. Returns details about EdLight Code, Academy, News, Initiative, Nexus, and Labs — the full EdLight ecosystem.',
+    'Get a high-level overview of the EdLight ecosystem and its platforms (Initiative, Nexus, Labs, News, Academy, Code). Use ONLY for questions like "What is EdLight?", "What platforms does EdLight have?", or "Tell me about EdLight Initiative/News/Labs/Nexus". Do NOT use this tool when users ask about courses, lessons, what to learn, or what tracks are available — use getCourseInventory instead.',
   parameters: {
     type: 'object',
     properties: {

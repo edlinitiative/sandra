@@ -6,7 +6,7 @@ import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/mem
 import { resolveLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
-import { generateRequestId, createLogger, verifyMetaSignature } from '@/lib/utils';
+import { generateRequestId, createLogger, verifyMetaSignature, isDuplicate } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext, isReplyToSandra } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
@@ -81,6 +81,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
+  // ── Message deduplication ──────────────────────────────────────────────
+  const messageId = extractWhatsAppMessageId(rawBody);
+  if (isDuplicate(messageId)) {
+    return NextResponse.json({ status: 'ok' }, { status: 200 });
+  }
+
   // Await processing — errors are caught inside so we always reach the 200
   await processWebhookAsync(rawBody, requestId);
 
@@ -101,6 +107,23 @@ function isCallsWebhookEvent(payload: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+/** Extract the WhatsApp message ID from the raw webhook payload for dedup. */
+function extractWhatsAppMessageId(payload: unknown): string | undefined {
+  try {
+    const p = payload as Record<string, unknown>;
+    const entries = (p?.entry as Array<Record<string, unknown>>) ?? [];
+    for (const entry of entries) {
+      const changes = (entry?.changes as Array<Record<string, unknown>>) ?? [];
+      for (const change of changes) {
+        const value = change?.value as Record<string, unknown> | undefined;
+        const messages = (value?.messages as Array<Record<string, unknown>>) ?? [];
+        if (messages[0]?.id) return messages[0].id as string;
+      }
+    }
+  } catch { /* ignore — no ID available */ }
+  return undefined;
 }
 
 // ─── Background processing ────────────────────────────────────────────────────

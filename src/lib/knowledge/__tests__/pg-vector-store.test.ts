@@ -133,7 +133,25 @@ describe('PgVectorStore', () => {
       expect(params).toContain('edlinitiative/code');
     });
 
-    it('filters by repo metadata (JS-side)', async () => {
+    it('passes repo filter to SQL WHERE clause', async () => {
+      const queryVec = new Array(1536).fill(0);
+      queryVec[0] = 1;
+
+      mockPrismaClient.$queryRawUnsafe.mockResolvedValue([]);
+
+      await store.search(queryVec, 5, { repo: 'edlinitiative/EdLight-Academy' });
+
+      expect(mockPrismaClient.$queryRawUnsafe).toHaveBeenCalledTimes(1);
+      const callArgs = mockPrismaClient.$queryRawUnsafe.mock.calls[0]!;
+      // repo value should appear as a SQL parameter
+      expect(callArgs).toContain('edlinitiative/EdLight-Academy');
+      // SQL should reference both sourceId and metadata->>'repo'
+      const sql = callArgs[0] as string;
+      expect(sql).toMatch(/sourceId/);
+      expect(sql).toMatch(/metadata/);
+    });
+
+    it('filters by repo — SQL WHERE clause and JS post-filter', async () => {
       const queryVec = new Array(1536).fill(0);
       queryVec[0] = 1;
 

@@ -32,14 +32,17 @@ export function inferKnowledgeQueryContext(query: string): InferredKnowledgeQuer
     platform = 'academy';
   } else if (
     normalized.includes('edlight code') ||
-    /\b(code|coding|python|sql|javascript|web development)\b/.test(normalized)
+    /\b(coding|python|sql|javascript|html|css|typescript|terminal|git)\b/.test(normalized)
   ) {
     platform = 'code';
-  } else if (normalized.includes('news') || /(announcement|update|story)/.test(normalized)) {
+  } else if (
+    normalized.includes('news') ||
+    /(announcement|update|story|scholarship|opportunity)/.test(normalized)
+  ) {
     platform = 'news';
   } else if (
     normalized.includes('initiative') ||
-    /(leadership|scholarship|program|internship|eslp)/.test(normalized)
+    /(leadership|program|internship|eslp|nexus|labs)/.test(normalized)
   ) {
     platform = 'initiative';
   }

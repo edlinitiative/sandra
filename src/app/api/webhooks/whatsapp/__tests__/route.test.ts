@@ -87,6 +87,7 @@ vi.mock('@/lib/utils', () => ({
     debug: vi.fn(),
   }),
   verifyMetaSignature: () => true,
+  isDuplicate: () => false,
 }));
 
 vi.mock('@/lib/channels/whatsapp-formatter', () => ({

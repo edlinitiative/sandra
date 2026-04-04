@@ -129,6 +129,17 @@ export class PgVectorStore implements VectorStore {
       paramIdx++;
     }
 
+    // Push repo filter into SQL so the ANN fetch is scoped to the right repo/platform
+    // rather than spending the whole fetchLimit budget on cross-repo candidates.
+    // The JS-side matchesMetadataFilter still validates the final set for accuracy.
+    if (filter?.repo && !filter.sourceId) {
+      conditions.push(
+        `(LOWER("sourceId") = LOWER($${paramIdx}) OR LOWER(("metadata"->>'repo')::text) = LOWER($${paramIdx}))`,
+      );
+      params.push(filter.repo);
+      paramIdx++;
+    }
+
     const sql = `
       SELECT
         "id", "sourceId", "title", "path", "content",

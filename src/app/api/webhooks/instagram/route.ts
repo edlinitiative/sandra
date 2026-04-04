@@ -6,7 +6,7 @@ import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/mem
 import { resolveLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
-import { generateRequestId, createLogger, verifyMetaSignature } from '@/lib/utils';
+import { generateRequestId, createLogger, verifyMetaSignature, isDuplicate } from '@/lib/utils';
 import { splitForInstagram } from '@/lib/channels/instagram-formatter';
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
@@ -73,6 +73,12 @@ export async function POST(request: Request) {
       : 0,
     payload: JSON.stringify(rawBody).slice(0, 500),
   });
+
+  // ── Message deduplication ──────────────────────────────────────────────
+  const messageId = extractInstagramMessageId(rawBody);
+  if (isDuplicate(messageId)) {
+    return NextResponse.json({ status: 'ok' }, { status: 200 });
+  }
 
   // Await processing — errors are caught inside so we always reach the 200
   await processInboundAsync(rawBody, requestId);
@@ -287,4 +293,22 @@ async function saveInstagramUsername(userId: string, username: string): Promise<
   } catch {
     // best-effort — don't break the flow
   }
+}
+
+/** Extract the Instagram message ID (mid) from the raw webhook payload for dedup. */
+function extractInstagramMessageId(payload: unknown): string | undefined {
+  try {
+    const p = payload as Record<string, unknown>;
+    const entries = (p?.entry as Array<Record<string, unknown>>) ?? [];
+    for (const entry of entries) {
+      const messaging = (entry?.messaging as Array<Record<string, unknown>>) ?? [];
+      for (const msg of messaging) {
+        const message = msg?.message as Record<string, unknown> | undefined;
+        if (message?.mid) return message.mid as string;
+        const postback = msg?.postback as Record<string, unknown> | undefined;
+        if (postback?.mid) return postback.mid as string;
+      }
+    }
+  } catch { /* ignore — no ID available */ }
+  return undefined;
 }
