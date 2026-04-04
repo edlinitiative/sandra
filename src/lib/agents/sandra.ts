@@ -14,6 +14,7 @@ import {
 import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
+import { detectAndRecordCorrection, detectAndRecordCapabilityGap } from '@/lib/learning';
 
 const log = createLogger('agents:sandra');
 
@@ -156,6 +157,18 @@ export async function runSandraAgent(
       message: input.message,
     }).catch(() => { /* best-effort */ });
 
+    // Detect implicit correction signals (best-effort — never throws)
+    const lastAssistantMsg = historyMessages.filter(m => m.role === 'assistant').at(-1);
+    await detectAndRecordCorrection({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
+      priorResponse: typeof lastAssistantMsg?.content === 'string'
+        ? lastAssistantMsg.content
+        : undefined,
+    }).catch(() => {});
+
     // 6. Agent loop (handles tool calls)
     const state: AgentState = {
       messages,
@@ -215,6 +228,17 @@ export async function runSandraAgent(
           language: input.language,
           data: { latencyMs: Date.now() - agentStartMs, responseLength: content.length, toolsUsed, model: 'gpt-4o', cacheHit: false },
         });
+
+        // Log capability gap when no tools ran (potential unmet action request)
+        if (toolsUsed.length === 0) {
+          await detectAndRecordCapabilityGap({
+            sessionId: input.sessionId,
+            userId: input.userId,
+            channel: input.channel,
+            language: input.language,
+            message: input.message,
+          }).catch(() => {});
+        }
 
         return {
           response: content,
@@ -444,6 +468,18 @@ export async function* runSandraAgentStream(
       message: input.message,
     }).catch(() => { /* best-effort */ });
 
+    // Detect implicit correction signals (best-effort — never throws)
+    const lastAssistantMsgStream = historyMessages.filter(m => m.role === 'assistant').at(-1);
+    await detectAndRecordCorrection({
+      sessionId: input.sessionId,
+      userId: input.userId,
+      language: input.language,
+      message: input.message,
+      priorResponse: typeof lastAssistantMsgStream?.content === 'string'
+        ? lastAssistantMsgStream.content
+        : undefined,
+    }).catch(() => {});
+
     let iterations = 0;
     const toolsUsed: string[] = [];
 
@@ -483,6 +519,17 @@ export async function* runSandraAgentStream(
         });
 
         await refreshConversationSummary(input.sessionId).catch(() => { /* best-effort */ });
+
+        // Log capability gap when no tools ran (potential unmet action request)
+        if (toolsUsed.length === 0) {
+          await detectAndRecordCapabilityGap({
+            sessionId: input.sessionId,
+            userId: input.userId,
+            channel: input.channel,
+            language: input.language,
+            message: input.message,
+          }).catch(() => {});
+        }
 
         yield {
           type: 'done',

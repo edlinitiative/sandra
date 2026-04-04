@@ -354,6 +354,52 @@ model AnalyticsEvent {
   @@index([channel])
   @@index([createdAt])
 }
+// ── Learning Signals ──────────────────────────────────────────────────────────
+
+/**
+ * Recorded when a user corrects a prior Sandra response.
+ * Admins review these to patch the knowledge base or fix retrieval gaps.
+ */
+model KnowledgeCorrection {
+  id            String   @id @default(cuid())
+  sessionId     String
+  userId        String?
+  language      String?
+  userMessage   String   // The correction message from the user (max 1000 chars)
+  priorResponse String?  // The assistant response being corrected (max 500 chars)
+  patterns      String[] // Matched pattern labels, e.g. ["en:thats_wrong"]
+  reviewed      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([reviewed])
+  @@index([createdAt])
+}
+
+/**
+ * Recorded when a user makes an action-oriented request but Sandra uses no tools.
+ * Patterns like "please send", "can you create", "schedule a meeting" with zero
+ * tool executions signal a capability Sandra doesn't yet have.
+ * Admins review these to prioritise new tool development.
+ */
+model CapabilityGap {
+  id          String   @id @default(cuid())
+  sessionId   String
+  userId      String?
+  channel     String?
+  language    String?
+  userMessage String   // The unmet request (max 1000 chars)
+  patterns    String[] // Matched action-pattern labels
+  reviewed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([reviewed])
+  @@index([createdAt])
+}
+
 // ── Multi-Tenant ─────────────────────────────────────────────────────────
 
 enum TenantRole {
