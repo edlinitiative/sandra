@@ -14,6 +14,12 @@ const schema = z.object({
   WHATSAPP_VOICE_VERIFY_TOKEN: z.string().default('sandra-voice-verify-2026'),
   // Meta App Secret for webhook payload signature verification (optional)
   META_APP_SECRET: z.string().default(''),
+
+  // ── Resilience ─────────────────────────────────────────────
+  // Maximum number of concurrent active calls (reject new calls if at cap)
+  MAX_CONCURRENT_CALLS: z.coerce.number().default(10),
+  // Maximum call duration in minutes before auto-hangup
+  CALL_TIMEOUT_MINUTES: z.coerce.number().default(30),
   WHATSAPP_API_VERSION: z.string().default('v19.0'),
 
   // ── OpenAI ──────────────────────────────────────────────────

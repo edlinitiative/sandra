@@ -23,6 +23,7 @@ export class CallSession {
 
   private connected = false
   private closed = false
+  private callTimeout: ReturnType<typeof setTimeout> | null = null
 
   constructor(callId: string, callerPhone: string = 'unknown') {
     this.callId = callId
@@ -105,6 +106,13 @@ export class CallSession {
     await acceptCall(this.callId, this.answerSdp)
     this.connected = true
     log(`[Call ${this.callId}] Accepted — Sandra is live`)
+
+    // Start call timeout guard
+    const timeoutMs = config.CALL_TIMEOUT_MINUTES * 60 * 1000
+    this.callTimeout = setTimeout(() => {
+      warn(`[Call ${this.callId}] Max duration (${config.CALL_TIMEOUT_MINUTES}min) reached — hanging up`)
+      void this.hangup()
+    }, timeoutMs)
   }
 
   /** Called when Meta sends a terminate webhook (caller hung up). */
@@ -247,6 +255,7 @@ export class CallSession {
     if (this.closed) return
     this.closed = true
     this.connected = false
+    if (this.callTimeout) clearTimeout(this.callTimeout)
     this.openai.close()
     this.pc.close()
     log(`[Call ${this.callId}] Session cleaned up`)

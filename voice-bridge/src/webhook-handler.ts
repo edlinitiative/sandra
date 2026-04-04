@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { Request, Response } from 'express'
 import { config } from './config'
 import { CallSession } from './call-session'
+import { rejectCall } from './meta-client'
 import { log, warn, error as logError } from './logger'
 
 /** Active call sessions keyed by callId */
@@ -100,6 +101,16 @@ async function handleCallObject(call: Record<string, unknown>): Promise<void> {
 
       const offerSdp = session.sdp as string
       const callerPhone = (call.from as string) ?? 'unknown'
+
+      // Enforce concurrent call cap
+      if (sessions.size >= config.MAX_CONCURRENT_CALLS) {
+        warn(`[Webhook] Concurrent call cap (${config.MAX_CONCURRENT_CALLS}) reached — rejecting call ${callId}`)
+        try { await rejectCall(callId) } catch (e) {
+          logError(`[Webhook] Failed to reject call ${callId}:`, e)
+        }
+        return
+      }
+
       const callSession = new CallSession(callId, callerPhone)
       sessions.set(callId, callSession)
 
