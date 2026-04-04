@@ -289,3 +289,56 @@ describe('getWhatsAppAdapter', () => {
     expect(a).toBe(b);
   });
 });
+
+describe('Group chat detection in parseInbound', () => {
+  let adapter: import('../whatsapp').WhatsAppChannelAdapter;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const mod = await import('../whatsapp');
+    adapter = new mod.WhatsAppChannelAdapter();
+  });
+
+  function makeGroupPayload(groupId: string): WhatsAppWebhookPayload {
+    return {
+      object: 'whatsapp_business_account',
+      entry: [{
+        id: 'entry-id',
+        changes: [{
+          value: {
+            messaging_product: 'whatsapp',
+            metadata: { display_phone_number: '15559990000', phone_number_id: 'test-phone-id' },
+            contacts: [{ profile: { name: 'Rony' }, wa_id: '50912345678' }],
+            messages: [{
+              id: 'wamid.group1',
+              from: '50912345678',
+              timestamp: '1700000000',
+              type: 'text' as const,
+              text: { body: '@Sandra what is ESLP?' },
+              group_id: groupId,
+            }],
+          },
+          field: 'messages',
+        }],
+      }],
+    };
+  }
+
+  it('detects a group message and sets isGroup + groupId', async () => {
+    const payload = makeGroupPayload('120363001234567890@g.us');
+    const inbound = await adapter.parseInbound(payload);
+
+    expect(inbound.isGroup).toBe(true);
+    expect(inbound.groupId).toBe('120363001234567890@g.us');
+    expect(inbound.metadata?.isGroup).toBe(true);
+    expect(inbound.metadata?.groupId).toBe('120363001234567890@g.us');
+  });
+
+  it('marks 1:1 messages as not group', async () => {
+    const payload = makeTextPayload();
+    const inbound = await adapter.parseInbound(payload);
+
+    expect(inbound.isGroup).toBe(false);
+    expect(inbound.groupId).toBeUndefined();
+  });
+});

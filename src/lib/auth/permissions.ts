@@ -24,6 +24,14 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'applications:read',
     'applications:write',
     'actions:submit',
+    // Google Workspace — read-only access for basic tenant members
+    'drive:read',
+    'contacts:read',
+    'calendar:write',
+    'gmail:read',
+    'gmail:draft',
+    'tasks:write',
+    'forms:read',
   ],
   educator: [
     'knowledge:read',
@@ -35,6 +43,15 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'applications:read',
     'applications:write',
     'actions:submit',
+    // Google Workspace — read + draft (manager-level tenant members)
+    'drive:read',
+    'contacts:read',
+    'gmail:read',
+    'gmail:draft',
+    'calendar:write',
+    'tasks:write',
+    'forms:read',
+    'forms:write',
   ],
   admin: [
     'knowledge:read',
@@ -52,6 +69,20 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'audit:read',
     'actions:submit',
     'actions:approve',
+    // Google Workspace — full access for admin tenant members
+    'drive:read',
+    'drive:write',
+    'contacts:read',
+    'gmail:read',
+    'gmail:draft',
+    'gmail:send',
+    'calendar:write',
+    'tasks:write',
+    'zoom:meeting',
+    'forms:read',
+    'forms:write',
+    // WhatsApp Groups API (requires Official Business Account)
+    'whatsapp:groups',
   ],
 };
 
@@ -96,6 +127,16 @@ export const PRIVATE_SCOPES = [
   'admin:tools',
   'actions:submit',
   'actions:approve',
+  // Google Workspace scopes are always audited
+  'drive:read',
+  'drive:write',
+  'contacts:read',
+  'gmail:draft',
+  'gmail:read',
+  'gmail:send',
+  'calendar:write',
+  'tasks:write',
+  'zoom:meeting',
 ] as const;
 
 /** Check if a tool's required scopes indicate it accesses private user data. */

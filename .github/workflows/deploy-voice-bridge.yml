@@ -1,0 +1,85 @@
+name: Deploy Voice Bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'voice-bridge/**'
+      - '.github/workflows/deploy-voice-bridge.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-voice-bridge
+  cancel-in-progress: false   # never cancel an in-flight deploy
+
+jobs:
+  deploy:
+    name: Deploy to sandra-vm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout (for image tag only — we deploy via SSH pull) ──────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. SSH deploy ──────────────────────────────────────────────────────
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Pull & rebuild on VM
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_DEPLOY_DIR: ${{ secrets.VM_DEPLOY_DIR }}   # e.g. /opt/sandra/repo
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=no \
+              "$VM_USER@$VM_HOST" bash -s << 'ENDSSH'
+
+          set -euo pipefail
+
+          REPO_DIR="${VM_DEPLOY_DIR:-/opt/sandra/repo}"
+          BRIDGE_DIR="$REPO_DIR/voice-bridge"
+
+          echo "=== [$(date -u)] Starting deploy ==="
+
+          # Pull latest code
+          echo "--- git pull"
+          git -C "$REPO_DIR" fetch --prune
+          git -C "$REPO_DIR" pull --ff-only
+
+          # Rebuild image and recreate container (zero-downtime: build first, then swap)
+          echo "--- docker compose build"
+          docker compose -f "$BRIDGE_DIR/docker-compose.yml" build voice-bridge
+
+          echo "--- docker compose up"
+          docker compose -f "$BRIDGE_DIR/docker-compose.yml" up -d --no-build --remove-orphans voice-bridge caddy
+
+          # Prune old images to keep disk clean
+          docker image prune -f --filter "until=24h" >/dev/null 2>&1 || true
+
+          # Health check
+          echo "--- health check"
+          for i in $(seq 1 12); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' sandra-voice-bridge 2>/dev/null || echo "missing")
+            echo "  attempt $i/12 — $STATUS"
+            [[ "$STATUS" == "healthy" ]] && echo "=== Deploy successful ===" && exit 0
+            sleep 5
+          done
+
+          echo "ERROR: voice-bridge did not become healthy within 60s"
+          docker logs sandra-voice-bridge --tail 50
+          exit 1
+
+          ENDSSH
+
+      # ── 3. Notify on failure ───────────────────────────────────────────────
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "::error::Voice bridge deploy to ${{ secrets.VM_HOST }} FAILED. Check logs above."

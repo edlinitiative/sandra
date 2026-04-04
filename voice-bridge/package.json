@@ -1,0 +1,25 @@
+{
+  "name": "sandra-voice-bridge",
+  "version": "1.0.0",
+  "description": "WhatsApp Calling API ↔ OpenAI Realtime AI voice bridge for Sandra",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "werift": "^0.19.3",
+    "ws": "^8.16.0",
+    "dotenv": "^16.4.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.5",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

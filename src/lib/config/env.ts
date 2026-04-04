@@ -55,6 +55,24 @@ const envSchema = z.object({
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+
+  // Google Workspace (domain-wide delegation via service account)
+  // These are OPTIONAL — Google integration is configured per-tenant in ConnectedProvider.
+  // Env vars are a convenience for single-tenant / dev setups.
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
+  GOOGLE_SERVICE_ACCOUNT_KEY: z.string().optional(), // base64-encoded PEM private key
+  GOOGLE_WORKSPACE_DOMAIN: z.string().optional(),    // e.g. "edlight.org"
+  GOOGLE_DELEGATED_ADMIN_EMAIL: z.string().email().optional(), // admin for impersonation
+
+  // Web Search (Brave Search API — optional; enables the webSearch tool)
+  BRAVE_SEARCH_API_KEY: z.string().optional(),
+
+  // Birthday alerts (optional; enables the checkBirthdays tool)
+  BIRTHDAY_CONTACTS_SHEET_ID: z.string().optional(), // Google Sheets file ID for the contacts+birthday list
+  BIRTHDAY_ADMIN_PHONE: z.string().optional(),       // WhatsApp number to notify, e.g. "50938001234"
+
+  // Cron / scheduled jobs
+  CRON_SECRET: z.string().optional(),                // Vercel Cron secret — protects /api/cron/* routes
 });
 
 export type Env = z.infer<typeof envSchema>;

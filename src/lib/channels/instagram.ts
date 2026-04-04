@@ -198,15 +198,24 @@ export class InstagramChannelAdapter implements ChannelAdapter {
    * Returns null if unavailable or on any error.
    */
   async fetchSenderName(senderId: string): Promise<string | null> {
-    if (!this.isConfigured()) return null;
+    const profile = await this.fetchSenderProfile(senderId);
+    return profile.name;
+  }
+
+  /**
+   * Fetch the display name AND username of an Instagram user by their IGSID.
+   * Returns { name: null, username: null } on any error.
+   */
+  async fetchSenderProfile(senderId: string): Promise<{ name: string | null; username: string | null }> {
+    if (!this.isConfigured()) return { name: null, username: null };
     try {
-      const url = `${this.apiBase}/${senderId}?fields=name&access_token=${this.pageAccessToken}`;
+      const url = `${this.apiBase}/${senderId}?fields=name,username&access_token=${this.pageAccessToken}`;
       const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json() as { name?: string };
-      return data.name ?? null;
+      if (!res.ok) return { name: null, username: null };
+      const data = await res.json() as { name?: string; username?: string };
+      return { name: data.name ?? null, username: data.username ?? null };
     } catch {
-      return null;
+      return { name: null, username: null };
     }
   }
 

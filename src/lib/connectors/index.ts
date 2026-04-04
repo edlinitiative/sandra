@@ -12,6 +12,7 @@ export { AcademyConnector } from './academy-connector';
 export { CodeConnector } from './code-connector';
 export { NewsConnector } from './news-connector';
 export { InitiativeConnector } from './initiative-connector';
+export { GoogleWorkspaceConnector } from './google-workspace-connector';
 
 import { connectorRegistry } from './types';
 import { GitHubConnector } from './github-connector';
@@ -21,6 +22,7 @@ import { AcademyConnector } from './academy-connector';
 import { CodeConnector } from './code-connector';
 import { NewsConnector } from './news-connector';
 import { InitiativeConnector } from './initiative-connector';
+import { GoogleWorkspaceConnector } from './google-workspace-connector';
 
 /**
  * Register all default connectors.
@@ -35,6 +37,7 @@ function registerDefaultConnectors(): void {
     new CodeConnector(),
     new NewsConnector(),
     new InitiativeConnector(),
+    new GoogleWorkspaceConnector(),
   ];
 
   for (const connector of defaults) {

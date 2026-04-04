@@ -18,6 +18,10 @@ export interface InboundMessage {
   metadata?: Record<string, unknown>;
   /** For channels that support media (images, voice notes, etc.) */
   attachments?: MessageAttachment[];
+  /** Whether this message originates from a group chat */
+  isGroup?: boolean;
+  /** Group identifier (WhatsApp group JID, etc.) */
+  groupId?: string;
 }
 
 /** Attachment on a message */
