@@ -30,9 +30,6 @@ jobs:
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Debug key fingerprint
-        run: ssh-keygen -lf ~/.ssh/deploy_key || echo "invalid key"
-
       - name: Pull & rebuild on VM
         env:
           VM_HOST: ${{ secrets.VM_HOST }}
