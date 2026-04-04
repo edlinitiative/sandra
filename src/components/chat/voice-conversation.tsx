@@ -64,6 +64,7 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
 
   // Per-turn accumulation
   const currentAssistantIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
   const userTurnTextRef = useRef('');
 
   // Keep onTurn callback fresh without recreating the data-channel handler
@@ -108,27 +109,46 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
         setSessionState('listening');
         break;
 
-      // Server VAD: user started speaking
-      case 'input_audio_buffer.speech_started':
+      // Server VAD: user started speaking — create a streaming placeholder
+      case 'input_audio_buffer.speech_started': {
         userTurnTextRef.current = '';
         setSessionState('user_speaking');
+        const userId = crypto.randomUUID();
+        currentUserIdRef.current = userId;
+        setTranscript(prev => [...prev, { id: userId, role: 'user', text: '', streaming: true }]);
         break;
+      }
 
       // Server VAD: user paused
       case 'input_audio_buffer.speech_stopped':
         setSessionState('processing');
         break;
 
+      // Streaming user transcript delta
+      case 'conversation.item.input_audio_transcription.delta': {
+        const delta = (event.delta as string | undefined) ?? '';
+        const uid = currentUserIdRef.current;
+        if (uid && delta) {
+          setTranscript(prev =>
+            prev.map(e => e.id === uid ? { ...e, text: e.text + delta } : e),
+          );
+        }
+        break;
+      }
+
       // User transcript ready
       case 'conversation.item.input_audio_transcription.completed': {
         const text = (event.transcript as string | undefined)?.trim() ?? '';
         if (!text) break;
         userTurnTextRef.current = text;
+        const uid = currentUserIdRef.current;
+        currentUserIdRef.current = null;
         setTranscript(prev => {
-          const idx = prev.findIndex(e => e.role === 'user' && e.streaming);
-          if (idx !== -1) {
-            return prev.map((e, i) => i === idx ? { ...e, text, streaming: false } : e);
+          if (uid) {
+            // Finalize the streaming entry we created on speech_started
+            return prev.map(e => e.id === uid ? { ...e, text, streaming: false } : e);
           }
+          // Fallback: no streaming entry exists, append a new one
           return [...prev, { id: crypto.randomUUID(), role: 'user', text, streaming: false }];
         });
         break;
@@ -226,7 +246,7 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
             modalities: ['text', 'audio'],
             instructions: VOICE_INSTRUCTIONS,
             voice: 'alloy',
-            input_audio_transcription: { model: 'whisper-1' },
+            input_audio_transcription: { model: 'gpt-4o-transcribe' },
             turn_detection: {
               type: 'server_vad',
               threshold: 0.5,
