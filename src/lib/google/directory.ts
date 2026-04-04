@@ -3,6 +3,9 @@
  *
  * Uses the Admin SDK Directory API with service account impersonation.
  * The impersonated user must be a Workspace admin for directory access.
+ *
+ * Also exposes listDirectoryPeopleWithBirthdays() which uses the Google People
+ * API to fetch birthday data stored against Workspace directory contacts.
  */
 
 import { createLogger } from '@/lib/utils';
@@ -130,4 +133,116 @@ export async function getUserByEmail(
 
   const data = (await res.json()) as Record<string, unknown>;
   return toDirectoryUser(data);
+}
+// ─── People API — birthday contacts ──────────────────────────────────────────
+
+const PEOPLE_API = 'https://people.googleapis.com/v1';
+
+export interface PersonWithBirthday {
+  resourceName: string;
+  name: string;
+  /** MM-DD normalised, e.g. "04-03" */
+  birthday: string;
+  email: string;
+  phone: string;
+}
+
+/**
+ * List all Workspace directory people who have a birthday set, using the
+ * Google People API (`people:listDirectoryPeople`).
+ *
+ * Domain-wide delegation: impersonates the configured admin email.
+ * Required scope: contacts.readonly
+ *
+ * Returns people whose birthday month+day matches `filterMMDD` (if provided),
+ * or ALL people with a birthday set (if omitted).
+ */
+export async function listDirectoryPeopleWithBirthdays(
+  ctx: GoogleWorkspaceContext,
+  filterMMDD?: string,
+): Promise<PersonWithBirthday[]> {
+  log.info('Listing directory people with birthdays via People API', {
+    tenantId: ctx.tenantId,
+    filter: filterMMDD ?? 'all',
+  });
+
+  const adminCtx: GoogleWorkspaceContext = {
+    ...ctx,
+    impersonateEmail: ctx.config.directoryAdminEmail ?? ctx.config.adminEmail,
+  };
+
+  const token = await getContextToken(adminCtx, [GOOGLE_SCOPES.CONTACTS_READONLY]);
+
+  const results: PersonWithBirthday[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const params = new URLSearchParams({
+      readMask: 'names,emailAddresses,birthdays,phoneNumbers',
+      sources: 'DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE',
+      pageSize: '1000',
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const res = await fetch(`${PEOPLE_API}/people:listDirectoryPeople?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      // 403/404 → domain-wide delegation may not have contacts.readonly granted; return empty
+      if (res.status === 403 || res.status === 404) {
+        log.warn('People API listDirectoryPeople permission denied or not found — skipping contacts source', {
+          status: res.status, body,
+        });
+        return [];
+      }
+      throw new Error(`People API listDirectoryPeople failed: ${res.status} — ${body}`);
+    }
+
+    const data = (await res.json()) as {
+      people?: Record<string, unknown>[];
+      nextPageToken?: string;
+    };
+
+    for (const person of data.people ?? []) {
+      // ── Extract birthday ──────────────────────────────────────────────────
+      const birthdays = person.birthdays as Array<{ date?: { month?: number; day?: number } }> | undefined;
+      if (!birthdays?.length) continue;
+      const bd = birthdays[0]?.date;
+      if (!bd?.month || !bd.day) continue;
+
+      const mmdd = `${String(bd.month).padStart(2, '0')}-${String(bd.day).padStart(2, '0')}`;
+      if (filterMMDD && mmdd !== filterMMDD) continue;
+
+      // ── Extract name ──────────────────────────────────────────────────────
+      const names = person.names as Array<{ displayName?: string }> | undefined;
+      const displayName = names?.[0]?.displayName ?? '';
+      if (!displayName) continue;
+
+      // ── Extract email ─────────────────────────────────────────────────────
+      const emails = person.emailAddresses as Array<{ value?: string }> | undefined;
+      const email = emails?.[0]?.value ?? '';
+
+      // ── Extract phone ─────────────────────────────────────────────────────
+      const phones = person.phoneNumbers as Array<{ value?: string }> | undefined;
+      const phone = phones?.[0]?.value ?? '';
+
+      results.push({
+        resourceName: person.resourceName as string ?? '',
+        name:  displayName,
+        birthday: mmdd,
+        email,
+        phone,
+      });
+    }
+
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  log.info(`People API returned ${results.length} birthday match(es)`, {
+    tenantId: ctx.tenantId,
+    filter: filterMMDD,
+  });
+  return results;
 }

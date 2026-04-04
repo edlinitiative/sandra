@@ -70,6 +70,9 @@ const envSchema = z.object({
   // Birthday alerts (optional; enables the checkBirthdays tool)
   BIRTHDAY_CONTACTS_SHEET_ID: z.string().optional(), // Google Sheets file ID for the contacts+birthday list
   BIRTHDAY_ADMIN_PHONE: z.string().optional(),       // WhatsApp number to notify, e.g. "50938001234"
+
+  // Cron / scheduled jobs
+  CRON_SECRET: z.string().optional(),                // Vercel Cron secret — protects /api/cron/* routes
 });
 
 export type Env = z.infer<typeof envSchema>;

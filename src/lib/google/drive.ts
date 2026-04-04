@@ -449,6 +449,229 @@ export async function readSheetRows(
   return data.values ?? [];
 }
 
+// ─── Birthday sheet auto-discovery ───────────────────────────────────────────
+
+/** A contact row extracted from a Form response spreadsheet */
+export interface SheetBirthdayContact {
+  /** Sheet file name — used to infer contact type */
+  sheetName: string;
+  fileId: string;
+  name: string;
+  email: string;
+  phone: string;
+  /** MM-DD normalised */
+  birthday: string;
+  /** Raw header of the birthday column found */
+  birthdayColHeader: string;
+}
+
+/** Keywords whose presence in a column header indicates a birthday field */
+const BIRTHDAY_HEADER_KEYWORDS = ['birthday', 'birth date', 'date of birth', 'dob', 'born', 'naissance', 'anniversaire'];
+
+/** Detect which column index (0-based) is the birthday column, or -1 */
+function detectBirthdayColumn(headers: string[]): { index: number; header: string } {
+  for (let i = 0; i < headers.length; i++) {
+    const h = (headers[i] ?? '').toLowerCase().trim();
+    if (BIRTHDAY_HEADER_KEYWORDS.some((kw) => h.includes(kw))) {
+      return { index: i, header: headers[i] ?? '' };
+    }
+  }
+  return { index: -1, header: '' };
+}
+
+/** Detect which column index is a name column, or -1 */
+function detectNameColumn(headers: string[]): number {
+  const candidates = ['name', 'full name', 'fullname', 'nom', 'prénom', 'prenom', 'first name', 'firstname'];
+  for (let i = 0; i < headers.length; i++) {
+    const h = (headers[i] ?? '').toLowerCase().trim();
+    if (candidates.some((c) => h.includes(c))) return i;
+  }
+  return 0; // fallback to first column
+}
+
+/** Detect which column index is an email column, or -1 */
+function detectEmailColumn(headers: string[]): number {
+  for (let i = 0; i < headers.length; i++) {
+    const h = (headers[i] ?? '').toLowerCase().trim();
+    if (h.includes('email') || h.includes('courriel') || h.includes('mail')) return i;
+  }
+  return -1;
+}
+
+/** Detect which column index is a phone column, or -1 */
+function detectPhoneColumn(headers: string[]): number {
+  const candidates = ['phone', 'telephone', 'téléphone', 'mobile', 'whatsapp', 'tel', 'contact number'];
+  for (let i = 0; i < headers.length; i++) {
+    const h = (headers[i] ?? '').toLowerCase().trim();
+    if (candidates.some((c) => h.includes(c))) return i;
+  }
+  return -1;
+}
+
+/**
+ * Parse a birthday string into MM-DD format. Accepts:
+ *   "MM-DD", "MM/DD", "YYYY-MM-DD", "April 3", "3 April", "3/4/1998", "April 3, 1998"
+ */
+const MONTH_MAP: Record<string, string> = {
+  january: '01', february: '02', march: '03', april: '04',
+  may: '05', june: '06', july: '07', august: '08',
+  september: '09', october: '10', november: '11', december: '12',
+  jan: '01', feb: '02', mar: '03', apr: '04',
+  jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+  // French
+  janvier: '01', février: '02', fevrier: '02', mars: '03', avril: '04',
+  mai: '05', juin: '06', juillet: '07', août: '08', aout: '08',
+  septembre: '09', octobre: '10', novembre: '11', décembre: '12', decembre: '12',
+};
+
+export function parseBirthdayToMMDD(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+
+  // ISO: YYYY-MM-DD
+  const iso = s.match(/^\d{4}-(\d{1,2})-(\d{1,2})$/);
+  if (iso?.[1] && iso[2]) return `${iso[1].padStart(2, '0')}-${iso[2].padStart(2, '0')}`;
+
+  // MM-DD or MM/DD (2-segment, no year, month ≤12, day ≤31)
+  const mmdd = s.match(/^(\d{1,2})[-\/](\d{1,2})$/);
+  if (mmdd?.[1] && mmdd[2]) {
+    const m = Number(mmdd[1]), d = Number(mmdd[2]);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  // D/M/YYYY or M/D/YYYY or D-M-YYYY (3-segment with year) — treat first two segments as MM-DD
+  const dmy = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/]\d{2,4}$/);
+  if (dmy?.[1] && dmy[2]) {
+    const a = Number(dmy[1]), b = Number(dmy[2]);
+    // Try MM/DD first (US convention) if a ≤ 12
+    if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}`;
+  }
+
+  // "April 3" or "April 3, 1998"
+  const nameDay = s.match(/^([a-zA-Zéàèûîô]+)\.?\s+(\d{1,2})(,\s*\d{4})?$/);
+  if (nameDay?.[1] && nameDay[2]) {
+    const month = MONTH_MAP[nameDay[1].toLowerCase()];
+    if (month) return `${month}-${nameDay[2].padStart(2, '0')}`;
+  }
+
+  // "3 April" or "3 avril 1998"
+  const dayName = s.match(/^(\d{1,2})\s+([a-zA-Zéàèûîô]+)(\.?\s*\d{4})?$/);
+  if (dayName?.[1] && dayName[2]) {
+    const month = MONTH_MAP[dayName[2].toLowerCase()];
+    if (month) return `${month}-${dayName[1].padStart(2, '0')}`;
+  }
+
+  return null;
+}
+
+/**
+ * Search all Google Sheets accessible to the service account/impersonated user,
+ * read each one, and return contacts whose birthday column matches `filterMMDD`.
+ *
+ * @param ctx          - Google Workspace context
+ * @param filterMMDD   - Today's date in MM-DD, e.g. "04-03"
+ * @param maxSheets    - Maximum number of spreadsheets to inspect (default 40)
+ */
+export async function findSheetsWithBirthdayData(
+  ctx: GoogleWorkspaceContext,
+  filterMMDD: string,
+  maxSheets = 40,
+): Promise<SheetBirthdayContact[]> {
+  log.info('Scanning Drive sheets for birthday data', { filterMMDD, tenantId: ctx.tenantId });
+
+  // ── 1. Find all spreadsheets (ordered by most recently modified) ──────────
+  const sheetsData = await driveGet<{ files: Record<string, unknown>[]; nextPageToken?: string }>(
+    ctx,
+    '/files',
+    {
+      q: "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false",
+      fields: 'files(id,name,modifiedTime,webViewLink)',
+      pageSize: String(maxSheets),
+      orderBy: 'modifiedTime desc',
+    },
+  );
+
+  const sheets = sheetsData.files;
+  log.info(`Found ${sheets.length} spreadsheet(s) to inspect`, { tenantId: ctx.tenantId });
+
+  const results: SheetBirthdayContact[] = [];
+  const token = await getContextToken(ctx, [SHEETS_READONLY_SCOPE]);
+
+  for (const sheet of sheets) {
+    const fileId   = sheet.id as string;
+    const fileName = sheet.name as string ?? 'Untitled';
+
+    try {
+      // ── 2. Read first tab (Sheet1 fallback) via Sheets API ─────────────────
+      const sheetMeta = await fetch(
+        `${SHEETS_API}/spreadsheets/${fileId}?fields=sheets.properties.title&includeGridData=false`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!sheetMeta.ok) continue;
+
+      const metaData = (await sheetMeta.json()) as { sheets?: Array<{ properties?: { title?: string } }> };
+      const firstTabTitle = metaData.sheets?.[0]?.properties?.title ?? 'Sheet1';
+
+      // Read up to 500 rows from the first tab
+      const range = `${firstTabTitle}!A1:Z500`;
+      const rowsRes = await fetch(
+        `${SHEETS_API}/spreadsheets/${fileId}/values/${encodeURIComponent(range)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!rowsRes.ok) continue;
+
+      const rowsData = (await rowsRes.json()) as { values?: string[][] };
+      const rows = rowsData.values ?? [];
+      if (rows.length < 2) continue;
+
+      const headerRow = rows[0] ?? [];
+
+      // ── 3. Detect birthday column ──────────────────────────────────────────
+      const { index: bdayIdx, header: bdayHeader } = detectBirthdayColumn(headerRow);
+      if (bdayIdx === -1) continue; // this sheet has no birthday column
+
+      const nameIdx  = detectNameColumn(headerRow);
+      const emailIdx = detectEmailColumn(headerRow);
+      const phoneIdx = detectPhoneColumn(headerRow);
+
+      log.info(`Sheet "${fileName}" has birthday column "${bdayHeader}" at index ${bdayIdx}`, {
+        fileId, tenantId: ctx.tenantId,
+      });
+
+      // ── 4. Scan rows for today's birthday ─────────────────────────────────
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row) continue;
+        const rawBday = row[bdayIdx]?.trim() ?? '';
+        if (!rawBday) continue;
+
+        const mmdd = parseBirthdayToMMDD(rawBday);
+        if (mmdd !== filterMMDD) continue;
+
+        results.push({
+          sheetName: fileName,
+          fileId,
+          name:  row[nameIdx]?.trim() ?? `Row ${r + 1}`,
+          email: emailIdx >= 0 ? (row[emailIdx]?.trim() ?? '') : '',
+          phone: phoneIdx >= 0 ? (row[phoneIdx]?.trim() ?? '') : '',
+          birthday: mmdd,
+          birthdayColHeader: bdayHeader,
+        });
+      }
+    } catch (err) {
+      log.warn(`Failed to read sheet "${fileName}"`, {
+        fileId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  log.info(`Found ${results.length} birthday match(es) across ${sheets.length} sheet(s)`, {
+    tenantId: ctx.tenantId,
+  });
+  return results;
+}
+
 export type DriveShareRole = 'reader' | 'commenter' | 'writer' | 'fileOrganizer';
 
 /**

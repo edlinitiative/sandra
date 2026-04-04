@@ -98,6 +98,9 @@ export const GOOGLE_SCOPES = {
   TASKS: 'https://www.googleapis.com/auth/tasks',
   FORMS_BODY: 'https://www.googleapis.com/auth/forms.body',
   FORMS_RESPONSES_READONLY: 'https://www.googleapis.com/auth/forms.responses.readonly',
+  // People API (contacts + birthdays via Google People API)
+  CONTACTS_READONLY: 'https://www.googleapis.com/auth/contacts.readonly',
+  SPREADSHEETS_READONLY: 'https://www.googleapis.com/auth/spreadsheets.readonly',
 } as const;
 
 /**
