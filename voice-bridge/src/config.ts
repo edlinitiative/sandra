@@ -12,6 +12,8 @@ const schema = z.object({
   WHATSAPP_ACCESS_TOKEN: z.string(),
   // Separate verify token for the calls webhook subscription
   WHATSAPP_VOICE_VERIFY_TOKEN: z.string().default('sandra-voice-verify-2026'),
+  // Meta App Secret for webhook payload signature verification (optional)
+  META_APP_SECRET: z.string().default(''),
   WHATSAPP_API_VERSION: z.string().default('v19.0'),
 
   // ── OpenAI ──────────────────────────────────────────────────

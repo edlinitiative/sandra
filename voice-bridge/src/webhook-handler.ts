@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { Request, Response } from 'express'
 import { config } from './config'
 import { CallSession } from './call-session'
@@ -29,11 +30,34 @@ export function handleVerify(req: Request, res: Response): void {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function handleCallWebhook(req: Request, res: Response): void {
+  // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
+  if (config.META_APP_SECRET) {
+    const signature = req.headers['x-hub-signature-256'] as string | undefined
+    const rawBody = JSON.stringify(req.body)
+    if (!verifySignature(rawBody, signature, config.META_APP_SECRET)) {
+      warn('[Webhook] Signature verification failed')
+      res.sendStatus(403)
+      return
+    }
+  }
+
   // Acknowledge immediately — Meta requires < 20 s response
   res.sendStatus(200)
 
   // Process asynchronously
   void processCallEvent(req.body as Record<string, unknown>)
+}
+
+function verifySignature(body: string, signature: string | undefined, secret: string): boolean {
+  if (!signature) return false
+  const [algo, hash] = signature.split('=')
+  if (algo !== 'sha256' || !hash) return false
+  const expected = crypto.createHmac('sha256', secret).update(body).digest('hex')
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expected, 'hex'))
+  } catch {
+    return false
+  }
 }
 
 async function processCallEvent(body: Record<string, unknown>): Promise<void> {
