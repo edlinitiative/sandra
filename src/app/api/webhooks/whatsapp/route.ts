@@ -54,10 +54,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
+  // ── Calls webhook — proxy to voice bridge ───────────────────────────────
+  // The voice bridge runs on a separate VM and handles WhatsApp Calling API
+  // events. We forward the payload and respond 200 immediately regardless.
+  if (isCallsWebhookEvent(rawBody)) {
+    const voiceBridgeUrl = process.env.VOICE_BRIDGE_URL ?? 'https://voice.edlight.org';
+    void fetch(`${voiceBridgeUrl}/webhook/calls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rawBody),
+    }).catch((err) => {
+      log.warn('Failed to forward calls webhook to voice bridge', { error: String(err) });
+    });
+    return NextResponse.json({ status: 'ok' }, { status: 200 });
+  }
+
   // Await processing — errors are caught inside so we always reach the 200
   await processWebhookAsync(rawBody, requestId);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function isCallsWebhookEvent(payload: unknown): boolean {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const p = payload as Record<string, unknown>;
+  try {
+    const entries = (p?.entry as Array<Record<string, unknown>>) ?? [];
+    return entries.some((entry) => {
+      const changes = (entry?.changes as Array<Record<string, unknown>>) ?? [];
+      return changes.some((c) => c?.field === 'calls');
+    });
+  } catch {
+    return false;
+  }
 }
 
 // ─── Background processing ────────────────────────────────────────────────────
