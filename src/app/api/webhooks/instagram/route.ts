@@ -6,7 +6,7 @@ import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/mem
 import { resolveLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
-import { generateRequestId, createLogger } from '@/lib/utils';
+import { generateRequestId, createLogger, verifyMetaSignature } from '@/lib/utils';
 import { splitForInstagram } from '@/lib/channels/instagram-formatter';
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
@@ -45,11 +45,23 @@ export async function POST(request: Request) {
   const requestId = generateRequestId();
   setCorrelationId(requestId);
 
+  let rawText: string;
   let rawBody: unknown;
   try {
-    rawBody = await request.json();
+    rawText = await request.text();
+    rawBody = JSON.parse(rawText);
   } catch {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
+  }
+
+  // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
+  const appSecret = process.env.INSTAGRAM_APP_SECRET ?? '';
+  if (appSecret) {
+    const signature = request.headers.get('x-hub-signature-256');
+    if (!verifyMetaSignature(rawText, signature, appSecret)) {
+      log.warn('Instagram webhook signature verification failed', { requestId });
+      return new Response('Forbidden', { status: 403 });
+    }
   }
 
   // Log the raw payload for debugging

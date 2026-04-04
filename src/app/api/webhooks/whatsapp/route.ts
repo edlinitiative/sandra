@@ -6,7 +6,7 @@ import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/mem
 import { resolveLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
-import { generateRequestId, createLogger } from '@/lib/utils';
+import { generateRequestId, createLogger, verifyMetaSignature } from '@/lib/utils';
 import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext, isReplyToSandra } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
@@ -47,11 +47,23 @@ export async function POST(request: Request) {
   const requestId = generateRequestId();
   setCorrelationId(requestId);
 
+  let rawText: string;
   let rawBody: unknown;
   try {
-    rawBody = await request.json();
+    rawText = await request.text();
+    rawBody = JSON.parse(rawText);
   } catch {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
+  }
+
+  // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
+  const appSecret = process.env.WHATSAPP_WEBHOOK_SECRET ?? '';
+  if (appSecret) {
+    const signature = request.headers.get('x-hub-signature-256');
+    if (!verifyMetaSignature(rawText, signature, appSecret)) {
+      log.warn('WhatsApp webhook signature verification failed', { requestId });
+      return new Response('Forbidden', { status: 403 });
+    }
   }
 
   // ── Calls webhook — proxy to voice bridge ───────────────────────────────
