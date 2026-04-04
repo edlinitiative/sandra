@@ -1,8 +1,9 @@
 import Link from 'next/link';
+import { ThemeToggle } from './theme-toggle';
 
 export function Header() {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white/80 px-4 backdrop-blur-md transition-colors dark:border-gray-800 dark:bg-gray-900/80 lg:px-6">
       <Link href="/" className="flex items-center gap-2.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sandra-500 to-sandra-700 text-white">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -13,23 +14,26 @@ export function Header() {
             />
           </svg>
         </div>
-        <span className="text-lg font-bold text-gray-900">Sandra</span>
-        <span className="hidden text-sm text-gray-400 sm:inline">by EdLight</span>
+        <span className="text-lg font-bold text-gray-900 dark:text-white">Sandra</span>
+        <span className="hidden text-sm text-gray-400 dark:text-gray-500 sm:inline">by EdLight</span>
       </Link>
 
       <nav className="flex items-center gap-1">
         <Link
           href="/chat"
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
         >
           Chat
         </Link>
         <Link
           href="/admin"
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
         >
           Admin
         </Link>
+        <div className="ml-2">
+          <ThemeToggle />
+        </div>
       </nav>
     </header>
   );

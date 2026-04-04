@@ -8,6 +8,11 @@
     --foreground: #111827;
   }
 
+  .dark {
+    --background: #0b1120;
+    --foreground: #f1f5f9;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -16,6 +21,7 @@
   body {
     color: var(--foreground);
     background: var(--background);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
