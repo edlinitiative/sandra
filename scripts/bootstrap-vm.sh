@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Sandra VM Bootstrap — Oracle Cloud Ubuntu 24.04
+# Run once as a sudo-capable user (e.g. ubuntu) on a fresh VM.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/YOUR_ORG/sandra/main/scripts/bootstrap-vm.sh | bash
+#   — or —
+#   scp scripts/bootstrap-vm.sh ubuntu@<VM_IP>:~/ && ssh ubuntu@<VM_IP> bash bootstrap-vm.sh
+# =============================================================================
+set -euo pipefail
+
+REPO_URL="${REPO_URL:-https://github.com/edlinitiative/sandra.git}"
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/sandra/voice-bridge}"
+VM_DOMAIN="${VM_DOMAIN:-voice.edlight.org}"
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+info()    { echo -e "${GREEN}[INFO]${NC}  $*"; }
+warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
+
+# ── 0. Pre-flight ─────────────────────────────────────────────────────────────
+[[ $EUID -ne 0 ]] && error "Run as root (or prefix with sudo)."
+[[ "$(lsb_release -si 2>/dev/null)" != "Ubuntu" ]] && warn "Not Ubuntu — proceed with caution."
+
+info "=== Sandra Voice Bridge — VM Bootstrap ==="
+info "Domain  : $VM_DOMAIN"
+info "Repo    : $REPO_URL"
+info "Dir     : $DEPLOY_DIR"
+echo
+
+# ── 1. System packages ────────────────────────────────────────────────────────
+info "Updating packages..."
+apt-get update -qq
+apt-get upgrade -y -qq
+apt-get install -y -qq curl git ufw lsof
+
+# ── 2. Docker (official repo, latest stable) ──────────────────────────────────
+if ! command -v docker &>/dev/null; then
+  info "Installing Docker..."
+  curl -fsSL https://get.docker.com | sh
+  systemctl enable --now docker
+  # Allow the deploy user to run docker without sudo
+  DEPLOY_USER="${SUDO_USER:-ubuntu}"
+  usermod -aG docker "$DEPLOY_USER" && info "Added $DEPLOY_USER to docker group (re-login required for effect)."
+else
+  info "Docker already installed: $(docker --version)"
+fi
+
+# Ensure compose v2 plugin is available
+if ! docker compose version &>/dev/null; then
+  apt-get install -y -qq docker-compose-plugin
+fi
+info "Docker Compose: $(docker compose version)"
+
+# ── 3. Firewall (ufw) ─────────────────────────────────────────────────────────
+info "Configuring ufw..."
+ufw --force reset
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow ssh          # 22
+ufw allow 80/tcp       # Caddy ACME HTTP-01
+ufw allow 443/tcp      # HTTPS
+ufw allow 443/udp      # HTTP/3
+# WebRTC UDP media ports — must also be open in Oracle Cloud Security List
+ufw allow 10000:11000/udp
+ufw --force enable
+info "ufw status:"
+ufw status verbose
+
+# ── 4. Oracle Cloud — disable legacy iptables rules that block ingress ────────
+# OCI images ship with iptables REJECT rules on the default chain.
+# We keep ufw in charge; flush the INPUT REJECT leftover.
+if iptables -L INPUT -n 2>/dev/null | grep -q "REJECT"; then
+  warn "Detected iptables REJECT rules — removing (ufw manages the firewall now)..."
+  iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+  iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+  # Persist
+  if command -v netfilter-persistent &>/dev/null; then
+    netfilter-persistent save
+  else
+    apt-get install -y -qq iptables-persistent
+    netfilter-persistent save
+  fi
+fi
+
+# ── 5. Clone / update repo ────────────────────────────────────────────────────
+mkdir -p "$(dirname "$DEPLOY_DIR")"
+
+if [[ -d "$DEPLOY_DIR/.git" ]]; then
+  info "Repo already cloned — pulling latest..."
+  git -C "$DEPLOY_DIR" pull --ff-only
+elif [[ -d "/opt/sandra/repo" ]]; then
+  info "Using existing full clone, symlinking voice-bridge..."
+  ln -sfn /opt/sandra/repo/voice-bridge "$DEPLOY_DIR"
+else
+  info "Cloning repo (sparse: voice-bridge only)..."
+  git clone --filter=blob:none --sparse "$REPO_URL" /opt/sandra/repo
+  git -C /opt/sandra/repo sparse-checkout set voice-bridge prisma scripts
+  ln -sfn /opt/sandra/repo/voice-bridge "$DEPLOY_DIR"
+fi
+
+# Resolve symlink for subsequent steps
+REAL_DIR="$(realpath "$DEPLOY_DIR")"
+info "Working directory: $REAL_DIR"
+
+# ── 6. Create .env from interactive prompt (skip if already exists) ───────────
+ENV_FILE="$REAL_DIR/.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  warn ".env already exists at $ENV_FILE — skipping interactive setup."
+  warn "Edit it manually: nano $ENV_FILE"
+else
+  info "Creating .env (press Enter to skip optional fields)..."
+  echo
+
+  prompt_required() {
+    local VAR="$1"; local PROMPT="$2"; local VAL=""
+    while [[ -z "$VAL" ]]; do
+      read -r -p "  [REQUIRED] $PROMPT: " VAL
+      [[ -z "$VAL" ]] && echo "    → This field is required."
+    done
+    echo "$VAR=$VAL"
+  }
+  prompt_optional() {
+    local VAR="$1"; local PROMPT="$2"; local DEFAULT="$3"; local VAL=""
+    read -r -p "  [optional] $PROMPT [$DEFAULT]: " VAL
+    echo "$VAR=${VAL:-$DEFAULT}"
+  }
+
+  {
+    echo "# Auto-generated by bootstrap-vm.sh on $(date -u)"
+    echo ""
+    echo "PORT=3001"
+    echo "HOST=0.0.0.0"
+    echo ""
+    prompt_required  "WHATSAPP_PHONE_NUMBER_ID"    "WhatsApp Phone Number ID (Meta Developer Console)"
+    prompt_required  "WHATSAPP_ACCESS_TOKEN"        "WhatsApp Permanent Access Token"
+    prompt_optional  "WHATSAPP_VOICE_VERIFY_TOKEN"  "Webhook verify token"         "sandra-voice-verify-2026"
+    prompt_optional  "WHATSAPP_API_VERSION"         "WhatsApp API version"          "v19.0"
+    echo ""
+    prompt_required  "OPENAI_API_KEY"               "OpenAI API Key"
+    prompt_optional  "OPENAI_REALTIME_MODEL"        "OpenAI Realtime model"         "gpt-4o-realtime-preview"
+    prompt_optional  "OPENAI_VOICE"                 "Voice (alloy/echo/fable/onyx/nova/shimmer)" "alloy"
+    echo ""
+    echo "LOG_LEVEL=info"
+  } > "$ENV_FILE"
+
+  chmod 600 "$ENV_FILE"
+  info ".env written to $ENV_FILE"
+fi
+
+# ── 7. Build & start containers ───────────────────────────────────────────────
+info "Building and starting Docker Compose stack..."
+docker compose -f "$REAL_DIR/docker-compose.yml" up -d --build --remove-orphans
+
+# ── 8. Wait for health check ──────────────────────────────────────────────────
+info "Waiting for voice-bridge to become healthy (up to 60s)..."
+for i in $(seq 1 12); do
+  STATUS=$(docker inspect --format='{{.State.Health.Status}}' sandra-voice-bridge 2>/dev/null || echo "not-found")
+  if [[ "$STATUS" == "healthy" ]]; then
+    info "voice-bridge is healthy ✓"
+    break
+  fi
+  sleep 5
+  warn "  attempt $i/12 — status: $STATUS"
+done
+
+# ── 9. Summary ────────────────────────────────────────────────────────────────
+echo
+info "══════════════════════════════════════════════"
+info "  Bootstrap complete!"
+info "══════════════════════════════════════════════"
+echo
+info "Running containers:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+echo
+echo -e "${YELLOW}Next steps:${NC}"
+echo "  1. Point DNS:  voice.edlight.org  →  $(curl -s ifconfig.me 2>/dev/null || echo '<VM_PUBLIC_IP>')"
+echo "  2. Open Oracle Cloud Security List: TCP 80, 443 and UDP 10000-11000"
+echo "  3. Register Meta webhook:"
+echo "       Callback URL : https://$VM_DOMAIN/webhook/calls"
+echo "       Verify Token : $(grep WHATSAPP_VOICE_VERIFY_TOKEN "$ENV_FILE" | cut -d= -f2)"
+echo "  4. Add GitHub secrets for CI/CD (see .github/workflows/deploy-voice-bridge.yml):"
+echo "       VM_HOST  VM_USER  VM_SSH_KEY  VM_DEPLOY_DIR"
+echo
+info "Logs: docker compose -f $REAL_DIR/docker-compose.yml logs -f"

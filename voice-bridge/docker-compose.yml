@@ -5,18 +5,15 @@ services:
     build: .
     container_name: sandra-voice-bridge
     restart: unless-stopped
+    # HTTP port is only exposed internally to Caddy — not on the host
+    expose:
+      - '3001'
+    # UDP range for WebRTC media — must be on the host NIC so Meta can reach us directly
+    # Match these ports in your Oracle Cloud Security List and OS firewall rules
     ports:
-      # Host port 3001 → container port 3001
-      # In production Coolify puts Caddy in front, so only 3001 needs to be open internally
-      - '3001:3001'
+      - '10000-11000:10000-11000/udp'
     env_file:
       - .env
-    # UDP range for WebRTC media — must match Oracle security list rules
-    # Meta's ICE candidates use ports 40012, 3478-3484
-    # Our media ports are in this range
-    ports:
-      - '3001:3001'
-      - '10000-11000:10000-11000/udp'
     healthcheck:
       test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 30s
@@ -27,3 +24,34 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
+    networks:
+      - bridge-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sandra-caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'    # Required for ACME HTTP-01 challenge (Let's Encrypt)
+      - '443:443'  # HTTPS
+      - '443:443/udp' # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data     # Persists TLS certs across restarts
+      - caddy-config:/config
+    networks:
+      - bridge-net
+    depends_on:
+      - voice-bridge
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+networks:
+  bridge-net:
+
+volumes:
+  caddy-data:
+  caddy-config:
