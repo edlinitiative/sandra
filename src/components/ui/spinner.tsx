@@ -3,7 +3,7 @@ export function Spinner({ className = '', size = 'md' }: { className?: string; s
 
   return (
     <svg
-      className={`animate-spin text-sandra-600 ${sizeClasses[size]} ${className}`}
+      className={`animate-spin text-sandra-400 ${sizeClasses[size]} ${className}`}
       viewBox="0 0 24 24"
       fill="none"
     >

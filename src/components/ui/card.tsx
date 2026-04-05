@@ -9,7 +9,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`rounded-xl border border-gray-200 bg-white shadow-sm ${padded ? 'p-6' : ''} ${className}`}
+        className={`rounded-xl border border-white/[0.08] bg-[#1a1a1a] ${padded ? 'p-6' : ''} ${className}`}
         {...props}
       >
         {children}
@@ -30,7 +30,7 @@ export function CardHeader({ className = '', children, ...props }: HTMLAttribute
 
 export function CardTitle({ className = '', children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-lg font-semibold text-gray-900 ${className}`} {...props}>
+    <h3 className={`text-lg font-semibold text-white ${className}`} {...props}>
       {children}
     </h3>
   );

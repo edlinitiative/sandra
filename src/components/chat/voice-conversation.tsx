@@ -48,7 +48,9 @@ const VOICE_INSTRUCTIONS = `You are Sandra, the friendly voice assistant for EdL
 
 EdLight has five programs: ESLP (funded 2-week summer leadership for high schoolers), Nexus (international exchange residencies for university students), Academy (free bilingual video lessons in Maths, Physics, Chemistry, Economics), Code (free coding tracks: SQL, Python, HTML, CSS, JavaScript), and Labs (digital products for mission-led organizations). EdLight News curates external scholarship listings — EdLight does NOT offer its own scholarships. Website: edlight.org.
 
-This is a voice conversation. Be warm and conversational. Keep answers to 1-3 sentences unless the user asks for more detail. Never read bullet lists aloud — summarize naturally instead.`;
+This is a voice conversation. Be warm and conversational. Keep answers to 1-3 sentences unless the user asks for more detail. Never read bullet lists aloud — summarize naturally instead.
+
+ENDING THE CONVERSATION: When the user says goodbye, bye, thanks that's all, I'm done, or anything that signals they want to stop — give a warm closing reply and end it with exactly the phrase "Goodbye for now!". If someone asks you about anything violent, sexually explicit, hateful, or otherwise inappropriate, politely decline and end with "Goodbye for now!". The system will close the session automatically when you say that phrase.`;
 
 // ── Audio FFT singletons — survive component re-renders ──────────────────────
 // createMediaElementSource can only be called once per element per AudioContext.
@@ -56,8 +58,21 @@ let _audioCtx: AudioContext | null = null;
 let _analyser: AnalyserNode | null = null;
 let _src: MediaElementAudioSourceNode | null = null;
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+/**
+ * Remap BCP-47 codes to the closest language the transcription model supports.
+ * Haitian Creole ('ht') → French ('fr'): same script, shared vocabulary,
+ * prevents the model from hallucinating CJK characters.
+ */
+function realtimeLanguageHint(language: string | undefined): string | undefined {
+  if (!language) return undefined;
+  const base = language.toLowerCase().split('-')[0];
+  const REMAP: Record<string, string> = { ht: 'fr' };
+  return REMAP[base ?? ''] ?? base ?? undefined;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
-export function VoiceConversation({ onTurn }: VoiceConversationProps) {
+export function VoiceConversation({ onTurn, language }: VoiceConversationProps) {
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +87,9 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
   const currentAssistantIdRef = useRef<string | null>(null);
   const currentUserIdRef = useRef<string | null>(null);
   const userTurnTextRef = useRef('');
+
+  // Signals that the session should close after the current response finishes
+  const pendingEndRef = useRef(false);
 
   // Audio FFT canvas
   const vizCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -161,6 +179,13 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
           // Fallback: no streaming entry exists, append a new one
           return [...prev, { id: crypto.randomUUID(), role: 'user', text, streaming: false }];
         });
+        // Detect farewell or inappropriate requests — Sandra will respond
+        // with "Goodbye for now!" and then response.done will close the session.
+        const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\s+)?(call|conversation|chat|session)|hang\s+up|i[''']m\s+(done|good|all\s+set)|that[''']?s?\s+all|no\s+more\s+questions|stop\s+(talking|the\s+(call|chat)))\b/i;
+        const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
+        if (FAREWELL_RE.test(text) || INAPPROPRIATE_RE.test(text)) {
+          pendingEndRef.current = true;
+        }
         break;
       }
 
@@ -195,13 +220,23 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
           );
           onTurnRef.current?.(userTurnTextRef.current, finalText);
         }
+        // If Sandra said the farewell phrase, schedule end after audio finishes
+        if (/goodbye for now/i.test(finalText)) {
+          pendingEndRef.current = true;
+        }
         break;
       }
 
-      // Response fully done → back to listening
+      // Response fully done → back to listening (or end if farewell was detected)
       case 'response.done':
         currentAssistantIdRef.current = null;
-        setSessionState('listening');
+        if (pendingEndRef.current) {
+          pendingEndRef.current = false;
+          // Give the TTS audio ~1.5 s to finish before closing
+          setTimeout(() => { cleanup(); setSessionState('idle'); setTranscript([]); }, 1500);
+        } else {
+          setSessionState('listening');
+        }
         break;
 
       // API error
@@ -218,6 +253,7 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
   const startConversation = async () => {
     setError(null);
     setTranscript([]);
+    pendingEndRef.current = false;
     setSessionState('connecting');
 
     try {
@@ -230,14 +266,35 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
       const tokenData = await tokenRes.json() as { client_secret: { value: string } };
       const ephemeralKey = tokenData.client_secret.value;
 
-      // 2. Peer connection
-      const pc = new RTCPeerConnection();
+      // 2. Peer connection — include STUN so NAT traversal works on all networks
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      });
       pcRef.current = pc;
 
+      // Surface hard connection failures to the user
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'failed') {
+          setError('Connection failed — please check your network and try again');
+          setSessionState('error');
+          cleanup();
+        }
+      };
+
       // 3. Remote audio track → Sandra's voice plays through the hidden element
+      // Explicitly call play() in addition to autoPlay to satisfy browser autoplay policies.
       pc.ontrack = (e) => {
         const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
-        if (audioEl) audioEl.srcObject = e.streams[0] ?? null;
+        if (audioEl) {
+          audioEl.srcObject = e.streams[0] ?? null;
+          void audioEl.play().catch(() => {
+            // Autoplay blocked — the user will need to interact with the page first.
+            // This is rare since we always start from a button click.
+          });
+        }
       };
 
       // 4. Microphone input
@@ -250,13 +307,19 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
       dcRef.current = dc;
 
       dc.onopen = () => {
+        const langHint = realtimeLanguageHint(language);
         sendEvent({
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
             instructions: VOICE_INSTRUCTIONS,
             voice: 'alloy',
-            input_audio_transcription: { model: 'gpt-4o-transcribe' },
+            input_audio_transcription: {
+              model: 'gpt-4o-transcribe',
+              // Passing 'fr' for Haitian Creole users anchors the model in the
+              // Latin script and avoids CJK hallucinations on ambiguous phonemes.
+              ...(langHint ? { language: langHint } : {}),
+            },
             turn_detection: {
               type: 'server_vad',
               threshold: 0.5,
@@ -490,41 +553,6 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
               )}
             </div>
           </div>
-
-          {/* Transcript */}
-          {transcript.length > 0 && (
-            <div className="max-h-[20vh] overflow-y-auto border-t border-white/[0.06] px-4 py-3">
-              <div className="space-y-2">
-                {transcript.map((entry) => (
-                  <div key={entry.id} className="space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`h-1 w-1 rounded-full ${entry.role === 'user' ? 'bg-slate-500' : 'bg-sandra-400'}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-widest ${entry.role === 'user' ? 'text-slate-500' : 'text-sandra-400'}`}>
-                        {entry.role === 'user' ? 'You' : 'Sandra'}
-                      </span>
-                      {entry.streaming && (
-                        <span className="ml-1 flex h-3 items-center gap-[2px]">
-                          {[0, 120, 240].map((d, i) => (
-                            <span key={i} className="soundwave-bar block h-full w-[2px] rounded-full bg-slate-500" style={{ animationDelay: `${d}ms` }} />
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                    <p
-                      className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
-                        entry.role === 'user'
-                          ? 'bg-white/[0.04] text-slate-300'
-                          : 'bg-sandra-500/10 text-slate-200'
-                      }`}
-                    >
-                      {entry.text || <span className="animate-pulse text-slate-600">…</span>}
-                    </p>
-                  </div>
-                ))}
-                <div ref={transcriptEndRef} />
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

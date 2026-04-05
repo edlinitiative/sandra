@@ -604,8 +604,8 @@ export function AdminDashboard() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sandra Admin</h1>
-        <p className="mt-1 text-gray-500">Manage repositories, indexing, and system status.</p>
+        <h1 className="text-2xl font-bold text-white">Sandra Admin</h1>
+        <p className="mt-1 text-slate-500">Manage repositories, indexing, and system status.</p>
       </div>
 
       <Card>
@@ -632,7 +632,7 @@ export function AdminDashboard() {
             </Button>
           )}
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
           <Badge variant={adminKey ? 'success' : 'warning'}>
             {adminKey ? 'Authenticated' : 'Read-only'}
           </Badge>
@@ -642,12 +642,12 @@ export function AdminDashboard() {
 
       {/* Database unavailable banner */}
       {dbUnavailable && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-lg border border-amber-500/20 bg-amber-950/30 p-4">
           <div className="flex items-start gap-3">
             <span className="text-lg">⚠️</span>
             <div>
-              <p className="font-medium text-amber-800">Database unavailable</p>
-              <p className="mt-1 text-sm text-amber-700">
+              <p className="font-medium text-amber-400">Database unavailable</p>
+              <p className="mt-1 text-sm text-amber-300/70">
                 Sandra is running without a database connection. Chat and tools work normally using
                 built-in knowledge, but repository management and indexing require a running PostgreSQL
                 database.
@@ -658,15 +658,15 @@ export function AdminDashboard() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white/[0.04] p-1">
         {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
+            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
               activeTab === tab
-                ? 'bg-white text-gray-900 shadow'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white/[0.1] text-white shadow'
+                : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {tab === 'system'    ? '⚙️ System'
@@ -689,28 +689,28 @@ export function AdminDashboard() {
                 <CardDescription>Sandra v{health.version}</CardDescription>
               </CardHeader>
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm font-medium text-gray-500">Knowledge</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                <div className="rounded-lg bg-white/[0.04] p-4">
+                  <p className="text-sm font-medium text-slate-500">Knowledge</p>
+                  <p className="mt-1 text-2xl font-bold text-white">
                     {formatMetric(health.summary.knowledge.indexedDocuments)}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500">
                     documents · {formatMetric(health.summary.knowledge.vectorStoreChunks)} vector chunks
                   </p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm font-medium text-gray-500">Repositories</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                <div className="rounded-lg bg-white/[0.04] p-4">
+                  <p className="text-sm font-medium text-slate-500">Repositories</p>
+                  <p className="mt-1 text-2xl font-bold text-white">
                     {formatMetric(health.summary.repos.active)}/{formatMetric(health.summary.repos.total)}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500">
                     indexed {formatMetric(health.summary.repos.indexed)} · errors {formatMetric(health.summary.repos.error)}
                   </p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm font-medium text-gray-500">Tools</p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">{health.summary.tools.count}</p>
-                  <p className="text-xs text-gray-500">registered</p>
+                <div className="rounded-lg bg-white/[0.04] p-4">
+                  <p className="text-sm font-medium text-slate-500">Tools</p>
+                  <p className="mt-1 text-2xl font-bold text-white">{health.summary.tools.count}</p>
+                  <p className="text-xs text-slate-500">registered</p>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -729,7 +729,7 @@ export function AdminDashboard() {
               Index All Repositories
             </Button>
             {indexResult && (
-              <p className="text-sm text-gray-600">{indexResult}</p>
+              <p className="text-sm text-slate-400">{indexResult}</p>
             )}
           </div>
 
@@ -747,12 +747,12 @@ export function AdminDashboard() {
                   onChange={(e) => setTestMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !testLoading && sendTestMessage()}
                   placeholder="Type a test message..."
-                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-sandra-400 focus:outline-none focus:ring-2 focus:ring-sandra-100"
+                  className="flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sandra-400 focus:outline-none focus:ring-2 focus:ring-sandra-500/30"
                 />
                 <select
                   value={testLanguage}
                   onChange={(e) => setTestLanguage(e.target.value)}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-sandra-400 focus:outline-none"
+                  className="rounded-lg border border-white/[0.08] px-3 py-2 text-sm focus:border-sandra-400 focus:outline-none"
                 >
                   <option value="en">🇺🇸 EN</option>
                   <option value="fr">🇫🇷 FR</option>
@@ -764,13 +764,13 @@ export function AdminDashboard() {
               </div>
 
               {testError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">
                   {testError}
                 </div>
               )}
 
               {testResult && (
-                <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
                   <div className="flex flex-wrap gap-2">
                     <Badge variant={testResult.demoMode ? 'warning' : 'success'}>
                       {testResult.demoMode ? 'Demo Mode' : 'Live'}
@@ -783,7 +783,7 @@ export function AdminDashboard() {
                       <Badge variant="info">Tools: {testResult.toolsUsed.join(', ')}</Badge>
                     )}
                   </div>
-                  <div className="whitespace-pre-wrap text-sm text-gray-800">
+                  <div className="whitespace-pre-wrap text-sm text-slate-300">
                     {testResult.response}
                   </div>
                 </div>
@@ -793,10 +793,10 @@ export function AdminDashboard() {
 
           {/* Repository List */}
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Registered Repositories</h2>
+            <h2 className="mb-4 text-lg font-semibold text-white">Registered Repositories</h2>
             {!adminKey ? (
               <Card>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-400">
                   Repository status and indexing controls unlock after you enter a valid admin key.
                 </p>
               </Card>
@@ -806,7 +806,7 @@ export function AdminDashboard() {
                   <Card key={`${repo.owner}/${repo.name}`} className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">{repo.displayName}</h3>
+                        <h3 className="font-semibold text-white">{repo.displayName}</h3>
                         <Badge variant={repo.isActive ? 'success' : 'default'}>
                           {repo.isActive ? 'Active' : 'Inactive'}
                         </Badge>
@@ -817,8 +817,8 @@ export function AdminDashboard() {
                           {repo.indexedDocumentCount} docs
                         </Badge>
                       </div>
-                      <p className="mt-1 text-sm text-gray-500">{repo.description ?? 'No description available.'}</p>
-                      <p className="mt-1 text-xs text-gray-400">
+                      <p className="mt-1 text-sm text-slate-400">{repo.description ?? 'No description available.'}</p>
+                      <p className="mt-1 text-xs text-slate-600">
                         {repo.owner}/{repo.name} · {repo.branch}
                         {repo.docsPath ? ` · docs: ${repo.docsPath}` : ' · no docs path'}
                         {repo.lastIndexedAt ? ` · indexed ${new Date(repo.lastIndexedAt).toLocaleString()}` : ' · never indexed'}
@@ -847,7 +847,7 @@ export function AdminDashboard() {
       {activeTab === 'analytics' && (
         <div className="space-y-6">
           {!adminKey ? (
-            <Card><p className="text-sm text-gray-600">Enter an admin key to view analytics.</p></Card>
+            <Card><p className="text-sm text-slate-400">Enter an admin key to view analytics.</p></Card>
           ) : (
             <>
               {/* Date range controls */}
@@ -858,21 +858,21 @@ export function AdminDashboard() {
                 </CardHeader>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-gray-500">From</span>
+                    <span className="text-xs font-medium text-slate-500">From</span>
                     <input
                       type="date"
                       value={analyticsFrom}
                       onChange={(e) => setAnalyticsFrom(e.target.value)}
-                      className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-sandra-400 focus:outline-none"
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-gray-500">To</span>
+                    <span className="text-xs font-medium text-slate-500">To</span>
                     <input
                       type="date"
                       value={analyticsTo}
                       onChange={(e) => setAnalyticsTo(e.target.value)}
-                      className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-sandra-400 focus:outline-none"
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none"
                     />
                   </label>
                   <Button
@@ -886,7 +886,7 @@ export function AdminDashboard() {
               </Card>
 
               {analyticsError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{analyticsError}</div>
+                <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">{analyticsError}</div>
               )}
 
               {analyticsLoading && !analyticsData && (
@@ -898,28 +898,28 @@ export function AdminDashboard() {
                   {/* Summary metrics */}
                   <div className="grid gap-4 sm:grid-cols-4">
                     <Card>
-                      <p className="text-xs font-medium text-gray-500">Total Events</p>
-                      <p className="mt-1 text-3xl font-bold text-gray-900">{analyticsData.totalEvents.toLocaleString()}</p>
+                      <p className="text-xs font-medium text-slate-500">Total Events</p>
+                      <p className="mt-1 text-3xl font-bold text-white">{analyticsData.totalEvents.toLocaleString()}</p>
                     </Card>
                     <Card>
-                      <p className="text-xs font-medium text-gray-500">Avg Response</p>
-                      <p className="mt-1 text-3xl font-bold text-gray-900">
+                      <p className="text-xs font-medium text-slate-500">Avg Response</p>
+                      <p className="mt-1 text-3xl font-bold text-white">
                         {analyticsData.averageResponseMs !== null ? `${Math.round(analyticsData.averageResponseMs)}ms` : '—'}
                       </p>
                     </Card>
                     <Card>
-                      <p className="text-xs font-medium text-gray-500">Cache Hit Rate</p>
-                      <p className="mt-1 text-3xl font-bold text-gray-900">
+                      <p className="text-xs font-medium text-slate-500">Cache Hit Rate</p>
+                      <p className="mt-1 text-3xl font-bold text-white">
                         {analyticsData.cacheHitRate !== null ? `${(analyticsData.cacheHitRate * 100).toFixed(1)}%` : '—'}
                       </p>
                     </Card>
                     <Card>
-                      <p className="text-xs font-medium text-gray-500">Top Tool</p>
-                      <p className="mt-1 text-lg font-bold text-gray-900 truncate">
+                      <p className="text-xs font-medium text-slate-500">Top Tool</p>
+                      <p className="mt-1 text-lg font-bold text-white truncate">
                         {analyticsData.topTools[0]?.tool ?? '—'}
                       </p>
                       {analyticsData.topTools[0] && (
-                        <p className="text-xs text-gray-400">{analyticsData.topTools[0].count} calls</p>
+                        <p className="text-xs text-slate-600">{analyticsData.topTools[0].count} calls</p>
                       )}
                     </Card>
                   </div>
@@ -931,18 +931,18 @@ export function AdminDashboard() {
                       <div className="space-y-2">
                         {Object.entries(analyticsData.byEventType).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
                           <div key={type} className="flex items-center gap-3">
-                            <span className="w-40 truncate text-sm text-gray-600">{type}</span>
-                            <div className="flex-1 rounded-full bg-gray-100">
+                            <span className="w-40 truncate text-sm text-slate-400">{type}</span>
+                            <div className="flex-1 rounded-full bg-white/[0.06]">
                               <div
                                 className="h-2 rounded-full bg-sandra-500"
                                 style={{ width: `${Math.round((count / analyticsData.totalEvents) * 100)}%` }}
                               />
                             </div>
-                            <span className="w-12 text-right text-sm font-medium text-gray-900">{count}</span>
+                            <span className="w-12 text-right text-sm font-medium text-white">{count}</span>
                           </div>
                         ))}
                         {Object.keys(analyticsData.byEventType).length === 0 && (
-                          <p className="text-sm text-gray-400">No events recorded.</p>
+                          <p className="text-sm text-slate-600">No events recorded.</p>
                         )}
                       </div>
                     </Card>
@@ -953,18 +953,18 @@ export function AdminDashboard() {
                       <div className="space-y-2">
                         {Object.entries(analyticsData.byChannel).sort((a, b) => b[1] - a[1]).map(([channel, count]) => (
                           <div key={channel} className="flex items-center gap-3">
-                            <span className="w-24 truncate text-sm text-gray-600 capitalize">{channel}</span>
-                            <div className="flex-1 rounded-full bg-gray-100">
+                            <span className="w-24 truncate text-sm text-slate-400 capitalize">{channel}</span>
+                            <div className="flex-1 rounded-full bg-white/[0.06]">
                               <div
                                 className="h-2 rounded-full bg-indigo-400"
                                 style={{ width: `${Math.round((count / analyticsData.totalEvents) * 100)}%` }}
                               />
                             </div>
-                            <span className="w-12 text-right text-sm font-medium text-gray-900">{count}</span>
+                            <span className="w-12 text-right text-sm font-medium text-white">{count}</span>
                           </div>
                         ))}
                         {Object.keys(analyticsData.byChannel).length === 0 && (
-                          <p className="text-sm text-gray-400">No channel data.</p>
+                          <p className="text-sm text-slate-600">No channel data.</p>
                         )}
                       </div>
                     </Card>
@@ -974,13 +974,13 @@ export function AdminDashboard() {
                       <CardHeader><CardTitle>Events by Language</CardTitle></CardHeader>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(analyticsData.byLanguage).sort((a, b) => b[1] - a[1]).map(([lang, count]) => (
-                          <div key={lang} className="flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2">
-                            <span className="text-sm font-medium uppercase text-gray-700">{lang}</span>
+                          <div key={lang} className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-2">
+                            <span className="text-sm font-medium uppercase text-slate-300">{lang}</span>
                             <Badge variant="default">{count}</Badge>
                           </div>
                         ))}
                         {Object.keys(analyticsData.byLanguage).length === 0 && (
-                          <p className="text-sm text-gray-400">No language data.</p>
+                          <p className="text-sm text-slate-600">No language data.</p>
                         )}
                       </div>
                     </Card>
@@ -991,12 +991,12 @@ export function AdminDashboard() {
                       <div className="space-y-2">
                         {analyticsData.topTools.slice(0, 8).map(({ tool, count }) => (
                           <div key={tool} className="flex items-center justify-between">
-                            <span className="truncate text-sm text-gray-600">{tool}</span>
+                            <span className="truncate text-sm text-slate-400">{tool}</span>
                             <Badge variant="info">{count}</Badge>
                           </div>
                         ))}
                         {analyticsData.topTools.length === 0 && (
-                          <p className="text-sm text-gray-400">No tool usage recorded.</p>
+                          <p className="text-sm text-slate-600">No tool usage recorded.</p>
                         )}
                       </div>
                     </Card>
@@ -1012,7 +1012,7 @@ export function AdminDashboard() {
       {activeTab === 'actions' && (
         <div className="space-y-6">
           {!adminKey ? (
-            <Card><p className="text-sm text-gray-600">Enter an admin key to manage action requests.</p></Card>
+            <Card><p className="text-sm text-slate-400">Enter an admin key to manage action requests.</p></Card>
           ) : (
             <>
               <Card>
@@ -1023,7 +1023,7 @@ export function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+                  <div className="flex gap-1 rounded-lg bg-white/[0.06] p-1">
                     {(['pending', 'all'] as const).map((f) => (
                       <button
                         key={f}
@@ -1032,7 +1032,7 @@ export function AdminDashboard() {
                           void loadActions(f, adminKey);
                         }}
                         className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-                          actionsFilter === f ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+                          actionsFilter === f ? 'bg-white/[0.1] text-white' : 'text-slate-500 hover:text-slate-300'
                         }`}
                       >
                         {f === 'pending' ? '⏳ Pending' : '📋 All'}
@@ -1047,12 +1047,12 @@ export function AdminDashboard() {
                   >
                     Refresh
                   </Button>
-                  <span className="ml-auto text-sm text-gray-400">{actionsTotal} total</span>
+                  <span className="ml-auto text-sm text-slate-600">{actionsTotal} total</span>
                 </div>
               </Card>
 
               {actionsError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{actionsError}</div>
+                <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">{actionsError}</div>
               )}
 
               {actionsLoading && actions.length === 0 && (
@@ -1061,7 +1061,7 @@ export function AdminDashboard() {
 
               {!actionsLoading && actions.length === 0 && !actionsError && (
                 <Card>
-                  <p className="text-center text-sm text-gray-500 py-6">
+                  <p className="text-center text-sm text-slate-500 py-6">
                     {actionsFilter === 'pending' ? '✅ No pending actions — queue is clear.' : 'No action requests found.'}
                   </p>
                 </Card>
@@ -1073,7 +1073,7 @@ export function AdminDashboard() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-gray-900">{action.tool}</span>
+                          <span className="font-semibold text-white">{action.tool}</span>
                           <Badge variant={
                             action.status === 'pending' ? 'warning'
                             : action.status === 'approved' || action.status === 'executed' ? 'success'
@@ -1084,17 +1084,17 @@ export function AdminDashboard() {
                           </Badge>
                           <Badge variant="info" >{action.channel}</Badge>
                         </div>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-xs text-slate-600">
                           ID: {action.id.slice(0, 8)}…
                           {action.userId ? ` · user: ${action.userId.slice(0, 8)}…` : ''}
                           {' · '}
                           {new Date(action.requestedAt).toLocaleString()}
                         </p>
-                        <pre className="mt-2 rounded bg-gray-50 p-2 text-xs text-gray-700 overflow-auto max-h-32">
+                        <pre className="mt-2 rounded bg-black/30 p-2 text-xs text-slate-300 overflow-auto max-h-32">
                           {JSON.stringify(action.input, null, 2)}
                         </pre>
                         {action.reviewedBy && (
-                          <p className="mt-1 text-xs text-gray-500">
+                          <p className="mt-1 text-xs text-slate-500">
                             Reviewed by {action.reviewedBy}
                             {action.reviewNote ? `: ${action.reviewNote}` : ''}
                           </p>
@@ -1133,7 +1133,7 @@ export function AdminDashboard() {
       {activeTab === 'gaps' && (
         <div className="space-y-6">
           {!adminKey ? (
-            <Card><p className="text-sm text-gray-600">Enter an admin key to view capability gaps.</p></Card>
+            <Card><p className="text-sm text-slate-400">Enter an admin key to view capability gaps.</p></Card>
           ) : (
             <>
               <Card>
@@ -1144,7 +1144,7 @@ export function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+                  <div className="flex gap-1 rounded-lg bg-white/[0.06] p-1">
                     {(['unreviewed', 'all'] as const).map((f) => (
                       <button
                         key={f}
@@ -1153,7 +1153,7 @@ export function AdminDashboard() {
                           void loadGaps(f, adminKey);
                         }}
                         className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-                          gapsFilter === f ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+                          gapsFilter === f ? 'bg-white/[0.1] text-white' : 'text-slate-500 hover:text-slate-300'
                         }`}
                       >
                         {f === 'unreviewed' ? '🔴 Unreviewed' : '📋 All'}
@@ -1161,15 +1161,15 @@ export function AdminDashboard() {
                     ))}
                   </div>
                   <Button variant="secondary" size="sm" onClick={() => void loadGaps(gapsFilter, adminKey)} isLoading={gapsLoading}>Refresh</Button>
-                  <span className="ml-auto text-sm text-gray-400">{gapsTotal} total</span>
+                  <span className="ml-auto text-sm text-slate-600">{gapsTotal} total</span>
                 </div>
               </Card>
 
-              {gapsError && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{gapsError}</div>}
+              {gapsError && <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">{gapsError}</div>}
               {gapsLoading && gaps.length === 0 && <div className="flex justify-center py-12"><Spinner size="lg" /></div>}
               {!gapsLoading && gaps.length === 0 && !gapsError && (
                 <Card>
-                  <p className="text-center text-sm text-gray-500 py-6">
+                  <p className="text-center text-sm text-slate-500 py-6">
                     {gapsFilter === 'unreviewed' ? '✅ No unreviewed gaps — all caught up.' : 'No capability gaps recorded yet.'}
                   </p>
                 </Card>
@@ -1180,7 +1180,7 @@ export function AdminDashboard() {
                   <Card key={gap.id} className="space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-sm leading-relaxed">&ldquo;{gap.userMessage}&rdquo;</p>
+                        <p className="font-medium text-white text-sm leading-relaxed">&ldquo;{gap.userMessage}&rdquo;</p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {gap.patterns.map((p) => (
                             <Badge key={p} variant="warning">{p}</Badge>
@@ -1191,7 +1191,7 @@ export function AdminDashboard() {
                             {gap.reviewed ? 'reviewed' : 'unreviewed'}
                           </Badge>
                         </div>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-xs text-slate-600">
                           {new Date(gap.createdAt).toLocaleString()}
                           {gap.userId ? ` · user: ${gap.userId.slice(0, 8)}…` : ''}
                         </p>
@@ -1219,7 +1219,7 @@ export function AdminDashboard() {
       {activeTab === 'tools' && (
         <div className="space-y-6">
           {!adminKey ? (
-            <Card><p className="text-sm text-gray-600">Enter an admin key to manage dynamic tools.</p></Card>
+            <Card><p className="text-sm text-slate-400">Enter an admin key to manage dynamic tools.</p></Card>
           ) : (
             <>
               <Card>
@@ -1231,15 +1231,15 @@ export function AdminDashboard() {
                 </CardHeader>
                 <div className="flex items-center gap-3">
                   <Button variant="secondary" size="sm" onClick={() => void loadDynamicTools(adminKey)} isLoading={toolsLoading}>Refresh</Button>
-                  <span className="ml-auto text-sm text-gray-400">{dynamicTools.length} tool{dynamicTools.length !== 1 ? 's' : ''}</span>
+                  <span className="ml-auto text-sm text-slate-600">{dynamicTools.length} tool{dynamicTools.length !== 1 ? 's' : ''}</span>
                 </div>
               </Card>
 
-              {toolsError && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{toolsError}</div>}
+              {toolsError && <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">{toolsError}</div>}
               {toolsLoading && dynamicTools.length === 0 && <div className="flex justify-center py-12"><Spinner size="lg" /></div>}
               {!toolsLoading && dynamicTools.length === 0 && !toolsError && (
                 <Card>
-                  <p className="text-center text-sm text-gray-500 py-6">No dynamic tools yet. Ask Sandra to scaffold one, or use the Gaps tab.</p>
+                  <p className="text-center text-sm text-slate-500 py-6">No dynamic tools yet. Ask Sandra to scaffold one, or use the Gaps tab.</p>
                 </Card>
               )}
 
@@ -1249,17 +1249,17 @@ export function AdminDashboard() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-gray-900">{tool.name}</span>
+                          <span className="font-semibold text-white">{tool.name}</span>
                           <Badge variant={tool.enabled ? 'success' : 'default'}>{tool.enabled ? 'enabled' : 'disabled'}</Badge>
                           <Badge variant={tool.tested ? 'success' : 'warning'}>{tool.tested ? 'tested' : 'untested'}</Badge>
                         </div>
-                        <p className="mt-1 text-sm text-gray-600">{tool.description}</p>
+                        <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {tool.requiredScopes.map((s) => (
                             <Badge key={s} variant="info">{s}</Badge>
                           ))}
                         </div>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-xs text-slate-600">
                           Created {new Date(tool.createdAt).toLocaleString()}
                           {tool.createdBy ? ` · by ${tool.createdBy.slice(0, 8)}…` : ''}
                           {tool.sourceGapIds.length > 0 ? ` · from ${tool.sourceGapIds.length} gap(s)` : ''}

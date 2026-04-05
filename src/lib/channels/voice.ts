@@ -21,9 +21,21 @@ export interface TranscriptionResult {
 }
 
 /**
- * ISO 639-1 codes supported by OpenAI Whisper.
- * Languages not in this set (e.g. Haitian Creole 'ht') will have their hint
- * dropped so Whisper auto-detects instead of returning HTTP 400.
+ * Maps BCP-47 base codes that Whisper doesn't support to the closest language
+ * it does support, to avoid HTTP 400 errors and CJK hallucinations.
+ *
+ * Key mapping: Haitian Creole ('ht') → French ('fr')
+ *   HC is a French-based creole; using 'fr' keeps Whisper in the Latin script
+ *   and produces far more accurate transcriptions than auto-detect, which can
+ *   confuse HC phonemes for Asian languages and output CJK characters.
+ */
+const WHISPER_LANGUAGE_REMAP: Record<string, string> = {
+  ht: 'fr', // Haitian Creole → French (closest supported language)
+  // Add further remaps here as needed
+};
+
+/**
+ * ISO 639-1 codes natively supported by OpenAI Whisper.
  */
 const WHISPER_SUPPORTED_LANGUAGES = new Set([
   'af', 'ar', 'hy', 'az', 'be', 'bs', 'bg', 'ca', 'zh', 'hr', 'cs', 'da',
@@ -34,13 +46,26 @@ const WHISPER_SUPPORTED_LANGUAGES = new Set([
 ]);
 
 /**
+ * Resolve the best language hint to send to Whisper for a given BCP-47 code.
+ * Returns undefined if language is unset, remaps unsupported codes (e.g. 'ht' → 'fr'),
+ * and drops anything not in the supported set.
+ */
+function resolveWhisperLanguage(language: string | undefined): string | undefined {
+  if (!language) return undefined;
+  const base = language.toLowerCase().split('-')[0];
+  if (!base) return undefined;
+  const remapped = WHISPER_LANGUAGE_REMAP[base] ?? base;
+  return WHISPER_SUPPORTED_LANGUAGES.has(remapped) ? remapped : undefined;
+}
+
+/**
  * Transcribe an audio buffer using OpenAI Whisper.
  *
  * @param audioBuffer  Raw audio bytes (mp3, wav, m4a, webm, ogg, etc.)
  * @param mimeType     MIME type of the audio, e.g. 'audio/mpeg'
  * @param filename     Filename with extension — Whisper uses extension for codec detection
- * @param language     Optional BCP-47 language hint (e.g. 'en', 'fr'). Unsupported
- *                     codes like 'ht' are silently dropped so Whisper auto-detects.
+ * @param language     Optional BCP-47 language hint (e.g. 'en', 'fr', 'ht').
+ *                     Unsupported codes are remapped (ht→fr) or dropped.
  */
 export async function transcribeAudio(
   audioBuffer: Buffer,
@@ -53,11 +78,7 @@ export async function transcribeAudio(
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  // Only pass the language hint if Whisper actually supports it; otherwise
-  // drop it and let Whisper auto-detect (avoids HTTP 400 for e.g. 'ht').
-  const baseCode = language ? language.toLowerCase().split('-')[0] : undefined;
-  const whisperLanguage =
-    baseCode && WHISPER_SUPPORTED_LANGUAGES.has(baseCode) ? language : undefined;
+  const whisperLanguage = resolveWhisperLanguage(language);
 
   const formData = new FormData();
   const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
@@ -65,6 +86,7 @@ export async function transcribeAudio(
   formData.append('model', env.OPENAI_WHISPER_MODEL);
   formData.append('response_format', 'verbose_json');
   if (whisperLanguage) {
+    // whisperLanguage is already validated/remapped (e.g. 'ht' → 'fr')
     formData.append('language', whisperLanguage);
   }
 
