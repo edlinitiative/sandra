@@ -9,7 +9,10 @@ const { mockEnv } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/lib/config', () => ({ env: mockEnv }));
+vi.mock('@/lib/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/config')>();
+  return { ...actual, env: mockEnv };
+});
 
 vi.mock('@/lib/channels/voice', () => ({
   transcribeAudio: vi.fn(),
@@ -42,9 +45,10 @@ vi.mock('@/lib/agents', () => ({
   }),
 }));
 
-vi.mock('@/lib/i18n', () => ({
-  resolveLanguage: vi.fn().mockReturnValue('en'),
-}));
+vi.mock('@/lib/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/i18n')>();
+  return { ...actual, resolveLanguage: vi.fn().mockReturnValue('en') };
+});
 
 vi.mock('@/lib/auth', () => ({
   getScopesForRole: vi.fn().mockReturnValue([]),
