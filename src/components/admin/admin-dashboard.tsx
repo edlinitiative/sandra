@@ -752,7 +752,7 @@ export function AdminDashboard() {
                 <select
                   value={testLanguage}
                   onChange={(e) => setTestLanguage(e.target.value)}
-                  className="rounded-lg border border-white/[0.08] px-3 py-2 text-sm focus:border-sandra-400 focus:outline-none"
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none [&>option]:bg-[#1a1a1a] [&>option]:text-white"
                 >
                   <option value="en">🇺🇸 EN</option>
                   <option value="fr">🇫🇷 FR</option>
@@ -1272,7 +1272,7 @@ export function AdminDashboard() {
                           {expandedCode === tool.id ? '▲ Hide code' : '▼ View code'}
                         </button>
                         {expandedCode === tool.id && (
-                          <pre className="mt-2 overflow-auto rounded bg-gray-900 p-3 text-xs text-gray-100 max-h-48">
+                          <pre className="mt-2 overflow-auto rounded bg-black/40 p-3 text-xs text-slate-300 max-h-48">
                             {tool.handlerCode}
                           </pre>
                         )}
