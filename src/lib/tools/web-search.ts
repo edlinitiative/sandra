@@ -30,10 +30,11 @@ const inputSchema = z.object({
     .describe('Maximum number of results to return (default 5)'),
   country: z
     .string()
-    .length(2)
+    .min(2)
+    .max(3)
     .optional()
-    .default('HT')
-    .describe("Two-letter country code to bias results, e.g. 'HT' (Haiti), 'US', 'FR'"),
+    .default('ALL')
+    .describe("Two-letter country code to bias results, e.g. 'US', 'FR', 'HT'. Defaults to 'ALL' (global)."),
   language: z
     .enum(['en', 'fr', 'ht'])
     .optional()
@@ -48,6 +49,13 @@ interface BraveSearchResult {
   age?: string;
 }
 
+// Countries supported by the Brave Search API (HT/Haiti is NOT in this list)
+const BRAVE_SUPPORTED_COUNTRIES = new Set([
+  'AR','AU','AT','BE','BR','CA','CL','DK','FI','FR','DE','GR','HK',
+  'IN','ID','IT','JP','KR','MY','MX','NL','NZ','NO','CN','PL','PT',
+  'PH','RU','SA','ZA','ES','SE','CH','TW','TR','GB','US','ALL',
+]);
+
 async function braveSearch(
   query: string,
   options: { count?: number; country?: string; language?: string },
@@ -60,7 +68,11 @@ async function braveSearch(
   const url = new URL('https://api.search.brave.com/res/v1/web/search');
   url.searchParams.set('q', query);
   url.searchParams.set('count', String(options.count ?? 5));
-  if (options.country) url.searchParams.set('country', options.country);
+  // Only pass country if Brave supports it; fall back to 'ALL' (global) for unsupported codes like HT
+  const country = options.country && BRAVE_SUPPORTED_COUNTRIES.has(options.country.toUpperCase())
+    ? options.country.toUpperCase()
+    : 'ALL';
+  if (country !== 'ALL') url.searchParams.set('country', country);
   if (options.language) url.searchParams.set('search_lang', options.language);
   url.searchParams.set('text_decorations', 'false');
   url.searchParams.set('safesearch', 'moderate');
@@ -126,7 +138,7 @@ const webSearchTool: SandraTool = {
     try {
       const results = await braveSearch(params.query, {
         count: params.maxResults,
-        country: params.country,
+        country: params.country ?? 'ALL',
         language: params.language === 'ht' ? 'fr' : params.language, // Brave doesn't support HT; use FR as closest
       });
 
