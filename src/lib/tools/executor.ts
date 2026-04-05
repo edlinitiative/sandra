@@ -41,10 +41,10 @@ export async function executeTool(
   // Permission check: all required scopes must be present in context
   const missingScopes = tool.requiredScopes.filter((s) => !context.scopes.includes(s));
   if (missingScopes.length > 0) {
-    throw new AuthError(`Missing required scopes for tool '${name}': ${missingScopes.join(', ')}`, {
-      tool: name,
-      missingScopes,
-    });
+    throw new AuthError(
+      `Tool '${name}' is not available with your current permissions (missing: ${missingScopes.join(', ')}).`,
+      { tool: name, missingScopes },
+    );
   }
 
   // Validate input with Zod schema

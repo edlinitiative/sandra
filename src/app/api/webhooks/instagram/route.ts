@@ -264,10 +264,14 @@ async function _processMessage(ctx: {
     }
 
     // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
+    // NOTE: Instagram users are separate DB Users from their web-app counterpart.
+    // wsIdentity.email IS the bridge — the web-app User has email=wsIdentity.email
+    // and that User's TenantMember holds the real role (admin/manager/basic).
+    // Querying by the channel userId would find nothing; query via user.email instead.
     let role: 'guest' | 'student' | 'educator' | 'admin' = wsIdentity ? 'student' : 'guest';
     if (wsIdentity) {
       const membership = await db.tenantMember.findFirst({
-        where: { userId, isActive: true },
+        where: { user: { email: wsIdentity.email }, isActive: true },
         select: { role: true },
       });
       if (membership?.role === 'admin') role = 'admin';
