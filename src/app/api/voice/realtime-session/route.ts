@@ -11,16 +11,27 @@
 
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
+import { getSandraSystemPrompt } from '@/lib/agents/prompts';
 
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: 'OPENAI_API_KEY is not configured' },
       { status: 500 },
     );
   }
+
+  // Allow caller to pass a language hint (default en)
+  let language: 'en' | 'fr' | 'ht' = 'en';
+  try {
+    const body = await req.json() as { language?: string };
+    if (body.language === 'fr' || body.language === 'ht') language = body.language;
+  } catch { /* no body is fine */ }
+
+  // Use Sandra's full system prompt so voice behaves identically to text chat
+  const instructions = getSandraSystemPrompt({ language });
 
   try {
     const res = await fetch('https://api.openai.com/v1/realtime/sessions', {
@@ -32,6 +43,7 @@ export async function POST(_req: Request) {
       body: JSON.stringify({
         model: REALTIME_MODEL,
         voice: env.OPENAI_TTS_VOICE ?? 'alloy',
+        instructions,
       }),
     });
 
