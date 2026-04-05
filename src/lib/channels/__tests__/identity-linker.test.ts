@@ -31,12 +31,14 @@ vi.mock('@/lib/db', () => ({
   db: {
     user: {
       update: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn().mockResolvedValue(null), // No existing user with email by default
     },
     tenant: {
       findFirst: vi.fn().mockResolvedValue({ id: 'tenant-1' }),
     },
     tenantMember: {
       upsert: vi.fn().mockResolvedValue({}),
+      findFirst: vi.fn().mockResolvedValue(null),
     },
   },
 }));
@@ -239,7 +241,7 @@ describe('linkWorkspaceIdentity', () => {
     expect((db.tenantMember.upsert as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ userId: 'user-1', role: 'basic', isActive: true }),
-        update: { isActive: true },
+        update: { isActive: true, role: 'basic' },
       }),
     );
   });

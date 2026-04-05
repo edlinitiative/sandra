@@ -207,16 +207,35 @@ export async function linkWorkspaceIdentity(
     }),
   ]);
 
-  // Also update the User record with the email
-  await db.user.update({
-    where: { id: userId },
-    data: {
+  // Also update the User record with the email.
+  // Skip if another User already owns this email (@unique constraint would fail).
+  const existingUserWithEmail = await db.user.findUnique({
+    where: { email: workspaceUser.email },
+    select: { id: true },
+  }).catch(() => null);
+
+  if (!existingUserWithEmail || existingUserWithEmail.id === userId) {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        email: workspaceUser.email,
+        name: workspaceUser.name,
+      },
+    }).catch((err) => {
+      log.warn('Failed to update user email', { userId, error: err instanceof Error ? err.message : 'unknown' });
+    });
+  } else {
+    // A separate web-app User already has this email — only update the name.
+    log.info('Skipping email update — web-app user already owns this email', {
+      userId,
       email: workspaceUser.email,
-      name: workspaceUser.name,
-    },
-  }).catch((err) => {
-    log.warn('Failed to update user email', { userId, error: err instanceof Error ? err.message : 'unknown' });
-  });
+      existingUserId: existingUserWithEmail.id,
+    });
+    await db.user.update({
+      where: { id: userId },
+      data: { name: workspaceUser.name },
+    }).catch(() => { /* best-effort */ });
+  }
 
   // Ensure the user has a TenantMember record so they can use Workspace tools.
   // Look up the tenant by the email domain (e.g. rony@edlight.org → edlight.org).
@@ -228,14 +247,27 @@ export async function linkWorkspaceIdentity(
     }).catch(() => null);
 
     if (tenant) {
+      // If the workspace user already has a TenantMember on the web-app User,
+      // mirror that role (e.g., admin stays admin) instead of defaulting to 'basic'.
+      let role: 'basic' | 'manager' | 'admin' = 'basic';
+      if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+        const existingMembership = await db.tenantMember.findFirst({
+          where: { userId: existingUserWithEmail.id, tenantId: tenant.id, isActive: true },
+          select: { role: true },
+        }).catch(() => null);
+        if (existingMembership?.role) {
+          role = existingMembership.role;
+        }
+      }
+
       await db.tenantMember.upsert({
         where: { tenantId_userId: { tenantId: tenant.id, userId } },
-        create: { tenantId: tenant.id, userId, role: 'basic', isActive: true },
-        update: { isActive: true },
+        create: { tenantId: tenant.id, userId, role, isActive: true },
+        update: { isActive: true, role },
       }).catch((err) => {
         log.warn('Failed to upsert tenant membership', { userId, tenantId: tenant.id, error: err instanceof Error ? err.message : 'unknown' });
       });
-      log.info('Ensured tenant membership', { userId, tenantId: tenant.id, domain });
+      log.info('Ensured tenant membership', { userId, tenantId: tenant.id, domain, role });
     } else {
       log.warn('No tenant found for domain — Workspace tools may be unavailable', { userId, domain });
     }

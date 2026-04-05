@@ -23,6 +23,9 @@ vi.mock('@/lib/db', () => ({
     programApplication: {
       findMany: (...args: unknown[]) => mockApplicationFindMany(...args),
     },
+    tenantMember: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
   },
 }));
 

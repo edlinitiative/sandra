@@ -22,6 +22,13 @@ export const INSTAGRAM_TRUNCATION_SUFFIX = '\n\n(Message truncated. Ask me to co
 export function stripInstagramMarkdown(text: string): string {
   let out = text;
 
+  // 0. Protect bare URLs from markdown stripping (underscores in URLs would be corrupted)
+  const urlPlaceholders: string[] = [];
+  out = out.replace(/https?:\/\/[^\s)>\]]+/g, (url) => {
+    urlPlaceholders.push(url);
+    return `\x00URL${urlPlaceholders.length - 1}\x00`;
+  });
+
   // 1. Strip image syntax before link conversion
   out = out.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
 
@@ -49,7 +56,10 @@ export function stripInstagramMarkdown(text: string): string {
   // 8. Collapse multiple blank lines
   out = out.replace(/\n{3,}/g, '\n\n');
 
-  // 9. Trim
+  // 9. Restore protected URLs
+  out = out.replace(/\x00URL(\d+)\x00/g, (_, i) => urlPlaceholders[parseInt(i)] ?? '');
+
+  // 10. Trim
   return out.trim();
 }
 

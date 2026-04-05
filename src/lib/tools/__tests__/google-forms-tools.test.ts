@@ -15,6 +15,7 @@ const mockLogAuditEvent = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/lib/google/context', () => ({
   resolveGoogleContext: (...a: unknown[]) => mockResolveGoogleContext(...a),
   resolveTenantForUser: (...a: unknown[]) => mockResolveTenantForUser(...a),
+  resolveTenantForContext: (...a: unknown[]) => mockResolveTenantForUser(...a),
 }));
 
 vi.mock('@/lib/db', () => ({

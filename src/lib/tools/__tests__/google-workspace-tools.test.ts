@@ -36,6 +36,7 @@ const mockUserFindUnique        = vi.fn();
 vi.mock('@/lib/google/context', () => ({
   resolveGoogleContext:  (...a: unknown[]) => mockResolveGoogleContext(...a),
   resolveTenantForUser:  (...a: unknown[]) => mockResolveTenantForUser(...a),
+  resolveTenantForContext: (...a: unknown[]) => mockResolveTenantForUser(...a),
 }));
 
 vi.mock('@/lib/google/calendar', () => ({

@@ -415,7 +415,18 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
   // Check if this user has granted sharing permission
   const sharingNote = await getGroupSharingNote(userId);
 
-  const scopes = getScopesForRole(wsIdentity ? 'student' : 'guest');
+  // ── RESOLVE ROLE FOR LINKED USERS (same pattern as DM path) ──────────
+  let role: 'guest' | 'student' | 'educator' | 'admin' = wsIdentity ? 'student' : 'guest';
+  if (wsIdentity) {
+    const membership = await db.tenantMember.findFirst({
+      where: { user: { email: wsIdentity.email }, isActive: true },
+      select: { role: true },
+    });
+    if (membership?.role === 'admin') role = 'admin';
+    else if (membership?.role === 'manager') role = 'educator';
+  }
+  const scopes = getScopesForRole(role);
+
   const result = await runSandraAgent({
     message: `${groupContext}\n${sharingNote}\n${cleanMessage}`,
     sessionId: groupSessionId,
@@ -425,6 +436,7 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
     senderName: resolvedName,
     attachments: inbound.attachments,
     scopes,
+    workspaceEmail: wsIdentity?.email,
     metadata: {
       requestId,
       source: 'whatsapp-group',

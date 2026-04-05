@@ -2,7 +2,7 @@ import type { AgentInput, AgentOutput, AgentConfig, AgentState, AgentStreamEvent
 import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
 import { getTenantAgentConfig } from './tenant-config';
-import { resolveTenantForUser } from '@/lib/google/context';
+import { resolveTenantForUser, resolveTenantForContext } from '@/lib/google/context';
 import { loadTenantTools, type TenantTool } from '@/lib/tools/tenant-tool-loader';
 import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
@@ -122,7 +122,7 @@ export async function runSandraAgent(
     let resolvedTenantId: string | null = input.tenantId ?? null;
     if (!resolvedTenantId && input.userId) {
       try {
-        resolvedTenantId = await resolveTenantForUser(input.userId);
+        resolvedTenantId = await resolveTenantForContext(input.userId, input.workspaceEmail);
       } catch {
         // best-effort
       }
@@ -474,7 +474,7 @@ export async function* runSandraAgentStream(
     let resolvedTenantIdStream: string | null = input.tenantId ?? null;
     if (!resolvedTenantIdStream && input.userId) {
       try {
-        resolvedTenantIdStream = await resolveTenantForUser(input.userId);
+        resolvedTenantIdStream = await resolveTenantForContext(input.userId, input.workspaceEmail);
       } catch {
         // best-effort
       }

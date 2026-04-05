@@ -18,6 +18,7 @@ vi.mock('@/lib/zoom', () => ({
 
 vi.mock('@/lib/google/context', () => ({
   resolveTenantForUser: (...a: unknown[]) => mockResolveTenantForUser(...a),
+  resolveTenantForContext: (...a: unknown[]) => mockResolveTenantForUser(...a),
 }));
 
 vi.mock('@/lib/audit', () => ({
