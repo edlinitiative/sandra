@@ -122,80 +122,76 @@ export function ChatInput({
   };
 
   return (
-    <div className="glass border-t border-white/[0.06] px-3 py-3 sm:px-4 sm:py-4">
+    <div className="p-2.5">
       {voiceError && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-red-900/20 border border-red-500/20 px-3 py-1.5 text-xs text-red-400">
+        <div className="mb-2 flex items-center justify-between rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-1.5 text-xs text-red-400">
           <span>{voiceError}</span>
           <button type="button" onClick={() => setVoiceError(null)} className="ml-2 text-red-500 hover:text-red-300">✕</button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <div className="relative flex-1">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isRecording ? '🔴 Recording… tap ■ to stop' : (placeholder ?? 'Message Sandra…')}
-            rows={1}
-            disabled={isLoading || isRecording || isVoiceLoading}
-            className="w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 pr-12 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sandra-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-sandra-500/20 disabled:opacity-40"
-            style={{ maxHeight: '120px' }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-            }}
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="flex items-end gap-1.5">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={isRecording ? '🔴 Recording…' : (placeholder ?? 'Message Sandra…')}
+          rows={1}
+          disabled={isLoading || isRecording || isVoiceLoading}
+          className="flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-40"
+          style={{ maxHeight: '120px' }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+          }}
+        />
 
-        {/* Voice button — only rendered when onVoiceResult is provided */}
+        {/* Voice record button */}
         {onVoiceResult && (
           <button
             type="button"
             onClick={handleMicClick}
             disabled={isLoading || isVoiceLoading}
             title={isRecording ? 'Stop recording' : 'Record voice message'}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all disabled:opacity-40 ${
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
               isRecording
-                ? 'animate-pulse bg-red-500/90 text-white glow-red'
+                ? 'animate-pulse bg-red-500 text-white'
                 : isVoiceLoading
-                ? 'cursor-wait bg-white/[0.04] text-slate-600'
-                : 'bg-white/[0.06] text-slate-400 hover:bg-white/[0.1] hover:text-slate-200'
+                  ? 'cursor-wait text-slate-600'
+                  : 'text-slate-500 hover:text-slate-200'
             }`}
           >
             {isVoiceLoading ? (
-              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             ) : isRecording ? (
-              /* Stop square */
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="6" width="12" height="12" rx="1" />
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
             ) : (
-              /* Microphone */
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
               </svg>
             )}
           </button>
         )}
 
-        {/* Send button */}
+        {/* Send button — white circle with up-arrow (ChatGPT-style) */}
         <button
           type="submit"
           disabled={!input.trim() || isLoading || isRecording || isVoiceLoading}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sandra-500 to-sandra-700 text-white shadow-sm transition-all glow-blue-sm hover:glow-blue disabled:opacity-40 disabled:hover:glow-blue-sm"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-slate-700 disabled:text-slate-500"
         >
           {isLoading ? (
-            <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           ) : (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
             </svg>
           )}
         </button>

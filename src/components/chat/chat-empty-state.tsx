@@ -46,60 +46,35 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
   ].slice(0, 4);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
-      {/* Sandra Orb with rings */}
-      <div className="relative mb-8 flex items-center justify-center">
-        {/* Outermost expanding ring */}
-        <div className="absolute h-40 w-40 rounded-full border border-sandra-500/15 animate-ring-out" />
-        {/* Second expanding ring (delayed) */}
-        <div className="absolute h-40 w-40 rounded-full border border-sandra-400/10 animate-ring-out-delayed" />
-        {/* Static ambient halo */}
-        <div className="absolute h-28 w-28 rounded-full bg-sandra-500/8 blur-xl" />
-        {/* The orb */}
-        <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sandra-400 to-sandra-700 animate-glow-pulse animate-orb-float shadow-2xl">
-          <svg className="h-10 w-10" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-            <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
-            <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.45" strokeWidth="1.5" fill="none" />
-            <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.2" strokeWidth="1" fill="none" strokeDasharray="4 6" />
-            <line x1="16" y1="2" x2="16" y2="8" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
-            <line x1="16" y1="24" x2="16" y2="30" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
-            <line x1="2" y1="16" x2="8" y2="16" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
-            <line x1="24" y1="16" x2="30" y2="16" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-        </div>
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+      {/* Sandra mark */}
+      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+        <svg className="h-6 w-6" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
+          <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
+          <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.15" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+        </svg>
       </div>
 
-      <h2 className="mb-2 text-2xl font-bold text-white">
-        Hi, I&apos;m Sandra
+      <h2 className="mb-1 text-xl font-semibold text-white">
+        How can I help?
       </h2>
-      <p className="mb-8 max-w-sm text-sm leading-relaxed text-slate-400">
-        AI assistant for the EdLight ecosystem — fluent in English, Fran\u00e7ais, and Kr\u00e8y\u00f2l Ayisyen.
+      <p className="mb-8 text-sm text-slate-500">
+        Ask about EdLight programs, courses, or opportunities
       </p>
 
       {/* Suggestion cards */}
       <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2">
         {questions.map((text) => (
-          <SuggestionCard key={text} text={text} onSend={onSend} />
+          <button
+            key={text}
+            onClick={() => onSend?.(text)}
+            className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left text-sm text-slate-400 transition-all hover:border-white/[0.12] hover:bg-white/[0.05] hover:text-slate-200 active:scale-[0.98]"
+          >
+            {text}
+          </button>
         ))}
       </div>
     </div>
-  );
-}
-
-function SuggestionCard({
-  text,
-  onSend,
-}: {
-  text: string;
-  onSend?: (message: string) => void;
-}) {
-  return (
-    <button
-      onClick={() => onSend?.(text)}
-      className="glass rounded-xl px-4 py-3 text-left text-sm text-slate-300 transition-all duration-200 hover:border-sandra-500/35 hover:bg-white/[0.07] hover:text-white active:scale-[0.97]"
-    >
-      <span className="mr-1.5 text-sandra-400">&#8594;</span>
-      {text}
-    </button>
   );
 }

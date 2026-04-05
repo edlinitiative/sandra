@@ -11,7 +11,7 @@ import { VoiceConversation } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
-import { AmbientParticles } from '@/components/ui/ambient-particles';
+
 
 type Language = 'en' | 'fr' | 'ht';
 
@@ -217,19 +217,13 @@ export function ChatContainer() {
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[#030b14]">
-      {/* Subtle ambient glows */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_-5%,rgba(56,157,246,0.07),transparent)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_90%_90%,rgba(34,211,238,0.03),transparent)]" />
-      {/* Neural-net ambient particle field */}
-      <AmbientParticles />
-
+    <div className="flex h-full flex-col bg-[#0d0d0d]">
       {/* Messages area */}
-      <div className="relative z-10 flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} />
         ) : (
-          <div className="mx-auto max-w-3xl space-y-5 px-3 py-5 sm:px-4 sm:py-6">
+          <div className="mx-auto max-w-2xl space-y-1 px-4 py-4">
             {messages.map((msg) => (
               <ChatMessage
                 key={msg.id}
@@ -253,26 +247,31 @@ export function ChatContainer() {
 
       {/* Error banner */}
       {error && (
-        <div className="relative z-10 border-t border-red-500/20 bg-red-900/20 px-4 py-2 text-center text-sm text-red-400">
+        <div className="border-t border-red-500/20 bg-red-950/30 px-4 py-2 text-center text-sm text-red-400">
           {error}
         </div>
       )}
 
-      {/* Bottom: language selector + voice panel + text input */}
-      <div className="relative z-10 mx-auto w-full max-w-3xl shrink-0">
-        {/* Language selector — slim bar */}
-        <div className="flex justify-end border-t border-white/[0.04] bg-[#030b14] px-4 py-1.5">
-          <LanguageSelector language={language} onChange={setLanguageState} />
-        </div>
-        {/* Voice — always-visible inline panel (compact when idle, expanded when active) */}
+      {/* ── Bottom section ── */}
+      <div className="mx-auto w-full max-w-2xl shrink-0 px-3 pb-3 sm:px-4 sm:pb-4">
+        {/* Voice panel — renders content only when active */}
         <VoiceConversation
           sessionId={storedSessionId ?? undefined}
           language={language}
           onTurn={handleLiveTurn}
           onSessionId={(id) => { if (!storedSessionId) setSessionId(id); }}
         />
-        {/* Text chat input */}
-        <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
+
+        {/* Unified input card */}
+        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-lg shadow-black/20">
+          <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
+        </div>
+
+        {/* Footer row: language selector + disclaimer */}
+        <div className="mt-2 flex items-center justify-between px-1">
+          <LanguageSelector language={language} onChange={setLanguageState} />
+          <span className="text-[10px] text-slate-600">Sandra can make mistakes</span>
+        </div>
       </div>
     </div>
   );

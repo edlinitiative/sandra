@@ -21,12 +21,26 @@ export interface TranscriptionResult {
 }
 
 /**
+ * ISO 639-1 codes supported by OpenAI Whisper.
+ * Languages not in this set (e.g. Haitian Creole 'ht') will have their hint
+ * dropped so Whisper auto-detects instead of returning HTTP 400.
+ */
+const WHISPER_SUPPORTED_LANGUAGES = new Set([
+  'af', 'ar', 'hy', 'az', 'be', 'bs', 'bg', 'ca', 'zh', 'hr', 'cs', 'da',
+  'nl', 'en', 'et', 'fi', 'fr', 'gl', 'de', 'el', 'he', 'hi', 'hu', 'is',
+  'id', 'it', 'ja', 'kn', 'kk', 'ko', 'lv', 'lt', 'mk', 'ms', 'mr', 'mi',
+  'ne', 'no', 'fa', 'pl', 'pt', 'ro', 'ru', 'sr', 'sk', 'sl', 'es', 'sw',
+  'sv', 'tl', 'ta', 'th', 'tr', 'uk', 'ur', 'vi', 'cy',
+]);
+
+/**
  * Transcribe an audio buffer using OpenAI Whisper.
  *
  * @param audioBuffer  Raw audio bytes (mp3, wav, m4a, webm, ogg, etc.)
  * @param mimeType     MIME type of the audio, e.g. 'audio/mpeg'
  * @param filename     Filename with extension — Whisper uses extension for codec detection
- * @param language     Optional BCP-47 language hint (e.g. 'en', 'fr', 'ht')
+ * @param language     Optional BCP-47 language hint (e.g. 'en', 'fr'). Unsupported
+ *                     codes like 'ht' are silently dropped so Whisper auto-detects.
  */
 export async function transcribeAudio(
   audioBuffer: Buffer,
@@ -39,13 +53,19 @@ export async function transcribeAudio(
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
+  // Only pass the language hint if Whisper actually supports it; otherwise
+  // drop it and let Whisper auto-detect (avoids HTTP 400 for e.g. 'ht').
+  const baseCode = language ? language.toLowerCase().split('-')[0] : undefined;
+  const whisperLanguage =
+    baseCode && WHISPER_SUPPORTED_LANGUAGES.has(baseCode) ? language : undefined;
+
   const formData = new FormData();
   const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
   formData.append('file', blob, filename);
   formData.append('model', env.OPENAI_WHISPER_MODEL);
   formData.append('response_format', 'verbose_json');
-  if (language) {
-    formData.append('language', language);
+  if (whisperLanguage) {
+    formData.append('language', whisperLanguage);
   }
 
   const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {

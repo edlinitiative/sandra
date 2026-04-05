@@ -390,84 +390,77 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
       {/* Hidden audio — Sandra's realtime voice output */}
       <audio id="sandra-realtime-audio" autoPlay className="hidden" />
 
-      {/* ── Compact idle / error strip ──────────────────────────────────────── */}
+      {/* ── Compact idle trigger ──────────────────────────────────────────── */}
       {!isActive && (
-        <div className="border-t border-white/[0.06] bg-[#030b14] px-4 py-3">
+        <div className="mb-2">
           <button
             onClick={() => void startConversation()}
             disabled={sessionState === 'connecting'}
-            className="flex w-full items-center gap-3 rounded-2xl border border-sandra-500/25 bg-sandra-500/[0.06] px-4 py-3 text-left transition-all hover:border-sandra-400/50 hover:bg-sandra-500/10 active:scale-[0.98] disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left transition-all hover:border-white/[0.12] hover:bg-white/[0.04] active:scale-[0.99] disabled:opacity-50"
           >
-            {/* Pulsing mic orb */}
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-sandra-400/30 bg-sandra-600/30">
-              <span className="absolute h-full w-full animate-ping rounded-full bg-sandra-400/20 opacity-60" />
-              <svg className="relative h-4 w-4 text-sandra-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
               </svg>
-            </span>
-            <div className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-white">Talk to Sandra</span>
-              <span className="block truncate text-xs text-slate-500">Live voice · tap to start</span>
             </div>
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-sandra-500/30 bg-sandra-500/10 px-2.5 py-1 text-[10px] font-bold tracking-widest text-sandra-400">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sandra-400" />
+            <div className="min-w-0 flex-1">
+              <span className="text-sm font-medium text-slate-200">Talk to Sandra</span>
+              <span className="ml-2 text-xs text-slate-600">Live voice</span>
+            </div>
+            <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold tracking-wider text-sandra-500">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sandra-500" />
               LIVE
             </span>
           </button>
-          {error && (
-            <p className="mt-2 text-center text-xs text-red-400">{error}</p>
-          )}
+          {error && <p className="mt-1.5 text-center text-xs text-red-400">{error}</p>}
         </div>
       )}
 
       {/* ── Active voice panel ──────────────────────────────────────────────── */}
       {isActive && (
-        <div className="relative overflow-hidden border-t border-white/[0.06] bg-[#030b14]/95">
-          {/* Ambient radial glow */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_100%_at_50%_120%,rgba(56,157,246,0.09),transparent)]" />
-          {/* Neural-net particle cloud */}
+        <div className="mb-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a1a]">
+          {/* Particle cloud behind orb */}
           <ParticleCanvas
             active={sessionState === 'assistant_speaking' || sessionState === 'user_speaking'}
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none absolute inset-0 opacity-60"
           />
           <div className="relative z-10 flex flex-col items-center px-4 pb-5 pt-6">
             {/* Status label */}
-            <p className="mb-5 text-[10px] font-bold tracking-[0.25em] uppercase text-sandra-400">
+            <p className="mb-4 text-[10px] font-semibold tracking-[0.2em] uppercase text-slate-500">
               {label}
             </p>
 
             {/* Orb + rings */}
-            <div className="relative flex h-32 w-32 items-center justify-center">
+            <div className="relative flex h-24 w-24 items-center justify-center">
               {showRings && (
                 <>
-                  <div className={`absolute h-28 w-28 rounded-full border ${ringColor} animate-ring-out`} />
-                  <div className={`absolute h-28 w-28 rounded-full border ${ringColor} animate-ring-out-delayed`} />
-                  <div className="absolute h-20 w-20 rounded-full bg-sandra-500/[0.06] blur-2xl" />
+                  <div className={`absolute h-20 w-20 rounded-full border ${ringColor} animate-ring-out`} />
+                  <div className={`absolute h-20 w-20 rounded-full border ${ringColor} animate-ring-out-delayed`} />
                 </>
               )}
               <div
-                className={`relative z-10 flex h-24 w-24 items-center justify-center shadow-2xl transition-[box-shadow,filter,border-radius] duration-500 ${orbClass} ${
+                className={`relative z-10 flex h-16 w-16 items-center justify-center shadow-xl transition-[box-shadow,filter,border-radius] duration-500 ${orbClass} ${
                   sessionState === 'assistant_speaking' ? 'animate-morph' : 'rounded-full'
                 } ${showRings ? 'animate-glow-pulse' : ''}`}
               >
                 {['listening', 'user_speaking'].includes(sessionState) && (
-                  <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
                   </svg>
                 )}
                 {['connecting', 'processing'].includes(sessionState) && (
-                  <svg className="h-10 w-10 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                  <svg className="h-7 w-7 animate-spin text-white" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 )}
                 {sessionState === 'assistant_speaking' && (
-                  <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
                   </svg>
                 )}
                 {sessionState === 'error' && (
-                  <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374l7.698-13.314c.866-1.5 3.032-1.5 3.898 0l7.698 13.314ZM12 15.75h.007v.008H12v-.008Z" />
                   </svg>
                 )}
@@ -476,21 +469,21 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
 
             {/* Real-time audio FFT canvas */}
             {sessionState === 'assistant_speaking' && (
-              <canvas ref={vizCanvasRef} width={240} height={48} className="mt-4 rounded opacity-90" />
+              <canvas ref={vizCanvasRef} width={200} height={40} className="mt-3 rounded opacity-80" />
             )}
 
             {/* Controls */}
-            <div className="mt-5 flex w-full max-w-xs gap-3">
+            <div className="mt-4 flex gap-2">
               <button
                 onClick={endConversation}
-                className="flex-1 rounded-2xl border border-red-500/30 bg-red-600/60 py-3 text-sm font-semibold text-white transition-all hover:bg-red-600/80 active:scale-[0.98]"
+                className="rounded-full border border-red-500/30 bg-red-500/10 px-5 py-2 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 active:scale-95"
               >
-                End Session
+                End
               </button>
               {sessionState === 'assistant_speaking' && (
                 <button
                   onClick={interrupt}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-slate-400 transition-all hover:bg-white/[0.08] hover:text-slate-200 active:scale-[0.98]"
+                  className="rounded-full border border-white/[0.08] px-4 py-2 text-xs text-slate-500 transition-all hover:bg-white/[0.04] hover:text-slate-300 active:scale-95"
                 >
                   Skip
                 </button>
@@ -498,9 +491,9 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
             </div>
           </div>
 
-          {/* ── Inline transcript ────────────────────────────────────────────── */}
+          {/* Transcript */}
           {transcript.length > 0 && (
-            <div className="max-h-[22vh] overflow-y-auto border-t border-white/[0.06] px-4 py-3">
+            <div className="max-h-[20vh] overflow-y-auto border-t border-white/[0.06] px-4 py-3">
               <div className="space-y-2">
                 {transcript.map((entry) => (
                   <div key={entry.id} className="space-y-1">
@@ -520,8 +513,8 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
                     <p
                       className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
                         entry.role === 'user'
-                          ? 'border border-white/[0.07] bg-white/[0.04] text-slate-300'
-                          : 'border border-sandra-500/20 bg-sandra-500/10 text-slate-200'
+                          ? 'bg-white/[0.04] text-slate-300'
+                          : 'bg-sandra-500/10 text-slate-200'
                       }`}
                     >
                       {entry.text || <span className="animate-pulse text-slate-600">…</span>}

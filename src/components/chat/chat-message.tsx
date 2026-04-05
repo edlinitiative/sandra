@@ -180,97 +180,95 @@ export function ChatMessage({
   }
 
   return (
-    <div className={`flex gap-3 animate-materialize ${isUser ? 'flex-row-reverse' : ''}`}>
-      {/* Avatar */}
-      <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-          isUser
-            ? 'bg-slate-700 text-slate-300'
-            : 'bg-gradient-to-br from-sandra-500 to-sandra-700 text-white glow-blue-sm animate-glow-pulse'
-        }`}
-      >
-        {isUser ? 'U' : 'S'}
-      </div>
-
-      {/* Message bubble + follow-ups */}
-      <div className={`flex max-w-[80%] flex-col gap-2 ${isUser ? 'items-end' : 'items-start'}`}>
-        <div
-          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-            isUser
-              ? 'rounded-br-sm bg-white/[0.08] border border-white/[0.10] text-slate-100'
-              : 'rounded-bl-sm glass border-l-2 border-l-sandra-500/50 text-slate-200 hud'
-          }`}
-        >
-          {isLoading ? (
-            <div className="flex items-center gap-1 py-1">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '0ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '150ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-sandra-400" style={{ animationDelay: '300ms' }} />
-            </div>
-          ) : isUser ? (
+    <div className="group animate-fade-up py-2.5">
+      {isUser ? (
+        /* ── User message — right-aligned pill ── */
+        <div className="flex justify-end">
+          <div className="max-w-[85%] rounded-3xl bg-white/[0.07] px-4 py-2.5 text-[15px] leading-relaxed text-slate-100 sm:max-w-[70%]">
             <div className="whitespace-pre-wrap">{content}</div>
-          ) : (
-            <div className="space-y-0.5">{renderMarkdown(content)}</div>
+          </div>
+        </div>
+      ) : (
+        /* ── Sandra message — icon + label + content ── */
+        <div>
+          <div className="mb-1.5 flex items-center gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+              <svg className="h-3 w-3" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <circle cx="16" cy="16" r="6" fill="white" fillOpacity="0.9" />
+                <circle cx="16" cy="16" r="11" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
+              </svg>
+            </div>
+            <span className="text-xs font-semibold text-slate-500">Sandra</span>
+          </div>
+
+          <div className="pl-8 text-[15px] leading-[1.75] text-slate-200">
+            {isLoading ? (
+              <div className="flex items-center gap-1.5 py-2">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '300ms' }} />
+              </div>
+            ) : (
+              <div className="space-y-1">{renderMarkdown(content)}</div>
+            )}
+          </div>
+
+          {/* Feedback — small thumbs */}
+          {!isLoading && messageId && onFeedback && (
+            <div className="mt-1.5 flex items-center gap-0.5 pl-8">
+              <button
+                onClick={() => handleFeedback('up')}
+                disabled={!!feedback}
+                title="Helpful"
+                className={`rounded-md px-1.5 py-1 text-xs transition-colors ${
+                  feedback === 'up'
+                    ? 'text-sandra-400'
+                    : feedback
+                      ? 'cursor-default text-slate-800'
+                      : 'text-slate-600 hover:bg-white/[0.04] hover:text-slate-300'
+                }`}
+              >
+                👍
+              </button>
+              <button
+                onClick={() => handleFeedback('down')}
+                disabled={!!feedback}
+                title="Not helpful"
+                className={`rounded-md px-1.5 py-1 text-xs transition-colors ${
+                  feedback === 'down'
+                    ? 'text-red-400'
+                    : feedback
+                      ? 'cursor-default text-slate-800'
+                      : 'text-slate-600 hover:bg-white/[0.04] hover:text-slate-300'
+                }`}
+              >
+                👎
+              </button>
+            </div>
+          )}
+
+          {/* Follow-up suggestion chips */}
+          {showFollowUps && (
+            <div className="mt-3 flex flex-wrap gap-2 pl-8">
+              {followUps!.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => onFollowUp?.(q)}
+                  className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-all hover:border-white/[0.15] hover:bg-white/[0.06] hover:text-slate-200 active:scale-95"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           )}
         </div>
+      )}
 
-        {timestamp && (
-          <p className={`text-xs text-slate-600 ${isUser ? 'text-right' : ''}`}>
-            {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        )}
-
-        {/* Feedback thumbs — only on non-loading assistant messages */}
-        {!isUser && !isLoading && messageId && onFeedback && (
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => handleFeedback('up')}
-              disabled={!!feedback}
-              title="Helpful"
-              aria-label="Mark as helpful"
-              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                feedback === 'up'
-                  ? 'border-green-300 bg-green-50 text-green-700'
-                  : feedback
-                    ? 'cursor-default border-gray-100 text-gray-300'
-                    : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'
-              }`}
-            >
-              👍{feedback === 'up' && <span className="ml-0.5">Thanks!</span>}
-            </button>
-            <button
-              onClick={() => handleFeedback('down')}
-              disabled={!!feedback}
-              title="Not helpful"
-              aria-label="Mark as not helpful"
-              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                feedback === 'down'
-                  ? 'border-red-200 bg-red-50 text-red-600'
-                  : feedback
-                    ? 'cursor-default border-gray-100 text-gray-300'
-                    : 'border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-500'
-              }`}
-            >
-              👎{feedback === 'down' && <span className="ml-0.5">Noted!</span>}
-            </button>
-          </div>
-        )}
-
-        {/* Follow-up suggestion chips */}
-        {showFollowUps && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {followUps!.map((q) => (
-              <button
-                key={q}
-                onClick={() => onFollowUp?.(q)}
-                className="rounded-full border border-sandra-500/30 bg-white/[0.03] px-3 py-1 text-xs text-sandra-400 shadow-sm transition-all hover:border-sandra-400/60 hover:bg-sandra-500/10 hover:text-sandra-300 active:scale-95"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {timestamp && (
+        <p className={`mt-1 text-[10px] text-slate-700 ${isUser ? 'text-right' : 'pl-8'}`}>
+          {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
     </div>
   );
 }

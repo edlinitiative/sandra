@@ -1,24 +1,20 @@
-/** Waveform soundwave bars — shown while waiting for Sandra's first token */
+/** Minimal dots indicator — shown while waiting for Sandra's first token */
 export function TypingIndicator() {
-  const DELAYS = [0, 120, 240, 120, 0];
   return (
-    <div className="flex gap-3">
-      {/* Sandra orb avatar */}
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700 text-xs font-bold text-white glow-blue-sm animate-glow-pulse">
-        S
-      </div>
-
-      {/* Glass bubble with soundwave */}
-      <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm glass px-4 py-3">
-        <div className="flex h-5 items-center gap-[3px]">
-          {DELAYS.map((delay, i) => (
-            <div
-              key={i}
-              className="w-[3px] h-full rounded-full bg-sandra-400 soundwave-bar"
-              style={{ animationDelay: `${delay}ms` }}
-            />
-          ))}
+    <div className="py-2.5">
+      <div className="mb-1.5 flex items-center gap-2">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+          <svg className="h-3 w-3" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="6" fill="white" fillOpacity="0.9" />
+            <circle cx="16" cy="16" r="11" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
+          </svg>
         </div>
+        <span className="text-xs font-semibold text-slate-500">Sandra</span>
+      </div>
+      <div className="flex items-center gap-1.5 py-2 pl-8">
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '0ms' }} />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '150ms' }} />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   );
