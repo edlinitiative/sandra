@@ -88,16 +88,22 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
   // Delete state
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Tenant ID — passed from server component, falls back to EdLight
-  const TENANT_ID = tenantIdProp ?? 'cmnhsjh850000a1y1b69ji257';
+  const tenantId = tenantIdProp ?? null;
 
   // ─── Data loading ─────────────────────────────────────────────────────────
 
   const loadConnections = useCallback(async () => {
+    if (!tenantId) {
+      setConnections([]);
+      setError('No tenant is assigned to this admin account yet.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tools/connections?tenantId=${TENANT_ID}`);
+      const res = await fetch(`/api/tools/connections?tenantId=${tenantId}`);
       const json = await res.json() as { connections?: ApiConnection[]; error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Failed to load');
       setConnections(json.connections ?? []);
@@ -106,7 +112,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
     } finally {
       setLoading(false);
     }
-  }, [TENANT_ID]);
+  }, [tenantId]);
 
   const loadDetail = useCallback(async (id: string) => {
     setDetailLoading(true);
@@ -167,6 +173,11 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
     setFormSubmitting(true);
 
     try {
+      if (!tenantId) {
+        setFormError('No tenant is assigned to this admin account yet.');
+        return;
+      }
+
       // Parse the spec
       let specJson: Record<string, unknown>;
       try {
@@ -204,7 +215,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantId: TENANT_ID,
+          tenantId,
           connectionName: formName,
           baseUrl: formBaseUrl,
           openApiSpec: specJson,
@@ -251,10 +262,10 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
   // ─── Tool toggle ──────────────────────────────────────────────────────────
 
   async function handleToggleTool(tool: ApiTool) {
-    if (!selectedId) return;
+    if (!selectedId || !tenantId) return;
     setTogglingTool(tool.id);
     try {
-      const res = await fetch(`/api/tools/tenant/${TENANT_ID}`, {
+      const res = await fetch(`/api/tools/tenant/${tenantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toolId: tool.id, enabled: !tool.enabled }),
@@ -319,6 +330,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
           </Button>
           <Button
             size="sm"
+            disabled={!tenantId}
             onClick={() => { resetForm(); setShowForm(true); }}
           >
             + Connect API
@@ -326,8 +338,19 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
         </div>
       </div>
 
+      {!tenantId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>No tenant assigned</CardTitle>
+            <CardDescription>
+              This admin account is not linked to a tenant yet, so integrations cannot be managed.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
       {/* ── Add Integration Form ─────────────────────────────────── */}
-      {showForm && (
+      {showForm && tenantId && (
         <Card className="border-sandra-500/20">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -486,7 +509,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">③ OpenAPI Specification</h4>
               <p className="text-sm text-slate-400">
-                Paste your OpenAPI 3.x spec as JSON, or upload a <code className="text-sandra-400">.json</code> file.
+                Paste your OpenAPI 3.x spec as JSON, or upload a .json file.
                 Sandra will parse every endpoint and auto-create a tool for each one.
               </p>
 
@@ -496,7 +519,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   📁 Upload spec file
                   <input
                     type="file"
-                    accept=".json,.yaml,.yml"
+                    accept=".json"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
