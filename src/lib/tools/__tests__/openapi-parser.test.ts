@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseOpenApiSpec } from '../openapi-parser';
+import { parseOpenApiSpec, parseOpenApiSpecFromText } from '../openapi-parser';
 
 const SAMPLE_SPEC = {
   openapi: '3.0.3',
@@ -221,5 +221,109 @@ describe('parseOpenApiSpec', () => {
     expect(deleteTool).toBeDefined();
     expect(deleteTool!.httpConfig.pathParams).toContain('customerId');
     expect(deleteTool!.parameters.required).toContain('customerId');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseOpenApiSpecFromText — YAML and JSON text input
+// ---------------------------------------------------------------------------
+
+const YAML_SPEC = `
+openapi: 3.0.3
+info:
+  title: Acme CRM API
+  version: 1.2.0
+paths:
+  /customers:
+    get:
+      operationId: listCustomers
+      summary: List all customers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /customers/{customerId}:
+    get:
+      operationId: getCustomer
+      summary: Get customer by ID
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+`;
+
+const JSON_TEXT_SPEC = JSON.stringify({
+  openapi: '3.0.0',
+  info: { title: 'JSON Text API', version: '1.0.0' },
+  paths: {
+    '/ping': {
+      get: {
+        operationId: 'ping',
+        summary: 'Health check',
+        responses: { '200': { description: 'OK' } },
+      },
+    },
+  },
+});
+
+describe('parseOpenApiSpecFromText', () => {
+  it('should parse a valid YAML spec', () => {
+    const result = parseOpenApiSpecFromText(YAML_SPEC);
+    expect(result.success).toBe(true);
+    expect(result.tools.length).toBe(2);
+    expect(result.tools.map(t => t.name)).toContain('listCustomers');
+    expect(result.tools.map(t => t.name)).toContain('getCustomer');
+  });
+
+  it('should detect YAML format and extract apiName', () => {
+    const result = parseOpenApiSpecFromText(YAML_SPEC);
+    expect(result.apiName).toBe('Acme CRM API');
+    expect(result.apiVersion).toBe('1.2.0');
+  });
+
+  it('should parse a valid JSON string', () => {
+    const result = parseOpenApiSpecFromText(JSON_TEXT_SPEC);
+    expect(result.success).toBe(true);
+    expect(result.tools.length).toBe(1);
+    const tool = result.tools[0];
+    expect(tool).toBeDefined();
+    expect(tool!.name).toBe('ping');
+  });
+
+  it('should return error for invalid text', () => {
+    const result = parseOpenApiSpecFromText('this is neither JSON nor valid YAML spec');
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should return error for empty string', () => {
+    const result = parseOpenApiSpecFromText('');
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should pass options through to the parser', () => {
+    const result = parseOpenApiSpecFromText(YAML_SPEC, { prefix: 'crm', maxTools: 1 });
+    expect(result.success).toBe(true);
+    expect(result.tools.length).toBe(1);
+    const tool = result.tools[0];
+    expect(tool!.name).toMatch(/^crm_/);
+  });
+
+  it('should extract path parameters from YAML spec', () => {
+    const result = parseOpenApiSpecFromText(YAML_SPEC);
+    const getTool = result.tools.find(t => t.name === 'getCustomer');
+    expect(getTool).toBeDefined();
+    expect(getTool!.httpConfig.pathParams).toContain('customerId');
+    expect(getTool!.parameters.required).toContain('customerId');
   });
 });

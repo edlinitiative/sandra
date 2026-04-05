@@ -12,6 +12,7 @@
  */
 
 import { createLogger } from '@/lib/utils';
+import { load as yamlLoad } from 'js-yaml';
 
 const log = createLogger('tools:openapi-parser');
 
@@ -167,6 +168,46 @@ export function parseOpenApiSpec(
     apiVersion,
     errors,
   };
+}
+
+// ─── Text parser (JSON or YAML auto-detect) ──────────────────────────────────
+
+/**
+ * Parse an OpenAPI spec from a raw string — either JSON or YAML.
+ * Detects the format automatically (JSON starts with `{` or `[`).
+ *
+ * @param text     Raw spec string (JSON or YAML)
+ * @param options  Same options as parseOpenApiSpec
+ */
+export function parseOpenApiSpecFromText(
+  text: string,
+  options: { prefix?: string; maxTools?: number } = {},
+): ParseResult {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { success: false, tools: [], apiName: '', apiVersion: '', errors: ['Spec is empty'] };
+  }
+
+  let parsed: unknown;
+  const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+
+  try {
+    if (looksLikeJson) {
+      parsed = JSON.parse(trimmed);
+    } else {
+      // YAML — js-yaml returns null for empty docs
+      parsed = yamlLoad(trimmed);
+      if (parsed === null || parsed === undefined) {
+        return { success: false, tools: [], apiName: '', apiVersion: '', errors: ['YAML document is empty'] };
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const fmt = looksLikeJson ? 'JSON' : 'YAML';
+    return { success: false, tools: [], apiName: '', apiVersion: '', errors: [`Failed to parse ${fmt}: ${msg}`] };
+  }
+
+  return parseOpenApiSpec(parsed, options);
 }
 
 // ─── Tool extraction ─────────────────────────────────────────────────────────

@@ -100,6 +100,21 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
   const [testing, setTesting] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
+  // Credential editing state
+  const [editingCredId, setEditingCredId] = useState<string | null>(null);
+  const [editAuthType, setEditAuthType] = useState<AuthType>('api_key');
+  const [editApiKey, setEditApiKey] = useState('');
+  const [editBearerToken, setEditBearerToken] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editClientId, setEditClientId] = useState('');
+  const [editClientSecret, setEditClientSecret] = useState('');
+  const [editTokenUrl, setEditTokenUrl] = useState('');
+  const [editHeaderName, setEditHeaderName] = useState('X-API-Key');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+
   const tenantId = tenantIdProp ?? null;
 
   // ─── Data loading ─────────────────────────────────────────────────────────
@@ -190,12 +205,8 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
         return;
       }
 
-      // Parse the spec
-      let specJson: Record<string, unknown>;
-      try {
-        specJson = JSON.parse(formSpec) as Record<string, unknown>;
-      } catch {
-        setFormError('Invalid JSON in OpenAPI spec. Please paste valid JSON.');
+      if (!formSpec.trim()) {
+        setFormError('Please paste or upload an OpenAPI spec.');
         setFormSubmitting(false);
         return;
       }
@@ -230,7 +241,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
           tenantId,
           connectionName: formName,
           baseUrl: formBaseUrl,
-          openApiSpec: specJson,
+          openApiSpecText: formSpec,
           authType: formAuthType,
           credentials,
           authConfig: formAuthType === 'api_key' ? authConfig : undefined,
@@ -290,7 +301,68 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
       setTogglingTool(null);
     }
   }
+  // ─── Credential editing ───────────────────────────────────────────────────
 
+  function openEditCreds(conn: ApiConnection) {
+    setEditingCredId(conn.id);
+    setEditAuthType(conn.authType as AuthType);
+    setEditApiKey('');
+    setEditBearerToken('');
+    setEditUsername('');
+    setEditPassword('');
+    setEditClientId('');
+    setEditClientSecret('');
+    setEditTokenUrl('');
+    setEditHeaderName('X-API-Key');
+    setEditError(null);
+    setEditSuccess(null);
+  }
+
+  async function handleSaveCreds(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCredId) return;
+    setEditSaving(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      const credentials: Record<string, string> = {};
+      const authConfig: Record<string, string> = {};
+      switch (editAuthType) {
+        case 'api_key':
+          if (editApiKey) credentials.apiKey = editApiKey;
+          authConfig.headerName = editHeaderName || 'X-API-Key';
+          break;
+        case 'bearer':
+          if (editBearerToken) credentials.bearerToken = editBearerToken;
+          break;
+        case 'basic':
+          if (editUsername) credentials.username = editUsername;
+          if (editPassword) credentials.password = editPassword;
+          break;
+        case 'oauth2':
+          if (editClientId) credentials.clientId = editClientId;
+          if (editClientSecret) credentials.clientSecret = editClientSecret;
+          if (editTokenUrl) credentials.tokenUrl = editTokenUrl;
+          break;
+      }
+      const res = await fetch(`/api/tools/connections/${editingCredId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credentials,
+          authConfig: editAuthType === 'api_key' ? authConfig : undefined,
+        }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) { setEditError(json.error ?? 'Failed to save'); return; }
+      setEditSuccess('Credentials updated successfully');
+      setTimeout(() => setEditingCredId(null), 1500);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setEditSaving(false);
+    }
+  }
   // ─── Connection test ───────────────────────────────────────────────────────
 
   async function handleTestConnection(id: string) {
@@ -543,7 +615,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">③ OpenAPI Specification</h4>
               <p className="text-sm text-slate-400">
-                Paste your OpenAPI 3.x spec as JSON, or upload a .json file.
+                Paste your OpenAPI 3.x spec (JSON <span className="text-slate-500">or YAML</span>), or upload a file.
                 Sandra will parse every endpoint and auto-create a tool for each one.
               </p>
 
@@ -553,7 +625,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   📁 Upload spec file
                   <input
                     type="file"
-                    accept=".json"
+                    accept=".json,.yaml,.yml"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -571,19 +643,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
               {/* Spec textarea */}
               <textarea
                 className="h-64 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] p-3 font-mono text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sandra-500 focus:ring-offset-1 focus:ring-offset-[#0d0d0d]"
-                placeholder={`{
-  "openapi": "3.0.0",
-  "info": { "title": "Your API", "version": "1.0" },
-  "paths": {
-    "/endpoint": {
-      "get": {
-        "operationId": "getEndpoint",
-        "summary": "Description here",
-        "responses": { "200": { "description": "OK" } }
-      }
-    }
-  }
-}`}
+                placeholder={`# YAML\nopenapi: 3.0.0\ninfo:\n  title: Your API\n  version: 1.0.0\npaths:\n  /endpoint:\n    get:\n      operationId: getEndpoint\n      summary: Description here\n      responses:\n        '200':\n          description: OK\n\n# Or paste JSON:\n# { "openapi": "3.0.0", ... }`}
                 value={formSpec}
                 onChange={(e) => setFormSpec(e.target.value)}
               />
@@ -613,7 +673,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
               <Button
                 type="submit"
                 isLoading={formSubmitting}
-                disabled={!formName || !formBaseUrl || !formSpec}
+                disabled={!formName || !formBaseUrl || !formSpec.trim()}
               >
                 Register API →
               </Button>
@@ -703,6 +763,14 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                     🔍 Test
                   </Button>
                   <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { openEditCreds(conn); setSelectedId(conn.id); }}
+                    disabled={!!deleting || !!testing}
+                  >
+                    🔑 Credentials
+                  </Button>
+                  <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => handleToggleConnection(conn)}
@@ -726,6 +794,87 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
               {/* Expanded detail panel */}
               {selectedId === conn.id && (
                 <div className="mt-4 border-t border-white/[0.06] pt-4" onClick={(e) => e.stopPropagation()}>
+                  {/* ── Credential edit panel ── */}
+                  {editingCredId === conn.id && (
+                    <form onSubmit={handleSaveCreds} className="mb-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-300">Update Credentials</h4>
+                        <Button variant="ghost" size="sm" type="button" onClick={() => setEditingCredId(null)}>✕</Button>
+                      </div>
+
+                      {/* Auth type selector */}
+                      <div className="flex flex-wrap gap-2">
+                        {(Object.entries(AUTH_LABELS) as [AuthType, string][]).map(([type, label]) => (
+                          <button key={type} type="button" onClick={() => setEditAuthType(type)}
+                            className={`rounded-lg px-3 py-1.5 text-sm transition-all ${
+                              editAuthType === type ? 'bg-sandra-600 text-white' : 'bg-white/[0.06] text-slate-400 hover:bg-white/[0.1]'
+                            }`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="rounded-lg bg-white/[0.03] p-4 space-y-3">
+                        {editAuthType === 'api_key' && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">New API Key</label>
+                              <Input type="password" placeholder="Leave blank to keep current" value={editApiKey} onChange={(e) => setEditApiKey(e.target.value)} />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">Header Name</label>
+                              <Input placeholder="X-API-Key" value={editHeaderName} onChange={(e) => setEditHeaderName(e.target.value)} />
+                            </div>
+                          </div>
+                        )}
+                        {editAuthType === 'bearer' && (
+                          <div>
+                            <label className="mb-1 block text-sm text-slate-400">New Bearer Token</label>
+                            <Input type="password" placeholder="Leave blank to keep current" value={editBearerToken} onChange={(e) => setEditBearerToken(e.target.value)} />
+                          </div>
+                        )}
+                        {editAuthType === 'basic' && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">Username</label>
+                              <Input placeholder="Leave blank to keep current" value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">Password</label>
+                              <Input type="password" placeholder="Leave blank to keep current" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} />
+                            </div>
+                          </div>
+                        )}
+                        {editAuthType === 'oauth2' && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">Client ID</label>
+                              <Input placeholder="Leave blank to keep current" value={editClientId} onChange={(e) => setEditClientId(e.target.value)} />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm text-slate-400">Client Secret</label>
+                              <Input type="password" placeholder="Leave blank to keep current" value={editClientSecret} onChange={(e) => setEditClientSecret(e.target.value)} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="mb-1 block text-sm text-slate-400">Token URL</label>
+                              <Input type="url" placeholder="Leave blank to keep current" value={editTokenUrl} onChange={(e) => setEditTokenUrl(e.target.value)} />
+                            </div>
+                          </div>
+                        )}
+                        {editAuthType === 'none' && (
+                          <p className="text-sm text-slate-500">No credentials needed.</p>
+                        )}
+                      </div>
+
+                      {editError && <p className="text-sm text-red-400">{editError}</p>}
+                      {editSuccess && <p className="text-sm text-green-400">{editSuccess}</p>}
+
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setEditingCredId(null)}>Cancel</Button>
+                        <Button type="submit" size="sm" isLoading={editSaving}>Save credentials</Button>
+                      </div>
+                    </form>
+                  )}
                   {detailLoading ? (
                     <div className="flex justify-center py-8"><Spinner /></div>
                   ) : detail ? (
