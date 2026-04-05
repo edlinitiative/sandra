@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/email-poll",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/process-reminders",
+      "schedule": "* * * * *"
     }
   ]
 }

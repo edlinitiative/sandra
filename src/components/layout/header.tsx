@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { GlitchText } from '@/components/ui/glitch-text';
 
 export function Header() {
   return (
@@ -7,16 +10,26 @@ export function Header() {
         <Link href="/" className="group flex items-center gap-2.5">
           {/* Glowing orb logo */}
           <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sandra-500 to-sandra-700 glow-blue-sm transition-all duration-300 group-hover:glow-blue">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
-              />
+            {/* Audio equalizer mark — represents Sandra as a voice AI */}
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="1" y="11" width="4" height="11" rx="2" fill="white" fillOpacity="0.45" />
+              <rect x="6.5" y="5" width="4" height="17" rx="2" fill="white" />
+              <rect x="12" y="8" width="4" height="14" rx="2" fill="white" fillOpacity="0.8" />
+              <rect x="17.5" y="13" width="4" height="9" rx="2" fill="white" fillOpacity="0.5" />
             </svg>
           </div>
           <div>
-            <span className="block text-sm font-bold leading-tight text-white">Sandra</span>
+            <div className="flex items-center gap-1.5">
+              {/* Online pulse LED */}
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sandra-400 opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sandra-500" />
+              </span>
+              <GlitchText
+                text="Sandra"
+                className="block text-sm font-bold leading-tight text-white"
+              />
+            </div>
             <span className="hidden text-[10px] font-medium leading-tight text-sandra-400 sm:block">
               by EdLight
             </span>

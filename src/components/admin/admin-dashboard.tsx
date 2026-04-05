@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 
 const ADMIN_KEY_STORAGE = 'sandra_admin_api_key';
 
-type AdminTab = 'system' | 'analytics' | 'actions';
+type AdminTab = 'system' | 'analytics' | 'actions' | 'gaps' | 'tools';
 
 interface Repo {
   owner: string;
@@ -84,6 +84,32 @@ interface TestResult {
   usage?: { totalTokens: number };
 }
 
+interface CapabilityGapEntry {
+  id: string;
+  sessionId: string;
+  userId: string | null;
+  channel: string | null;
+  language: string | null;
+  userMessage: string;
+  patterns: string[];
+  reviewed: boolean;
+  createdAt: string;
+}
+
+interface DynamicToolEntry {
+  id: string;
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  handlerCode: string;
+  requiredScopes: string[];
+  enabled: boolean;
+  tested: boolean;
+  createdBy: string | null;
+  sourceGapIds: string[];
+  createdAt: string;
+}
+
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('system');
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -121,6 +147,21 @@ export function AdminDashboard() {
   const [actionsFilter, setActionsFilter] = useState<'pending' | 'all'>('pending');
   const [actionProcessing, setActionProcessing] = useState<string | null>(null);
 
+  // Capability gaps state
+  const [gaps, setGaps] = useState<CapabilityGapEntry[]>([]);
+  const [gapsTotal, setGapsTotal] = useState(0);
+  const [gapsLoading, setGapsLoading] = useState(false);
+  const [gapsError, setGapsError] = useState<string | null>(null);
+  const [gapsFilter, setGapsFilter] = useState<'unreviewed' | 'all'>('unreviewed');
+  const [gapGenerating, setGapGenerating] = useState<string | null>(null);
+
+  // Dynamic tools state
+  const [dynamicTools, setDynamicTools] = useState<DynamicToolEntry[]>([]);
+  const [toolsLoading, setToolsLoading] = useState(false);
+  const [toolsError, setToolsError] = useState<string | null>(null);
+  const [toolProcessing, setToolProcessing] = useState<string | null>(null);
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
+
   // Initial admin bootstrap should run once on mount; follow-up refreshes are explicit.
   useEffect(() => {
     let storedKey = '';
@@ -148,6 +189,10 @@ export function AdminDashboard() {
       void loadAnalytics(analyticsFrom, analyticsTo, adminKey);
     } else if (activeTab === 'actions') {
       void loadActions(actionsFilter, adminKey);
+    } else if (activeTab === 'gaps') {
+      void loadGaps(gapsFilter, adminKey);
+    } else if (activeTab === 'tools') {
+      void loadDynamicTools(adminKey);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, adminKey]);
@@ -237,6 +282,107 @@ export function AdminDashboard() {
       }
     } finally {
       setActionProcessing(null);
+    }
+  };
+
+  const loadGaps = useCallback(async (filter: 'unreviewed' | 'all', key: string) => {
+    if (!key) return;
+    setGapsLoading(true);
+    setGapsError(null);
+    try {
+      const reviewed = filter === 'all' ? 'all' : 'false';
+      const res = await fetch(`/api/capability-gaps?reviewed=${reviewed}&limit=100`, {
+        headers: { 'x-api-key': key },
+      });
+      const json = await res.json() as { data?: { gaps: CapabilityGapEntry[]; total: number }; error?: { message?: string } };
+      if (!res.ok) {
+        setGapsError(json.error?.message ?? 'Failed to load capability gaps');
+      } else {
+        setGaps(json.data?.gaps ?? []);
+        setGapsTotal(json.data?.total ?? 0);
+      }
+    } catch (err) {
+      setGapsError(err instanceof Error ? err.message : 'Failed to load capability gaps');
+    } finally {
+      setGapsLoading(false);
+    }
+  }, []);
+
+  const loadDynamicTools = useCallback(async (key: string) => {
+    if (!key) return;
+    setToolsLoading(true);
+    setToolsError(null);
+    try {
+      const res = await fetch('/api/dynamic-tools', {
+        headers: { 'x-api-key': key },
+      });
+      const json = await res.json() as { data?: { tools: DynamicToolEntry[] }; error?: { message?: string } };
+      if (!res.ok) {
+        setToolsError(json.error?.message ?? 'Failed to load dynamic tools');
+      } else {
+        setDynamicTools(json.data?.tools ?? []);
+      }
+    } catch (err) {
+      setToolsError(err instanceof Error ? err.message : 'Failed to load dynamic tools');
+    } finally {
+      setToolsLoading(false);
+    }
+  }, []);
+
+  const handleGenerateFromGap = async (gapId: string) => {
+    setGapGenerating(gapId);
+    try {
+      const res = await fetch(`/api/capability-gaps/${gapId}/generate`, {
+        method: 'POST',
+        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json() as { data?: { result?: { success?: boolean; data?: { toolName?: string; message?: string } } } };
+      if (res.ok && json.data?.result?.success) {
+        const toolName = json.data.result.data?.toolName;
+        alert(`✅ Tool '${toolName}' generated and registered!`);
+        await loadGaps(gapsFilter, adminKey);
+        await loadDynamicTools(adminKey);
+      } else {
+        const msg = json.data?.result?.data?.message ?? 'Generation failed';
+        alert(`❌ ${msg}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'unknown'}`);
+    } finally {
+      setGapGenerating(null);
+    }
+  };
+
+  const handleToggleTool = async (tool: DynamicToolEntry) => {
+    setToolProcessing(tool.id);
+    try {
+      const res = await fetch(`/api/dynamic-tools/${tool.id}`, {
+        method: 'PATCH',
+        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !tool.enabled }),
+      });
+      if (res.ok) {
+        await loadDynamicTools(adminKey);
+      }
+    } finally {
+      setToolProcessing(null);
+    }
+  };
+
+  const handleDeleteTool = async (tool: DynamicToolEntry) => {
+    if (!confirm(`Delete dynamic tool '${tool.name}'? This cannot be undone.`)) return;
+    setToolProcessing(tool.id);
+    try {
+      const res = await fetch(`/api/dynamic-tools/${tool.id}`, {
+        method: 'DELETE',
+        headers: { 'x-api-key': adminKey },
+      });
+      if (res.ok) {
+        await loadDynamicTools(adminKey);
+      }
+    } finally {
+      setToolProcessing(null);
     }
   };
 
@@ -513,17 +659,21 @@ export function AdminDashboard() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
-        {(['system', 'analytics', 'actions'] as AdminTab[]).map((tab) => (
+        {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium capitalize transition-all ${
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
               activeTab === tab
                 ? 'bg-white text-gray-900 shadow'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'system' ? '⚙️ System' : tab === 'analytics' ? '📊 Analytics' : '🔐 Actions'}
+            {tab === 'system'    ? '⚙️ System'
+           : tab === 'analytics' ? '📊 Analytics'
+           : tab === 'actions'   ? '🔐 Actions'
+           : tab === 'gaps'      ? '🧠 Gaps'
+           :                       '🔧 Tools'}
           </button>
         ))}
       </div>
@@ -971,6 +1121,182 @@ export function AdminDashboard() {
                           </Button>
                         </div>
                       )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {/* ── GAPS TAB ──────────────────────────────────────── */}
+      {activeTab === 'gaps' && (
+        <div className="space-y-6">
+          {!adminKey ? (
+            <Card><p className="text-sm text-gray-600">Enter an admin key to view capability gaps.</p></Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Capability Gaps</CardTitle>
+                  <CardDescription>
+                    Requests Sandra couldn&apos;t fulfil. Use &ldquo;Generate Tool&rdquo; to scaffold a new tool from any gap.
+                  </CardDescription>
+                </CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+                    {(['unreviewed', 'all'] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => {
+                          setGapsFilter(f);
+                          void loadGaps(f, adminKey);
+                        }}
+                        className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                          gapsFilter === f ? 'bg-white text-gray-900 shadow' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {f === 'unreviewed' ? '🔴 Unreviewed' : '📋 All'}
+                      </button>
+                    ))}
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => void loadGaps(gapsFilter, adminKey)} isLoading={gapsLoading}>Refresh</Button>
+                  <span className="ml-auto text-sm text-gray-400">{gapsTotal} total</span>
+                </div>
+              </Card>
+
+              {gapsError && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{gapsError}</div>}
+              {gapsLoading && gaps.length === 0 && <div className="flex justify-center py-12"><Spinner size="lg" /></div>}
+              {!gapsLoading && gaps.length === 0 && !gapsError && (
+                <Card>
+                  <p className="text-center text-sm text-gray-500 py-6">
+                    {gapsFilter === 'unreviewed' ? '✅ No unreviewed gaps — all caught up.' : 'No capability gaps recorded yet.'}
+                  </p>
+                </Card>
+              )}
+
+              <div className="grid gap-4">
+                {gaps.map((gap) => (
+                  <Card key={gap.id} className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm leading-relaxed">&ldquo;{gap.userMessage}&rdquo;</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {gap.patterns.map((p) => (
+                            <Badge key={p} variant="warning">{p}</Badge>
+                          ))}
+                          {gap.channel && <Badge variant="info">{gap.channel}</Badge>}
+                          {gap.language && <Badge variant="default">{gap.language}</Badge>}
+                          <Badge variant={gap.reviewed ? 'success' : 'error'}>
+                            {gap.reviewed ? 'reviewed' : 'unreviewed'}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {new Date(gap.createdAt).toLocaleString()}
+                          {gap.userId ? ` · user: ${gap.userId.slice(0, 8)}…` : ''}
+                        </p>
+                      </div>
+                      {!gap.reviewed && (
+                        <Button
+                          size="sm"
+                          onClick={() => void handleGenerateFromGap(gap.id)}
+                          isLoading={gapGenerating === gap.id}
+                          disabled={!!gapGenerating}
+                        >
+                          ✨ Generate Tool
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── TOOLS TAB ─────────────────────────────────────── */}
+      {activeTab === 'tools' && (
+        <div className="space-y-6">
+          {!adminKey ? (
+            <Card><p className="text-sm text-gray-600">Enter an admin key to manage dynamic tools.</p></Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dynamic Tools</CardTitle>
+                  <CardDescription>
+                    Runtime-generated tools created by scaffoldTool. Toggle, inspect, or delete them here.
+                  </CardDescription>
+                </CardHeader>
+                <div className="flex items-center gap-3">
+                  <Button variant="secondary" size="sm" onClick={() => void loadDynamicTools(adminKey)} isLoading={toolsLoading}>Refresh</Button>
+                  <span className="ml-auto text-sm text-gray-400">{dynamicTools.length} tool{dynamicTools.length !== 1 ? 's' : ''}</span>
+                </div>
+              </Card>
+
+              {toolsError && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{toolsError}</div>}
+              {toolsLoading && dynamicTools.length === 0 && <div className="flex justify-center py-12"><Spinner size="lg" /></div>}
+              {!toolsLoading && dynamicTools.length === 0 && !toolsError && (
+                <Card>
+                  <p className="text-center text-sm text-gray-500 py-6">No dynamic tools yet. Ask Sandra to scaffold one, or use the Gaps tab.</p>
+                </Card>
+              )}
+
+              <div className="grid gap-4">
+                {dynamicTools.map((tool) => (
+                  <Card key={tool.id} className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-gray-900">{tool.name}</span>
+                          <Badge variant={tool.enabled ? 'success' : 'default'}>{tool.enabled ? 'enabled' : 'disabled'}</Badge>
+                          <Badge variant={tool.tested ? 'success' : 'warning'}>{tool.tested ? 'tested' : 'untested'}</Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-600">{tool.description}</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {tool.requiredScopes.map((s) => (
+                            <Badge key={s} variant="info">{s}</Badge>
+                          ))}
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Created {new Date(tool.createdAt).toLocaleString()}
+                          {tool.createdBy ? ` · by ${tool.createdBy.slice(0, 8)}…` : ''}
+                          {tool.sourceGapIds.length > 0 ? ` · from ${tool.sourceGapIds.length} gap(s)` : ''}
+                        </p>
+                        {/* Collapsible handler code */}
+                        <button
+                          className="mt-2 text-xs text-sandra-500 hover:underline"
+                          onClick={() => setExpandedCode(expandedCode === tool.id ? null : tool.id)}
+                        >
+                          {expandedCode === tool.id ? '▲ Hide code' : '▼ View code'}
+                        </button>
+                        {expandedCode === tool.id && (
+                          <pre className="mt-2 overflow-auto rounded bg-gray-900 p-3 text-xs text-gray-100 max-h-48">
+                            {tool.handlerCode}
+                          </pre>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void handleToggleTool(tool)}
+                          isLoading={toolProcessing === tool.id}
+                          disabled={!!toolProcessing}
+                        >
+                          {tool.enabled ? '⏸ Disable' : '▶ Enable'}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void handleDeleteTool(tool)}
+                          isLoading={toolProcessing === tool.id}
+                          disabled={!!toolProcessing}
+                        >
+                          🗑 Delete
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}

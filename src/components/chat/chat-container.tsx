@@ -11,6 +11,7 @@ import { VoiceConversation } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
+import { AmbientParticles } from '@/components/ui/ambient-particles';
 
 type Language = 'en' | 'fr' | 'ht';
 
@@ -216,21 +217,12 @@ export function ChatContainer() {
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[#030b14] cyber-grid">
-      {/* Ambient glow overlays */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_-5%,rgba(56,157,246,0.08),transparent)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_90%_90%,rgba(34,211,238,0.04),transparent)]" />
-
-      {/* Header bar — language selector + live voice button */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/[0.06] glass px-4 py-2.5">
-        <VoiceConversation
-          sessionId={storedSessionId ?? undefined}
-          language={language}
-          onTurn={handleLiveTurn}
-          onSessionId={(id) => { if (!storedSessionId) setSessionId(id); }}
-        />
-        <LanguageSelector language={language} onChange={setLanguageState} />
-      </div>
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#030b14]">
+      {/* Subtle ambient glows */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_-5%,rgba(56,157,246,0.07),transparent)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_90%_90%,rgba(34,211,238,0.03),transparent)]" />
+      {/* Neural-net ambient particle field */}
+      <AmbientParticles />
 
       {/* Messages area */}
       <div className="relative z-10 flex-1 overflow-y-auto">
@@ -266,8 +258,20 @@ export function ChatContainer() {
         </div>
       )}
 
-      {/* Input area */}
-      <div className="relative z-10 mx-auto w-full max-w-3xl">
+      {/* Bottom: language selector + voice panel + text input */}
+      <div className="relative z-10 mx-auto w-full max-w-3xl shrink-0">
+        {/* Language selector — slim bar */}
+        <div className="flex justify-end border-t border-white/[0.04] bg-[#030b14] px-4 py-1.5">
+          <LanguageSelector language={language} onChange={setLanguageState} />
+        </div>
+        {/* Voice — always-visible inline panel (compact when idle, expanded when active) */}
+        <VoiceConversation
+          sessionId={storedSessionId ?? undefined}
+          language={language}
+          onTurn={handleLiveTurn}
+          onSessionId={(id) => { if (!storedSessionId) setSessionId(id); }}
+        />
+        {/* Text chat input */}
         <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
       </div>
     </div>

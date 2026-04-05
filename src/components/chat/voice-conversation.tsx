@@ -14,6 +14,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { ParticleCanvas } from '@/components/ui/particle-canvas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SessionState =
@@ -49,9 +50,14 @@ EdLight has five programs: ESLP (funded 2-week summer leadership for high school
 
 This is a voice conversation. Be warm and conversational. Keep answers to 1-3 sentences unless the user asks for more detail. Never read bullet lists aloud — summarize naturally instead.`;
 
+// ── Audio FFT singletons — survive component re-renders ──────────────────────
+// createMediaElementSource can only be called once per element per AudioContext.
+let _audioCtx: AudioContext | null = null;
+let _analyser: AnalyserNode | null = null;
+let _src: MediaElementAudioSourceNode | null = null;
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function VoiceConversation({ onTurn }: VoiceConversationProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +72,10 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
   const currentAssistantIdRef = useRef<string | null>(null);
   const currentUserIdRef = useRef<string | null>(null);
   const userTurnTextRef = useRef('');
+
+  // Audio FFT canvas
+  const vizCanvasRef = useRef<HTMLCanvasElement>(null);
+  const vizRafRef = useRef<number>(0);
 
   // Keep onTurn callback fresh without recreating the data-channel handler
   const onTurnRef = useRef(onTurn);
@@ -291,9 +301,66 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
     }
   };
 
-  const endConversation = () => { cleanup(); setSessionState('idle'); };
+  const endConversation = () => { cleanup(); setSessionState('idle'); setTranscript([]); };
   const interrupt = () => { sendEvent({ type: 'response.cancel' }); };
-  const closeModal = () => { endConversation(); setIsOpen(false); setTranscript([]); };
+
+  // ── Real-time audio FFT visualizer ──────────────────────────────────────────
+  useEffect(() => {
+    if (sessionState !== 'assistant_speaking') {
+      cancelAnimationFrame(vizRafRef.current);
+      return;
+    }
+    const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
+    const canvas = vizCanvasRef.current;
+    if (!audioEl || !canvas) return;
+    const ctx2d = canvas.getContext('2d');
+    if (!ctx2d) return;
+
+    try {
+      if (!_audioCtx) _audioCtx = new AudioContext();
+      if (_audioCtx.state === 'suspended') void _audioCtx.resume();
+      if (!_analyser) {
+        _analyser = _audioCtx.createAnalyser();
+        _analyser.fftSize = 256;
+        _analyser.smoothingTimeConstant = 0.85;
+      }
+      if (!_src) {
+        _src = _audioCtx.createMediaElementSource(audioEl);
+        _src.connect(_analyser);
+        _analyser.connect(_audioCtx.destination);
+      }
+    } catch {
+      return; // AudioContext setup failed; degrade gracefully
+    }
+
+    const bufLen = _analyser.frequencyBinCount;
+    const data = new Uint8Array(bufLen);
+    const BARS = 38;
+
+    const render = () => {
+      vizRafRef.current = requestAnimationFrame(render);
+      _analyser!.getByteFrequencyData(data);
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx2d.clearRect(0, 0, w, h);
+      const step = Math.floor(bufLen / BARS);
+      const bw = w / BARS;
+      for (let i = 0; i < BARS; i++) {
+        const val = data[i * step] ?? 0;
+        const bh = Math.max((val / 255) * h, 2);
+        const x = i * bw + bw * 0.1;
+        const bwDraw = bw * 0.8;
+        const g = ctx2d.createLinearGradient(0, h, 0, h - bh);
+        g.addColorStop(0, 'rgba(26,105,216,0.85)');
+        g.addColorStop(1, 'rgba(93,185,250,1)');
+        ctx2d.fillStyle = g;
+        ctx2d.fillRect(x, h - bh, bwDraw, bh);
+      }
+    };
+
+    render();
+    return () => cancelAnimationFrame(vizRafRef.current);
+  }, [sessionState]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => () => { cleanup(); }, []);
@@ -318,67 +385,73 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
   const { label, orbClass, showRings, ringColor } = STATE[sessionState];
   const isActive = !['idle', 'error'].includes(sessionState);
 
-  // Waveform bar heights for assistant_speaking (relative proportions)
-  const WAVE_SCALES = [0.4, 0.7, 0.9, 0.6, 1, 0.7, 1, 0.6, 0.9, 0.7, 0.4];
-
   return (
     <>
       {/* Hidden audio — Sandra's realtime voice output */}
       <audio id="sandra-realtime-audio" autoPlay className="hidden" />
 
-      {/* Trigger button in chat header */}
-      <button
-        onClick={() => setIsOpen(true)}
-        title="Live voice conversation (Realtime API)"
-        className="flex h-8 w-8 items-center justify-center rounded-full glass border border-sandra-500/30 text-sandra-400 transition-all hover:border-sandra-500/60 hover:text-sandra-300 hover:glow-blue-sm"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#030b14] cyber-grid">
-          {/* Ambient glow */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,rgba(56,157,246,0.1),transparent)]" />
-
-          {/* ── Header ──────────────────────────────────────────────────── */}
-          <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-white/[0.06] glass px-5 py-4">
-            <div>
-              <h2 className="font-semibold text-white">Live Voice</h2>
-              <p className="mt-0.5 text-xs text-slate-500">{label}</p>
-            </div>
-            <button
-              onClick={closeModal}
-              className="rounded-full p-1.5 text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-300"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+      {/* ── Compact idle / error strip ──────────────────────────────────────── */}
+      {!isActive && (
+        <div className="border-t border-white/[0.06] bg-[#030b14] px-4 py-3">
+          <button
+            onClick={() => void startConversation()}
+            disabled={sessionState === 'connecting'}
+            className="flex w-full items-center gap-3 rounded-2xl border border-sandra-500/25 bg-sandra-500/[0.06] px-4 py-3 text-left transition-all hover:border-sandra-400/50 hover:bg-sandra-500/10 active:scale-[0.98] disabled:opacity-60"
+          >
+            {/* Pulsing mic orb */}
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-sandra-400/30 bg-sandra-600/30">
+              <span className="absolute h-full w-full animate-ping rounded-full bg-sandra-400/20 opacity-60" />
+              <svg className="relative h-4 w-4 text-sandra-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
               </svg>
-            </button>
-          </div>
+            </span>
+            <div className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-white">Talk to Sandra</span>
+              <span className="block truncate text-xs text-slate-500">Live voice · tap to start</span>
+            </div>
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-sandra-500/30 bg-sandra-500/10 px-2.5 py-1 text-[10px] font-bold tracking-widest text-sandra-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sandra-400" />
+              LIVE
+            </span>
+          </button>
+          {error && (
+            <p className="mt-2 text-center text-xs text-red-400">{error}</p>
+          )}
+        </div>
+      )}
 
-          {/* ── Central visual indicator ─────────────────────────────── */}
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center py-8">
+      {/* ── Active voice panel ──────────────────────────────────────────────── */}
+      {isActive && (
+        <div className="relative overflow-hidden border-t border-white/[0.06] bg-[#030b14]/95">
+          {/* Ambient radial glow */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_100%_at_50%_120%,rgba(56,157,246,0.09),transparent)]" />
+          {/* Neural-net particle cloud */}
+          <ParticleCanvas
+            active={sessionState === 'assistant_speaking' || sessionState === 'user_speaking'}
+            className="pointer-events-none absolute inset-0"
+          />
+          <div className="relative z-10 flex flex-col items-center px-4 pb-5 pt-6">
+            {/* Status label */}
+            <p className="mb-5 text-[10px] font-bold tracking-[0.25em] uppercase text-sandra-400">
+              {label}
+            </p>
 
             {/* Orb + rings */}
-            <div className="relative flex h-40 w-40 items-center justify-center">
+            <div className="relative flex h-32 w-32 items-center justify-center">
               {showRings && (
                 <>
-                  <div className={`absolute h-36 w-36 rounded-full border ${ringColor} animate-ring-out`} />
-                  <div className={`absolute h-36 w-36 rounded-full border ${ringColor} animate-ring-out-delayed`} />
-                  {/* Static ambient halo */}
-                  <div className="absolute h-24 w-24 rounded-full bg-sandra-500/8 blur-xl" />
+                  <div className={`absolute h-28 w-28 rounded-full border ${ringColor} animate-ring-out`} />
+                  <div className={`absolute h-28 w-28 rounded-full border ${ringColor} animate-ring-out-delayed`} />
+                  <div className="absolute h-20 w-20 rounded-full bg-sandra-500/[0.06] blur-2xl" />
                 </>
               )}
-
-              {/* The orb */}
-              <div className={`relative z-10 flex h-24 w-24 items-center justify-center rounded-full shadow-2xl transition-all duration-500 ${orbClass} ${showRings ? 'animate-glow-pulse' : ''}`}>
-                {['idle', 'listening', 'user_speaking'].includes(sessionState) && (
-                  <svg
-                    className={`h-10 w-10 ${sessionState === 'idle' ? 'text-slate-500' : 'text-white'}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                  >
+              <div
+                className={`relative z-10 flex h-24 w-24 items-center justify-center shadow-2xl transition-[box-shadow,filter,border-radius] duration-500 ${orbClass} ${
+                  sessionState === 'assistant_speaking' ? 'animate-morph' : 'rounded-full'
+                } ${showRings ? 'animate-glow-pulse' : ''}`}
+              >
+                {['listening', 'user_speaking'].includes(sessionState) && (
+                  <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
                   </svg>
                 )}
@@ -401,53 +474,54 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
               </div>
             </div>
 
-            {/* Waveform spectrum — only when Sandra is speaking */}
+            {/* Real-time audio FFT canvas */}
             {sessionState === 'assistant_speaking' && (
-              <div className="mt-6 flex h-12 items-center justify-center gap-[4px]">
-                {WAVE_SCALES.map((scale, i) => (
-                  <div
-                    key={i}
-                    className="w-[4px] rounded-full bg-sandra-400 soundwave-bar"
-                    style={{
-                      height: `${scale * 100}%`,
-                      animationDelay: `${i * 75}ms`,
-                    }}
-                  />
-                ))}
-              </div>
+              <canvas ref={vizCanvasRef} width={240} height={48} className="mt-4 rounded opacity-90" />
             )}
 
-            {error && (
-              <p className="mt-6 max-w-xs rounded-xl border border-red-500/20 bg-red-900/20 px-4 py-2 text-center text-xs text-red-400">
-                {error}
-              </p>
-            )}
+            {/* Controls */}
+            <div className="mt-5 flex w-full max-w-xs gap-3">
+              <button
+                onClick={endConversation}
+                className="flex-1 rounded-2xl border border-red-500/30 bg-red-600/60 py-3 text-sm font-semibold text-white transition-all hover:bg-red-600/80 active:scale-[0.98]"
+              >
+                End Session
+              </button>
+              {sessionState === 'assistant_speaking' && (
+                <button
+                  onClick={interrupt}
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-slate-400 transition-all hover:bg-white/[0.08] hover:text-slate-200 active:scale-[0.98]"
+                >
+                  Skip
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* ── Transcript ───────────────────────────────────────────── */}
+          {/* ── Inline transcript ────────────────────────────────────────────── */}
           {transcript.length > 0 && (
-            <div className="relative z-10 max-h-[32vh] overflow-y-auto border-t border-white/[0.06] px-5 py-4">
-              <div className="space-y-3">
+            <div className="max-h-[22vh] overflow-y-auto border-t border-white/[0.06] px-4 py-3">
+              <div className="space-y-2">
                 {transcript.map((entry) => (
                   <div key={entry.id} className="space-y-1">
                     <div className="flex items-center gap-1.5">
-                      <span className={`h-1.5 w-1.5 rounded-full ${entry.role === 'user' ? 'bg-slate-500' : 'bg-sandra-400'}`} />
-                      <span className={`text-xs font-medium ${entry.role === 'user' ? 'text-slate-500' : 'text-sandra-400'}`}>
+                      <span className={`h-1 w-1 rounded-full ${entry.role === 'user' ? 'bg-slate-500' : 'bg-sandra-400'}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${entry.role === 'user' ? 'text-slate-500' : 'text-sandra-400'}`}>
                         {entry.role === 'user' ? 'You' : 'Sandra'}
                       </span>
                       {entry.streaming && (
                         <span className="ml-1 flex h-3 items-center gap-[2px]">
                           {[0, 120, 240].map((d, i) => (
-                            <span key={i} className="block w-[2px] h-full rounded-full bg-slate-500 soundwave-bar" style={{ animationDelay: `${d}ms` }} />
+                            <span key={i} className="soundwave-bar block h-full w-[2px] rounded-full bg-slate-500" style={{ animationDelay: `${d}ms` }} />
                           ))}
                         </span>
                       )}
                     </div>
                     <p
-                      className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                      className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
                         entry.role === 'user'
-                          ? 'bg-white/[0.04] border border-white/[0.07] text-slate-300'
-                          : 'bg-sandra-500/10 border border-sandra-500/20 text-slate-200'
+                          ? 'border border-white/[0.07] bg-white/[0.04] text-slate-300'
+                          : 'border border-sandra-500/20 bg-sandra-500/10 text-slate-200'
                       }`}
                     >
                       {entry.text || <span className="animate-pulse text-slate-600">…</span>}
@@ -458,36 +532,6 @@ export function VoiceConversation({ onTurn }: VoiceConversationProps) {
               </div>
             </div>
           )}
-
-          {/* ── Controls ─────────────────────────────────────────────── */}
-          <div className="relative z-10 flex shrink-0 gap-3 border-t border-white/[0.06] glass px-5 py-4">
-            {!isActive ? (
-              <button
-                onClick={() => void startConversation()}
-                className="flex-1 rounded-xl bg-gradient-to-r from-sandra-600 to-sandra-500 py-3.5 text-sm font-semibold text-white transition-all glow-blue-sm hover:glow-blue active:scale-[0.98]"
-              >
-                🎤 Start Conversation
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={endConversation}
-                  className="flex-1 rounded-xl border border-red-500/30 bg-red-600/70 py-3.5 text-sm font-semibold text-white transition-all hover:bg-red-600/90 active:scale-[0.98]"
-                >
-                  ■ End
-                </button>
-                {sessionState === 'assistant_speaking' && (
-                  <button
-                    onClick={interrupt}
-                    className="rounded-xl border border-white/10 px-5 py-3.5 text-sm font-medium text-slate-400 transition-all hover:bg-white/5 hover:text-slate-200 active:scale-[0.98]"
-                  >
-                    Interrupt
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-
         </div>
       )}
     </>

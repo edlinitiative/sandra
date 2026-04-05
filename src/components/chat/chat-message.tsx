@@ -180,7 +180,7 @@ export function ChatMessage({
   }
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-3 animate-materialize ${isUser ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -198,7 +198,7 @@ export function ChatMessage({
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             isUser
               ? 'rounded-br-sm bg-white/[0.08] border border-white/[0.10] text-slate-100'
-              : 'rounded-bl-sm glass border-l-2 border-l-sandra-500/50 text-slate-200'
+              : 'rounded-bl-sm glass border-l-2 border-l-sandra-500/50 text-slate-200 hud'
           }`}
         >
           {isLoading ? (

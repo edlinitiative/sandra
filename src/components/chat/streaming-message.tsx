@@ -51,8 +51,7 @@ export function StreamingMessage({ content, activeToolCall }: StreamingMessagePr
           {content ? (
             <>
               <span className="whitespace-pre-wrap">{content}</span>
-              {/* Neon blinking cursor */}
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-sandra-400 align-middle" />
+              <span className="scan-cursor" />
             </>
           ) : (
             /* Soundwave when waiting for content */
