@@ -3,6 +3,7 @@ import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
 import { getTenantAgentConfig } from './tenant-config';
 import { resolveTenantForUser } from '@/lib/google/context';
+import { loadTenantTools, type TenantTool } from '@/lib/tools/tenant-tool-loader';
 import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
 import type { ChatMessage, MessageContentPart } from '@/lib/ai/types';
@@ -112,17 +113,34 @@ export async function runSandraAgent(
       }
     }
 
-    // 4. Build system prompt — load tenant config for platform-agnostic identity
-    const toolDefinitions = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
-    const toolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
+    // 4. Build system prompt — load tenant config + tenant-scoped tools
+    let globalToolDefs = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
+    let globalToolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
 
     let tenantConfig = undefined;
+    let tenantTools: TenantTool[] = [];
+    let resolvedTenantId: string | null = null;
     if (input.userId) {
       try {
-        const tenantId = await resolveTenantForUser(input.userId);
-        if (tenantId) tenantConfig = await getTenantAgentConfig(tenantId) ?? undefined;
+        resolvedTenantId = await resolveTenantForUser(input.userId);
+        if (resolvedTenantId) {
+          tenantConfig = await getTenantAgentConfig(resolvedTenantId) ?? undefined;
+          tenantTools = await loadTenantTools(resolvedTenantId);
+        }
       } catch {
         // best-effort — fall back to EdLight identity if tenant lookup fails
+      }
+    }
+
+    // Merge tenant tools into the tool set
+    const tenantToolMap = new Map<string, TenantTool>();
+    const toolDefinitions = [...globalToolDefs];
+    const toolNames = [...globalToolNames];
+    for (const tt of tenantTools) {
+      if (!toolNames.includes(tt.definition.name)) {
+        toolDefinitions.push(tt.definition);
+        toolNames.push(tt.definition.name);
+        tenantToolMap.set(tt.definition.name, tt);
       }
     }
 
@@ -281,11 +299,19 @@ export async function runSandraAgent(
         let toolError: string | undefined;
         try {
           const parsedArgs = JSON.parse(toolCall.arguments) as unknown;
-          const result = await executeTool(toolCall.name, parsedArgs, {
-            sessionId: input.sessionId,
-            userId: input.userId,
-            scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
-          });
+          // Check tenant tools first, fall back to global registry
+          const tenantTool = tenantToolMap.get(toolCall.name);
+          const result = tenantTool
+            ? await tenantTool.handler(parsedArgs, {
+                sessionId: input.sessionId,
+                userId: input.userId,
+                scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+              })
+            : await executeTool(toolCall.name, parsedArgs, {
+                sessionId: input.sessionId,
+                userId: input.userId,
+                scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+              });
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})
             : `Tool call failed: ${result.error ?? 'unknown error'}`;
@@ -433,17 +459,33 @@ export async function* runSandraAgentStream(
       }
     }
 
-    // Build system prompt — load tenant config for platform-agnostic identity
-    const toolDefinitions = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
-    const toolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
+    // Build system prompt — load tenant config + tenant-scoped tools
+    let globalToolDefsStream = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
+    let globalToolNamesStream = cfg.enableTools ? toolRegistry.getToolNames() : [];
 
     let tenantConfigStream = undefined;
+    let tenantToolsStream: TenantTool[] = [];
     if (input.userId) {
       try {
         const tenantId = await resolveTenantForUser(input.userId);
-        if (tenantId) tenantConfigStream = await getTenantAgentConfig(tenantId) ?? undefined;
+        if (tenantId) {
+          tenantConfigStream = await getTenantAgentConfig(tenantId) ?? undefined;
+          tenantToolsStream = await loadTenantTools(tenantId);
+        }
       } catch {
         // best-effort — fall back to EdLight identity if tenant lookup fails
+      }
+    }
+
+    // Merge tenant tools into the tool set
+    const tenantToolMapStream = new Map<string, TenantTool>();
+    const toolDefinitions = [...globalToolDefsStream];
+    const toolNames = [...globalToolNamesStream];
+    for (const tt of tenantToolsStream) {
+      if (!toolNames.includes(tt.definition.name)) {
+        toolDefinitions.push(tt.definition);
+        toolNames.push(tt.definition.name);
+        tenantToolMapStream.set(tt.definition.name, tt);
       }
     }
 
@@ -599,11 +641,19 @@ export async function* runSandraAgentStream(
         let resultStr: string;
         try {
           const parsedArgs = JSON.parse(toolCall.arguments) as unknown;
-          const result = await executeTool(toolCall.name, parsedArgs, {
-            sessionId: input.sessionId,
-            userId: input.userId,
-            scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
-          });
+          // Check tenant tools first, fall back to global registry
+          const tenantTool = tenantToolMapStream.get(toolCall.name);
+          const result = tenantTool
+            ? await tenantTool.handler(parsedArgs, {
+                sessionId: input.sessionId,
+                userId: input.userId,
+                scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+              })
+            : await executeTool(toolCall.name, parsedArgs, {
+                sessionId: input.sessionId,
+                userId: input.userId,
+                scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+              });
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})
             : `Tool call failed: ${result.error ?? 'unknown error'}`;

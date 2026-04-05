@@ -428,6 +428,8 @@ model Tenant {
 
   members     TenantMember[]
   providers   ConnectedProvider[]
+  dynamicTools DynamicTool[]
+  apiConnections ExternalApiConnection[]
 
   @@index([slug])
   @@index([domain])
@@ -493,9 +495,53 @@ model DynamicTool {
   createdBy     String?
   /// CapabilityGap IDs that triggered this tool's creation
   sourceGapIds  String[]
+  /// Tenant that owns this tool. NULL = global (legacy/scaffold-generated).
+  tenantId      String?
+  /// ExternalApiConnection this tool was generated from. NULL = scaffolded/manual.
+  apiConnectionId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  tenant        Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  apiConnection ExternalApiConnection? @relation(fields: [apiConnectionId], references: [id], onDelete: SetNull)
+
   @@index([enabled])
   @@index([createdAt])
+  @@index([tenantId, enabled])
+}
+
+// ── External API Connections (Tool Registry Layer 2) ──────────────────────────
+
+/// An external API that a tenant has registered with Sandra.
+/// Sandra parses the OpenAPI spec and generates DynamicTool rows for each endpoint.
+model ExternalApiConnection {
+  id            String   @id @default(cuid())
+  tenantId      String
+  /// Human-readable name: "Acme CRM API", "Support Desk"
+  name          String
+  /// Base URL for all API calls: "https://api.acme.com/v1"
+  baseUrl       String
+  /// The original OpenAPI 3.x spec (JSON). Stored for re-parsing on updates.
+  openApiSpec   Json?
+  /// Auth method: "api_key" | "bearer" | "oauth2" | "basic" | "none"
+  authType      String   @default("api_key")
+  /// Encrypted credentials: { apiKey, bearerToken, clientId/secret, username/password }
+  credentials   Json     @default("{}")
+  /// Auth header/param config: { headerName: "X-API-Key", queryParam: "key" }
+  authConfig    Json?
+  /// Custom headers to send with every request: { "X-Tenant-Id": "acme-123" }
+  defaultHeaders Json?
+  /// Rate limit: max requests per minute. 0 = unlimited.
+  rateLimitRpm  Int      @default(60)
+  isActive      Boolean  @default(true)
+  lastHealthCheck   DateTime?
+  lastHealthStatus  String?  // "connected" | "error" | "unknown"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tools         DynamicTool[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
 }
