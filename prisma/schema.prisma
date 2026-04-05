@@ -471,3 +471,30 @@ model ConnectedProvider {
   @@index([tenantId])
   @@index([provider])
 }
+
+// ── Dynamic Tool System ───────────────────────────────────────────────────────
+
+/// A tool generated at runtime by the scaffoldTool meta-tool.
+/// The handlerCode is plain JavaScript (no TypeScript) that gets eval'd and
+/// hot-registered in the tool registry without a server restart.
+model DynamicTool {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String
+  /// JSON Schema for the tool's input parameters
+  parameters    Json
+  /// Plain JS async function body (no TypeScript). Globals: fetch, executeTool.
+  handlerCode   String   @db.Text
+  requiredScopes String[]
+  enabled       Boolean  @default(true)
+  tested        Boolean  @default(false)
+  /// userId of the admin who created this tool
+  createdBy     String?
+  /// CapabilityGap IDs that triggered this tool's creation
+  sourceGapIds  String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([createdAt])
+}

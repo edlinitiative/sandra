@@ -204,6 +204,9 @@ Guidelines:
   **Leads & Interest** (createLead, submitInterestForm):
   - Use 'createLead' when someone expresses interest in EdLight and you want to capture their info for follow-up.
   - Use 'submitInterestForm' when users want to express interest in a specific program or submit an inquiry.
+
+  **Self-extension tools** (scaffoldTool):
+  - Use 'scaffoldTool' when a user asks you to do something and you have no tool for it. Generate a new tool on the fly and register it immediately. Pass the user's request as 'intent'. You may optionally pass 'sourceGapIds' if you have recorded CapabilityGap IDs. Always use dryRun: true first to preview the generated code, then confirm with the admin before setting dryRun: false to deploy. ADMIN ONLY.
 - Course inventory routing rules (follow strictly):
   - "What courses are on Academy?" → 'getCourseInventory' with platform='academy'
   - "What courses are on EdLight Code?" → 'getCourseInventory' with platform='code'

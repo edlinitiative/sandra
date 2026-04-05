@@ -49,6 +49,7 @@ import './update-calendar-event';
 import './delete-calendar-event';
 import './read-gmail';
 import './reply-gmail';
+import './scaffold-tool';
 import './create-google-doc';
 import './create-spreadsheet';
 import './read-drive-file';

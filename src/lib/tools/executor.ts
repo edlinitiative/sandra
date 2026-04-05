@@ -1,4 +1,5 @@
 import { toolRegistry } from './registry';
+import { ensureDynamicToolsLoaded } from './dynamic-loader';
 import type { ToolResult, ToolContext } from './types';
 import { createLogger, AuthError, ValidationError } from '@/lib/utils';
 import { logAuditEvent } from '@/lib/audit';
@@ -26,6 +27,10 @@ export async function executeTool(
   context: ToolContext,
 ): Promise<ToolResult> {
   const correlationId = getCorrelationId();
+
+  // Ensure any dynamic tools saved to DB are loaded into the registry
+  await ensureDynamicToolsLoaded();
+
   const tool = toolRegistry.get(name);
 
   if (!tool) {
