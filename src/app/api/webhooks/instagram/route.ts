@@ -3,11 +3,10 @@ import { getInstagramAdapter } from '@/lib/channels/instagram';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
 import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/memory/session-continuity';
-import { resolveLanguage } from '@/lib/i18n';
+import { resolveLanguage, detectMessageLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger, verifyMetaSignature, isDuplicate } from '@/lib/utils';
-import { splitForInstagram } from '@/lib/channels/instagram-formatter';
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
 import {
@@ -19,6 +18,16 @@ import {
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 
 const log = createLogger('api:webhooks:instagram');
+
+/**
+ * PSIDs currently being processed.
+ * Prevents a second inbound message from the same user spawning a parallel
+ * agent run while an earlier one is still in-flight.
+ */
+const activeProcessing = new Set<string>();
+
+/** Re-fire typing_on every N ms so Meta doesn't hide the indicator. */
+const TYPING_REFRESH_MS = 12_000;
 
 // ─── GET — Webhook verification (Meta challenge) ─────────────────────────────
 
@@ -113,21 +122,66 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     const { channelUserId: psid, content, metadata } = inbound;
     const pageId = metadata?.pageId as string | undefined;
 
-    // Fetch sender's profile (name + username) for personalised responses
-    const profile = await adapter.fetchSenderProfile(psid);
-    const senderName = profile.name;
-    const igUsername = profile.username;
+    // ── Per-PSID concurrency guard ────────────────────────────────────────
+    // Drop the second message if the same user's first is still processing.
+    // This prevents two parallel agent runs racing each other with no context.
+    if (activeProcessing.has(psid)) {
+      log.info('Instagram: message dropped — prior message still processing', {
+        psid: `${psid.slice(0, 4)}****`,
+      });
+      return;
+    }
+    activeProcessing.add(psid);
 
-    log.info('Processing Instagram inbound DM', {
-      from: `${psid.slice(0, 4)}****`,
-      senderName: senderName ?? 'unknown',
-      igUsername: igUsername ?? 'unknown',
+    try {
+      await _processMessage({ adapter, psid, pageId, content, inbound, requestId });
+    } finally {
+      activeProcessing.delete(psid);
+    }
+  } catch (error) {
+    log.error('Instagram webhook processing error', {
+      error: error instanceof Error ? error.message : 'unknown',
       requestId,
     });
+  } finally {
+    clearCorrelationId();
+  }
+}
 
-    // Show typing indicator immediately so the user knows Sandra is working
+// ─── Inner message processor (runs inside the concurrency guard) ──────────────
+
+async function _processMessage(ctx: {
+  adapter: ReturnType<typeof getInstagramAdapter>;
+  psid: string;
+  pageId: string | undefined;
+  content: string;
+  inbound: Awaited<ReturnType<ReturnType<typeof getInstagramAdapter>['parseInbound']>>;
+  requestId: string;
+}): Promise<void> {
+  const { adapter, psid, pageId, content, inbound, requestId } = ctx;
+
+  // Fetch sender's profile (name + username) for personalised responses
+  const profile = await adapter.fetchSenderProfile(psid);
+  const senderName = profile.name;
+  const igUsername = profile.username;
+
+  log.info('Processing Instagram inbound DM', {
+    from: `${psid.slice(0, 4)}****`,
+    senderName: senderName ?? 'unknown',
+    igUsername: igUsername ?? 'unknown',
+    requestId,
+  });
+
+  // ── Typing indicator — fire immediately, refresh every 12 s ──────────
+  // Meta's typing_on expires after ~20 s; long tool-call chains can take
+  // 30-60 s, leaving users staring at an empty screen. The interval keeps
+  // the indicator alive for the full agent run duration.
+  void adapter.sendTypingIndicator(psid, pageId);
+  const typingInterval = setInterval(() => {
     void adapter.sendTypingIndicator(psid, pageId);
+  }, TYPING_REFRESH_MS);
 
+  try {
     // Resolve or create channel identity → Sandra user
     const identity = await resolveChannelIdentity({
       channel: 'instagram',
@@ -210,7 +264,6 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     }
 
     // ── RESOLVE ROLE FOR LINKED USERS ────────────────────────────────────
-    // Look up the user's actual TenantMember role so admins get gmail:send etc.
     let role: 'guest' | 'student' | 'educator' | 'admin' = wsIdentity ? 'student' : 'guest';
     if (wsIdentity) {
       const membership = await db.tenantMember.findFirst({
@@ -230,7 +283,15 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
     });
 
     const sessionId = session.sessionId;
-    const language = resolveLanguage({ explicit: undefined, sessionLanguage: session.language });
+
+    // ── Language resolution ───────────────────────────────────────────────
+    // For new sessions (no stored language), detect from the incoming message
+    // content. This ensures French/Haitian Creole users get a response in their
+    // language from the very first turn, not after an awkward English exchange.
+    const detectedLang = !session.language
+      ? detectMessageLanguage(content)
+      : undefined;
+    const language = resolveLanguage({ explicit: detectedLang, sessionLanguage: session.language });
 
     await ensureSessionContinuity({ sessionId, channel: 'instagram', language, userId });
 
@@ -246,30 +307,24 @@ async function processInboundAsync(rawPayload: unknown, requestId: string): Prom
       metadata: { requestId, source: 'instagram', psid, igUsername, workspaceEmail: wsIdentity?.email },
     });
 
-    // Send reply — split into 1000-char chunks
-    const chunks = splitForInstagram(result.response);
-    for (const chunk of chunks) {
-      await adapter.send({
-        channelType: 'instagram',
-        recipientId: psid,
-        content: chunk,
-        language: result.language,
-        metadata: { pageId },
-      });
-    }
+    // adapter.send() handles format → split → multi-chunk delivery internally.
+    // No need to split here — just pass the full response.
+    await adapter.send({
+      channelType: 'instagram',
+      recipientId: psid,
+      content: result.response,
+      language: result.language,
+      metadata: { pageId },
+    });
 
     log.info('Instagram reply sent', {
       from: `${psid.slice(0, 4)}****`,
-      chunks: chunks.length,
       toolsUsed: result.toolsUsed,
-    });
-  } catch (error) {
-    log.error('Instagram webhook processing error', {
-      error: error instanceof Error ? error.message : 'unknown',
-      requestId,
+      detectedLang: detectedLang ?? null,
+      language,
     });
   } finally {
-    clearCorrelationId();
+    clearInterval(typingInterval);
   }
 }
 

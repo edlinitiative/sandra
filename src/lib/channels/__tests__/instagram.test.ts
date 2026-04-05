@@ -179,6 +179,46 @@ describe('InstagramChannelAdapter', () => {
       expect(options.headers).toHaveProperty('Authorization', 'Bearer test-ig-token');
     });
 
+    it('strips Markdown before sending', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+      await adapter.send({
+        channelType: 'instagram',
+        recipientId: 'psid-12345',
+        content: '**Bold** and _italic_ text with `code`',
+        language: 'en',
+      });
+
+      const [, options] = mockFetch.mock.calls[0]! as [string, RequestInit];
+      const body = JSON.parse(options.body as string) as { message: { text: string } };
+      expect(body.message.text).not.toContain('**');
+      expect(body.message.text).not.toContain('_');
+      expect(body.message.text).not.toContain('`');
+      expect(body.message.text).toBe('Bold and italic text with code');
+    });
+
+    it('splits long content into multiple API calls', async () => {
+      // Use a persistent mock (not mockResolvedValueOnce) so no stale entries
+      // remain in the queue regardless of how many chunks are produced.
+      mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+      // Two paragraphs each ~799 chars; combined > 1000 so they split.
+      const para1 = 'A '.repeat(400).trim();
+      const para2 = 'B '.repeat(400).trim();
+      const longContent = `${para1}\n\n${para2}`;
+
+      await adapter.send({
+        channelType: 'instagram',
+        recipientId: 'psid-12345',
+        content: longContent,
+        language: 'en',
+        metadata: { pageId: 'ig-page-123' },
+      });
+
+      // Content splits into 2 paragraphs → 2 API calls
+      expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
     it('throws on API error response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

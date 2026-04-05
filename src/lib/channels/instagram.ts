@@ -1,5 +1,5 @@
 import type { ChannelAdapter, InboundMessage, OutboundMessage, MessageAttachment } from './types';
-import { formatForInstagram } from './instagram-formatter';
+import { formatForInstagram, stripInstagramMarkdown, splitForInstagram } from './instagram-formatter';
 import { transcribeAudio } from './voice';
 import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
@@ -245,6 +245,8 @@ export class InstagramChannelAdapter implements ChannelAdapter {
 
   /**
    * Format an outbound message as an Instagram Graph API request body.
+   * Note: `send()` handles multi-chunk delivery internally; call this only when
+   * you need the formatted body for a single pre-split chunk.
    */
   async formatOutbound(message: OutboundMessage): Promise<InstagramOutboundBody> {
     return {
@@ -256,21 +258,40 @@ export class InstagramChannelAdapter implements ChannelAdapter {
 
   /**
    * Send a message via the Instagram Graph API.
+   *
+   * Handles the full format → split → send pipeline internally:
+   * 1. Strip Markdown and normalise to Instagram plain text (without truncating).
+   * 2. Split into ≤ 1000-char chunks on paragraph boundaries.
+   * 3. POST each chunk as a separate Graph API message in sequence.
+   *
+   * Callers should pass the full unformatted agent response — no pre-splitting
+   * required outside this method.
    */
   async send(message: OutboundMessage): Promise<void> {
     if (!this.isConfigured()) {
       throw new Error('Instagram adapter not configured: missing credentials');
     }
 
-    const body = await this.formatOutbound(message);
-    // Instagram API with Instagram Login requires:
-    // - graph.instagram.com (not graph.facebook.com)
-    // - Authorization: Bearer header (not access_token query param)
-    // - /{instagram-scoped-id}/messages endpoint
-    const igScopedId = message.metadata?.pageId as string | undefined;
-    const endpoint = igScopedId ? `${this.apiBase}/${igScopedId}/messages` : `${this.apiBase}/me/messages`;
+    // 1. Strip Markdown from the full response WITHOUT truncating.
+    //    (formatForInstagram would truncate multi-paragraph responses to 1000 chars
+    //     before splitting — stripInstagramMarkdown skips that guard.)
+    // 2. Split the plain-text result into ≤ 1000-char chunks.
+    const stripped = stripInstagramMarkdown(message.content);
+    const chunks = splitForInstagram(stripped);
 
-    log.info('Sending Instagram message', { to: `${message.recipientId.slice(0, 4)}****`, endpoint });
+    const igScopedId = message.metadata?.pageId as string | undefined;
+    const endpoint = igScopedId
+      ? `${this.apiBase}/${igScopedId}/messages`
+      : `${this.apiBase}/me/messages`;
+
+    for (const chunk of chunks) {
+      await this._sendChunk(endpoint, message.recipientId, chunk);
+    }
+  }
+
+  /** Low-level: POST a single pre-formatted text chunk to the Graph API. */
+  private async _sendChunk(endpoint: string, recipientId: string, text: string): Promise<void> {
+    log.info('Sending Instagram message', { to: `${recipientId.slice(0, 4)}****`, endpoint });
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -278,7 +299,11 @@ export class InstagramChannelAdapter implements ChannelAdapter {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.pageAccessToken}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        message: { text },
+        messaging_type: 'RESPONSE',
+      } satisfies InstagramOutboundBody),
     });
 
     if (!response.ok) {

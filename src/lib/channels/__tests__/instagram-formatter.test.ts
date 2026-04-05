@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatForInstagram,
+  stripInstagramMarkdown,
   splitForInstagram,
   INSTAGRAM_MAX_LENGTH,
 } from '../instagram-formatter';
@@ -61,6 +62,23 @@ describe('formatForInstagram', () => {
   });
 });
 
+describe('stripInstagramMarkdown', () => {
+  it('strips markdown but does NOT truncate long text', () => {
+    const longText = '**Bold start** ' + 'A '.repeat(600).trim();
+    const result = stripInstagramMarkdown(longText);
+    // markdown stripped
+    expect(result).not.toContain('**');
+    // no truncation — full text remains
+    expect(result).not.toContain('truncated');
+    expect(result.length).toBeGreaterThan(INSTAGRAM_MAX_LENGTH);
+  });
+
+  it('is equivalent to formatForInstagram for short text', () => {
+    const short = '**Hello** from [Sandra](https://example.com)';
+    expect(stripInstagramMarkdown(short)).toBe(formatForInstagram(short));
+  });
+});
+
 describe('splitForInstagram', () => {
   it('returns single chunk for short messages', () => {
     expect(splitForInstagram('Short message')).toEqual(['Short message']);
@@ -86,5 +104,14 @@ describe('splitForInstagram', () => {
     for (const chunk of chunks) {
       expect(chunk.length).toBeLessThanOrEqual(1000);
     }
+  });
+
+  it('correctly splits a 1600-char plain-text response into 2 chunks', () => {
+    const para1 = 'A '.repeat(400).trim(); // 799 chars
+    const para2 = 'B '.repeat(400).trim(); // 799 chars
+    const chunks = splitForInstagram(`${para1}\n\n${para2}`);
+    expect(chunks.length).toBe(2);
+    expect(chunks[0]).toBe(para1);
+    expect(chunks[1]).toBe(para2);
   });
 });

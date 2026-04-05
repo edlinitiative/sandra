@@ -49,6 +49,7 @@ export {
 } from './whatsapp-formatter';
 export {
   formatForInstagram,
+  stripInstagramMarkdown,
   splitForInstagram,
   INSTAGRAM_MAX_LENGTH,
 } from './instagram-formatter';

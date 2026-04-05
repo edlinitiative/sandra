@@ -9,4 +9,4 @@ export {
   type LanguageMeta,
   type LanguageConfig,
 } from './types';
-export { resolveLanguage, normalizeLanguageCode, getLanguageInfo, getLanguageInstruction, languagePromptInstruction } from './languages';
+export { resolveLanguage, normalizeLanguageCode, getLanguageInfo, getLanguageInstruction, languagePromptInstruction, detectMessageLanguage } from './languages';

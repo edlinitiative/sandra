@@ -12,10 +12,14 @@ export const INSTAGRAM_MAX_LENGTH = 1000;
 export const INSTAGRAM_TRUNCATION_SUFFIX = '\n\n(Message truncated. Ask me to continue.)';
 
 /**
- * Format a Sandra response for Instagram DM delivery.
- * Strips all Markdown and enforces the 1000-char limit.
+ * Strip all Markdown and normalise text for Instagram delivery.
+ *
+ * Does NOT enforce the 1000-character limit — this is a pure markdown-stripping
+ * step. Use `formatForInstagram` when you need the full pipeline (strip + truncate
+ * for a single chunk), or use `splitForInstagram` after this to split a long
+ * response into multiple safe chunks.
  */
-export function formatForInstagram(text: string): string {
+export function stripInstagramMarkdown(text: string): string {
   let out = text;
 
   // 1. Strip image syntax before link conversion
@@ -46,14 +50,25 @@ export function formatForInstagram(text: string): string {
   out = out.replace(/\n{3,}/g, '\n\n');
 
   // 9. Trim
-  out = out.trim();
+  return out.trim();
+}
 
-  // 10. Enforce 1000-char limit
+/**
+ * Format a Sandra response for Instagram DM delivery.
+ *
+ * Strips all Markdown and enforces the 1000-char limit via hard truncation.
+ * Intended for single, pre-split chunks. For the full multi-paragraph pipeline
+ * use `stripInstagramMarkdown` + `splitForInstagram` + send each chunk.
+ */
+export function formatForInstagram(text: string): string {
+  const out = stripInstagramMarkdown(text);
+
+  // 10. Enforce 1000-char limit (last resort — splitForInstagram should prevent this)
   if (out.length > INSTAGRAM_MAX_LENGTH) {
     const cutoff = INSTAGRAM_MAX_LENGTH - INSTAGRAM_TRUNCATION_SUFFIX.length;
     const lastNewline = out.lastIndexOf('\n', cutoff);
     const truncateAt = lastNewline > cutoff - 100 ? lastNewline : cutoff;
-    out = out.slice(0, truncateAt) + INSTAGRAM_TRUNCATION_SUFFIX;
+    return out.slice(0, truncateAt) + INSTAGRAM_TRUNCATION_SUFFIX;
   }
 
   return out;
