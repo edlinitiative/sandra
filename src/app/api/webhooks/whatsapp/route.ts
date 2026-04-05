@@ -302,6 +302,7 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
       senderName: resolvedName,
       attachments: inbound.attachments,
       scopes,
+      workspaceEmail: wsIdentity?.email,
       metadata: { requestId, source: 'whatsapp', phoneNumber, workspaceEmail: wsIdentity?.email },
     });
 

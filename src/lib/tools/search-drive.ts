@@ -11,7 +11,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { searchFiles, getFileContent } from '@/lib/google/drive';
 import { logAuditEvent } from '@/lib/audit';
 
@@ -60,7 +60,7 @@ const searchDrive: SandraTool = {
     }
 
     // Resolve tenant
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return { success: false, data: null, error: 'You are not a member of any organization with Google Drive access.' };
     }

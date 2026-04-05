@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { createCalendarEvent } from '@/lib/google/calendar';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -119,7 +119,7 @@ const createCalendarEventTool: SandraTool = {
       return { success: false, data: null, error: 'You need to be signed in to create calendar events.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return {
         success: false,
@@ -129,7 +129,7 @@ const createCalendarEventTool: SandraTool = {
     }
 
     const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
-    const userEmail = user?.email ?? null;
+    const userEmail = user?.email ?? context.workspaceEmail ?? null;
     if (!userEmail) {
       return {
         success: false,

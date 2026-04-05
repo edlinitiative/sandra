@@ -9,6 +9,12 @@ export interface ToolContext {
   sessionId: string;
   userId?: string;
   scopes: string[];
+  /**
+   * Workspace email for channel users (WhatsApp/Instagram).
+   * Channel users are separate DB Users with no email column.
+   * This bridges to their linked web-app identity for Workspace tool access.
+   */
+  workspaceEmail?: string;
 }
 
 /** Result of a tool execution */

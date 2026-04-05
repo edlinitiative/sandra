@@ -64,12 +64,25 @@ const getUserProfileTool: SandraTool = {
         memories.map((m) => [m.key, m.value]),
       );
 
+      // Resolve effective email (channel users have no email column; fall back to workspaceEmail)
+      const effectiveEmail = user.email ?? context.workspaceEmail ?? null;
+
+      // Resolve TenantMember role — more accurate than User.role for org members
+      let memberRole: string | null = null;
+      if (effectiveEmail) {
+        const membership = await db.tenantMember.findFirst({
+          where: { user: { email: effectiveEmail }, isActive: true },
+          select: { role: true },
+        });
+        memberRole = membership?.role ?? null;
+      }
+
       return {
         success: true,
         data: {
           name: user.name ?? 'Not set',
-          email: user.email ?? 'Not set',
-          role: user.role,
+          email: effectiveEmail ?? 'Not set',
+          role: memberRole ?? user.role,
           language: user.language,
           channel: user.channel,
           enrollmentCount: user._count.enrollments,

@@ -11,7 +11,7 @@ import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
 import { resolveZoomContext, createZoomMeeting } from '@/lib/zoom';
-import { resolveTenantForUser } from '@/lib/google/context';
+import { resolveTenantForContext } from '@/lib/google/context';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
 
@@ -95,7 +95,7 @@ const createZoomMeetingTool: SandraTool = {
       return { success: false, data: null, error: 'You need to be signed in to create Zoom meetings.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return {
         success: false,
@@ -119,7 +119,7 @@ const createZoomMeetingTool: SandraTool = {
 
     // Try to use the requesting user as host; fall back to account default
     // if they haven't been added to the Zoom account yet.
-    const preferredHost = user?.email ?? zoomCtx.config.defaultHostEmail;
+    const preferredHost = user?.email ?? context.workspaceEmail ?? zoomCtx.config.defaultHostEmail;
 
     try {
       let result;

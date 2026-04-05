@@ -20,6 +20,12 @@ export interface AgentInput {
   /** Permission scopes for tool execution. Defaults to ['knowledge:read', 'repos:read'] */
   scopes?: string[];
   /**
+   * Workspace email for channel users (WhatsApp/Instagram).
+   * Channel users are separate DB Users with no email column; this bridges to
+   * their linked web-app identity so Workspace tools (Gmail, Drive, etc.) work.
+   */
+  workspaceEmail?: string;
+  /**
    * When the caller authenticated with a TenantApiKey, the resolved tenantId is
    * passed here so the agent skips the resolveTenantForUser() DB lookup.
    */

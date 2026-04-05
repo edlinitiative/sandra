@@ -308,6 +308,7 @@ async function _processMessage(ctx: {
       senderName: resolvedName,
       attachments: inbound.attachments,
       scopes,
+      workspaceEmail: wsIdentity?.email,
       metadata: { requestId, source: 'instagram', psid, igUsername, workspaceEmail: wsIdentity?.email },
     });
 

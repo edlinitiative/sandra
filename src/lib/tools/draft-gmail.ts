@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { createDraft } from '@/lib/google/gmail';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -70,22 +70,23 @@ const draftGmail: SandraTool = {
       return { success: false, data: null, error: 'Authentication required to create Gmail drafts.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return { success: false, data: null, error: 'You are not a member of any organization with Gmail access.' };
     }
 
-    // Resolve sender email
+    // Resolve sender email (falls back to workspaceEmail for channel users)
     const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
-    if (!user?.email) {
+    const userEmail = user?.email ?? context.workspaceEmail ?? null;
+    if (!userEmail) {
       return { success: false, data: null, error: 'No email address associated with your account.' };
     }
 
     try {
-      const ctx = await resolveGoogleContext(tenantId, user.email);
+      const ctx = await resolveGoogleContext(tenantId, userEmail);
 
       const result = await createDraft(ctx, {
-        from: user.email,
+        from: userEmail,
         to: params.to,
         cc: params.cc,
         subject: params.subject,
@@ -106,7 +107,7 @@ const draftGmail: SandraTool = {
         data: {
           message: `Draft created in your Gmail. You can find it in your Drafts folder and send it when ready.`,
           draftId: result.draftId,
-          from: user.email,
+          from: userEmail,
           to: params.to,
           subject: params.subject,
         },

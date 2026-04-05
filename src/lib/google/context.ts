@@ -70,6 +70,30 @@ export async function resolveTenantForUser(userId: string): Promise<string | nul
 }
 
 /**
+ * Resolve tenant ID for a user, with workspace-email fallback for channel users.
+ *
+ * Channel users (WhatsApp/Instagram) are separate DB Users with no TenantMember row.
+ * Their workspaceEmail identifies the linked web-app User who does have one.
+ */
+export async function resolveTenantForContext(
+  userId: string,
+  workspaceEmail?: string,
+): Promise<string | null> {
+  const direct = await resolveTenantForUser(userId);
+  if (direct) return direct;
+
+  if (workspaceEmail) {
+    const webUser = await db.user.findFirst({
+      where: { email: workspaceEmail },
+      select: { id: true },
+    });
+    if (webUser) return resolveTenantForUser(webUser.id);
+  }
+
+  return null;
+}
+
+/**
  * Get the user's role within a tenant.
  */
 export async function getTenantRole(

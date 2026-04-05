@@ -15,7 +15,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { createForm } from '@/lib/google/forms';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -127,7 +127,7 @@ const createGoogleFormTool: SandraTool = {
       return { success: false, data: null, error: 'You need to be signed in to create Google Forms.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return { success: false, data: null, error: 'Your account is not linked to a Workspace with Google Forms access.' };
     }
@@ -136,7 +136,7 @@ const createGoogleFormTool: SandraTool = {
     let ownerEmail = params.ownerEmail ?? null;
     if (!ownerEmail) {
       const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
-      ownerEmail = user?.email ?? null;
+      ownerEmail = user?.email ?? context.workspaceEmail ?? null;
     }
 
     if (!ownerEmail) {

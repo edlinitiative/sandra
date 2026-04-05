@@ -7,7 +7,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { replyToMessage } from '@/lib/google/gmail';
 import { actionRateLimiter } from '@/lib/actions/rate-limiter';
 import { logAuditEvent } from '@/lib/audit';
@@ -70,7 +70,7 @@ const replyGmailTool: SandraTool = {
       return { success: false, data: null, error: 'Authentication required to reply to Gmail.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return { success: false, data: null, error: 'You are not a member of any organization with Gmail access.' };
     }
@@ -81,13 +81,14 @@ const replyGmailTool: SandraTool = {
 
     try {
       const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
-      if (!user?.email) {
+      const userEmail = user?.email ?? context.workspaceEmail ?? null;
+      if (!userEmail) {
         return { success: false, data: null, error: 'No email address associated with your account.' };
       }
 
-      const ctx = await resolveGoogleContext(tenantId, user.email);
+      const ctx = await resolveGoogleContext(tenantId, userEmail);
       const result = await replyToMessage(ctx, {
-        from: user.email,
+        from: userEmail,
         threadId: params.threadId,
         inReplyToMessageId: params.inReplyToMessageId,
         to: params.to,

@@ -310,11 +310,13 @@ export async function runSandraAgent(
                 sessionId: input.sessionId,
                 userId: input.userId,
                 scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+                workspaceEmail: input.workspaceEmail,
               })
             : await executeTool(toolCall.name, parsedArgs, {
                 sessionId: input.sessionId,
                 userId: input.userId,
                 scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+                workspaceEmail: input.workspaceEmail,
               });
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})
@@ -657,11 +659,13 @@ export async function* runSandraAgentStream(
                 sessionId: input.sessionId,
                 userId: input.userId,
                 scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+                workspaceEmail: input.workspaceEmail,
               })
             : await executeTool(toolCall.name, parsedArgs, {
                 sessionId: input.sessionId,
                 userId: input.userId,
                 scopes: input.scopes ?? ['knowledge:read', 'repos:read'],
+                workspaceEmail: input.workspaceEmail,
               });
           resultStr = result.success
             ? JSON.stringify(result.data ?? {})

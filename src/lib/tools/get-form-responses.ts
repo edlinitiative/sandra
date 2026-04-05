@@ -15,7 +15,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
+import { resolveGoogleContext, resolveTenantForContext } from '@/lib/google/context';
 import { getFormResponses } from '@/lib/google/forms';
 import { logAuditEvent } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -76,13 +76,13 @@ const getFormResponsesTool: SandraTool = {
       return { success: false, data: null, error: 'You need to be signed in to read form responses.' };
     }
 
-    const tenantId = await resolveTenantForUser(userId);
+    const tenantId = await resolveTenantForContext(userId, context.workspaceEmail);
     if (!tenantId) {
       return { success: false, data: null, error: 'Your account is not linked to a Workspace with Google Forms access.' };
     }
 
     const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
-    const userEmail = user?.email ?? null;
+    const userEmail = user?.email ?? context.workspaceEmail ?? null;
 
     if (!userEmail) {
       return { success: false, data: null, error: 'No email address found. Say "my email is you@edlight.org" to link your account first.' };
