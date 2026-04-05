@@ -45,9 +45,11 @@ export class EmailChannelAdapter implements ChannelAdapter {
   }
 
   isConfigured(): boolean {
-    // Needs either a saved tenant Google provider or env-level service account creds
+    // Production: credentials live in ConnectedProvider DB row (loaded via resolveGoogleContext)
+    // Dev / env-only: GOOGLE_SA_JSON or individual GOOGLE_SERVICE_ACCOUNT_* vars
     return Boolean(
-      env.GOOGLE_SERVICE_ACCOUNT_EMAIL && env.GOOGLE_SERVICE_ACCOUNT_KEY,
+      env.GOOGLE_SA_JSON ||
+      (env.GOOGLE_SERVICE_ACCOUNT_EMAIL && env.GOOGLE_SERVICE_ACCOUNT_KEY),
     );
   }
 

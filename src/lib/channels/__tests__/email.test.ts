@@ -18,6 +18,7 @@ vi.mock('@/lib/google/context', () => ({
 vi.mock('@/lib/config', () => ({
   env: {
     SANDRA_EMAIL_ADDRESS: 'sandra@edlight.org',
+    GOOGLE_SA_JSON: '{"type":"service_account"}',
     GOOGLE_SERVICE_ACCOUNT_EMAIL: 'sa@edlight.iam.gserviceaccount.com',
     GOOGLE_SERVICE_ACCOUNT_KEY: 'base64key',
     GOOGLE_WORKSPACE_DOMAIN: 'edlight.org',

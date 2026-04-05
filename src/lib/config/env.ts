@@ -57,6 +57,7 @@ const envSchema = z.object({
   // Google Workspace (domain-wide delegation via service account)
   // These are OPTIONAL — Google integration is configured per-tenant in ConnectedProvider.
   // Env vars are a convenience for single-tenant / dev setups.
+  GOOGLE_SA_JSON: z.string().optional(),              // full SA JSON (base64 or raw)
   GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
   GOOGLE_SERVICE_ACCOUNT_KEY: z.string().optional(), // base64-encoded PEM private key
   GOOGLE_WORKSPACE_DOMAIN: z.string().optional(),    // e.g. "edlight.org"

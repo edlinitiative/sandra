@@ -15,10 +15,11 @@ async function main() {
   const saJson = loadServiceAccount();
   console.log(`📄 Loaded service account: ${saJson.client_email}`);
 
-  // 1. Create EdLight tenant (tenant zero)
+  // 1. Create EdLight tenant (tenant zero) with fixed ID so cron routes stay stable
   const tenant = await db.tenant.upsert({
     where: { slug: 'edlight' },
     create: {
+      id: 'cmnhsjh850000a1y1b69ji257',
       name: 'EdLight',
       slug: 'edlight',
       domain: 'edlight.org',
@@ -50,7 +51,16 @@ async function main() {
       'https://www.googleapis.com/auth/drive.readonly',
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/admin.directory.user.readonly',
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/tasks',
+      'https://www.googleapis.com/auth/forms.body',
+      'https://www.googleapis.com/auth/forms.responses.readonly',
+      'https://www.googleapis.com/auth/contacts.readonly',
+      'https://www.googleapis.com/auth/spreadsheets.readonly',
     ],
     driveFolderIds: [], // Add folder IDs later
   };
