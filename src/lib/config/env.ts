@@ -42,11 +42,9 @@ const envSchema = z.object({
   INSTAGRAM_VERIFY_TOKEN: z.string().optional(),
   INSTAGRAM_API_VERSION: z.string().default('v19.0'),
 
-  // Email (SendGrid)
-  SENDGRID_API_KEY: z.string().optional(),
-  SENDGRID_FROM_EMAIL: z.string().email().optional().or(z.literal('')),
-  SENDGRID_FROM_NAME: z.string().default('Sandra — EdLight'),
-  SENDGRID_WEBHOOK_SECRET: z.string().optional(),
+  // Email — inbox address for the Sandra Gmail account
+  // Outbound and inbound both go through the Google Workspace Gmail API (no SendGrid).
+  SANDRA_EMAIL_ADDRESS: z.string().email().optional(), // e.g. sandra@edlight.org
 
   // Voice (OpenAI Whisper STT + TTS — reuses OPENAI_API_KEY)
   OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),

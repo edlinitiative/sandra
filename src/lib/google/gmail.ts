@@ -413,3 +413,29 @@ export async function replyToMessage(
   log.info('Reply sent', { messageId: data.id, threadId: data.threadId });
   return { messageId: data.id, threadId: data.threadId, labelIds: data.labelIds ?? [] };
 }
+
+/**
+ * Mark a Gmail message as read by removing the UNREAD label.
+ */
+export async function markAsRead(
+  ctx: GoogleWorkspaceContext,
+  messageId: string,
+): Promise<void> {
+  const token = await getContextToken(ctx, [GOOGLE_SCOPES.GMAIL_MODIFY]);
+
+  const res = await fetch(`${GMAIL_API}/users/me/messages/${messageId}/modify`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ removeLabelIds: ['UNREAD'] }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gmail markAsRead failed: ${res.status} — ${body}`);
+  }
+
+  log.info('Message marked as read', { messageId });
+}

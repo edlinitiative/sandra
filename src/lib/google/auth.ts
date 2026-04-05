@@ -91,6 +91,7 @@ export const GOOGLE_SCOPES = {
   GMAIL_SEND: 'https://www.googleapis.com/auth/gmail.send',
   GMAIL_COMPOSE: 'https://www.googleapis.com/auth/gmail.compose',
   GMAIL_READONLY: 'https://www.googleapis.com/auth/gmail.readonly',
+  GMAIL_MODIFY: 'https://www.googleapis.com/auth/gmail.modify',
   DIRECTORY_READONLY: 'https://www.googleapis.com/auth/admin.directory.user.readonly',
   DIRECTORY_GROUP_READONLY: 'https://www.googleapis.com/auth/admin.directory.group.readonly',
   CALENDAR: 'https://www.googleapis.com/auth/calendar',

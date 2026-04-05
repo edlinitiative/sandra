@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-birthdays",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/email-poll",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
