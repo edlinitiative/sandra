@@ -46,7 +46,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
   ].slice(0, 4);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-16">
       {/* Sandra mark */}
       <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
         <svg className="h-6 w-6" viewBox="0 0 32 32" fill="none" aria-hidden="true">
@@ -59,7 +59,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
       <h2 className="mb-1 text-xl font-semibold text-white">
         Hi, I&apos;m Sandra
       </h2>
-      <p className="mb-8 text-sm text-slate-500">
+      <p className="mb-5 text-sm text-slate-500 sm:mb-8">
         Ask about EdLight programs, courses, or opportunities
       </p>
 

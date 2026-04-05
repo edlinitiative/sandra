@@ -253,7 +253,10 @@ export function ChatContainer() {
       )}
 
       {/* ── Bottom section ── */}
-      <div className="mx-auto w-full max-w-2xl shrink-0 px-3 pb-3 sm:px-4 sm:pb-4">
+      <div
+        className="mx-auto w-full max-w-2xl shrink-0 px-3 sm:px-4"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
         {/* Voice panel — renders content only when active */}
         <VoiceConversation
           sessionId={storedSessionId ?? undefined}

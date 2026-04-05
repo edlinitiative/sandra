@@ -201,7 +201,7 @@ export function ChatMessage({
             <span className="text-xs font-semibold text-slate-500">Sandra</span>
           </div>
 
-          <div className="pl-8 text-[15px] leading-[1.75] text-slate-200">
+          <div className="pl-6 text-[15px] leading-[1.75] text-slate-200 sm:pl-8">
             {isLoading ? (
               <div className="flex items-center gap-1.5 py-2">
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '0ms' }} />
@@ -215,7 +215,7 @@ export function ChatMessage({
 
           {/* Feedback — small thumbs */}
           {!isLoading && messageId && onFeedback && (
-            <div className="mt-1.5 flex items-center gap-0.5 pl-8">
+            <div className="mt-1.5 flex items-center gap-0.5 pl-6 sm:pl-8">
               <button
                 onClick={() => handleFeedback('up')}
                 disabled={!!feedback}
@@ -249,7 +249,7 @@ export function ChatMessage({
 
           {/* Follow-up suggestion chips */}
           {showFollowUps && (
-            <div className="mt-3 flex flex-wrap gap-2 pl-8">
+            <div className="mt-3 flex flex-wrap gap-2 pl-6 sm:pl-8">
               {followUps!.map((q) => (
                 <button
                   key={q}
@@ -265,7 +265,7 @@ export function ChatMessage({
       )}
 
       {timestamp && (
-        <p className={`mt-1 text-[10px] text-slate-700 ${isUser ? 'text-right' : 'pl-8'}`}>
+        <p className={`mt-1 text-[10px] text-slate-700 ${isUser ? 'text-right' : 'pl-6 sm:pl-8'}`}>
           {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       )}

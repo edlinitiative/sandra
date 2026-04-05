@@ -17,8 +17,8 @@ export function Header() {
           <span className="text-sm font-semibold tracking-tight text-white">Sandra</span>
         </Link>
         <nav className="flex items-center gap-1">
-          <Link href="/chat" className="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:text-white">Chat</Link>
-          <Link href="/admin" className="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:text-white">Admin</Link>
+          <Link href="/chat" className="flex min-h-[2.75rem] items-center rounded-lg px-3 text-xs font-medium text-slate-500 transition-colors hover:text-white">Chat</Link>
+          <Link href="/admin" className="flex min-h-[2.75rem] items-center rounded-lg px-3 text-xs font-medium text-slate-500 transition-colors hover:text-white">Admin</Link>
         </nav>
       </div>
     </header>

@@ -137,7 +137,7 @@ export function ChatInput({
           placeholder={isRecording ? '🔴 Recording…' : (placeholder ?? 'Message Sandra…')}
           rows={1}
           disabled={isLoading || isRecording || isVoiceLoading}
-          className="flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-40"
+          className="flex-1 resize-none bg-transparent px-2 py-2 text-base text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-40"
           style={{ maxHeight: '120px' }}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;

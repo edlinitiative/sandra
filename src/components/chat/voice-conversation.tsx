@@ -481,7 +481,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
 
       {/* ── Active voice panel ──────────────────────────────────────────────── */}
       {isActive && (
-        <div className="mb-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a1a]">
+        <div className="relative mb-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a1a]">
           {/* Particle cloud behind orb */}
           <ParticleCanvas
             active={sessionState === 'assistant_speaking' || sessionState === 'user_speaking'}

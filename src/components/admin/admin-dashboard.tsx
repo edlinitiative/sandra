@@ -747,7 +747,7 @@ export function AdminDashboard() {
                   onChange={(e) => setTestMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !testLoading && sendTestMessage()}
                   placeholder="Type a test message..."
-                  className="flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sandra-400 focus:outline-none focus:ring-2 focus:ring-sandra-500/30"
+                  className="flex-1 rounded-lg border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-base text-white placeholder:text-slate-500 focus:border-sandra-400 focus:outline-none focus:ring-2 focus:ring-sandra-500/30"
                 />
                 <select
                   value={testLanguage}
