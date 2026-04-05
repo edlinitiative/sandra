@@ -39,11 +39,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { scaffoldToolDef } = await import('@/lib/tools/scaffold-tool');
 
     const context: ToolContext = {
-      sessionId:  gap.sessionId,
-      userId:     gap.userId ?? 'admin_dashboard',
-      scopes:     ['admin:tools'],
-      channel:    (gap.channel as ToolContext['channel']) ?? 'web',
-      language:   (gap.language as ToolContext['language']) ?? 'en',
+      sessionId: gap.sessionId,
+      userId:    gap.userId ?? 'admin_dashboard',
+      scopes:    ['admin:tools'],
     };
 
     const result = await scaffoldToolDef.handler(

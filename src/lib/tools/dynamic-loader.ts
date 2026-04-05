@@ -89,7 +89,6 @@ function registerDynamicTool(tool: DynamicToolRow): boolean {
     // Build the handler using new Function() with a controlled set of globals.
     // The function body is stored in DB; it must return { success, data, error? }.
     // Cast the factory to 'unknown' first to avoid circular type reference errors.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const handlerFactory = new Function(
       'fetch',
       'executeTool',
@@ -112,8 +111,7 @@ function registerDynamicTool(tool: DynamicToolRow): boolean {
       warn:  (...a: unknown[]) => log.warn(`[dyn:${tool.name}] ${String(a[0])}`, a[1] as Record<string, unknown>),
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handler = (handlerFactory as any)(
+    const handler = (handlerFactory as (...args: unknown[]) => (input: unknown, context: ToolContext) => Promise<ToolResult>)(
       globalThis.fetch,
       executeTool,
       JSON,

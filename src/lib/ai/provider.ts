@@ -1,5 +1,6 @@
 import type { AIProvider } from './types';
 import { OpenAIProvider } from './openai';
+import { AnthropicProvider } from './anthropic';
 import { ConfigurationError, createLogger } from '@/lib/utils';
 
 const log = createLogger('ai:provider');
@@ -7,11 +8,9 @@ const log = createLogger('ai:provider');
 type ProviderName = 'openai' | 'anthropic' | 'google';
 
 const providerFactories: Record<ProviderName, () => AIProvider> = {
-  openai: () => new OpenAIProvider(),
-  // Future providers — add factory functions here
-  anthropic: () => {
-    throw new ConfigurationError('Anthropic provider not yet implemented');
-  },
+  openai:    () => new OpenAIProvider(),
+  anthropic: () => new AnthropicProvider(),
+  // Google Gemini — embeddings via VertexAI, future work
   google: () => {
     throw new ConfigurationError('Google provider not yet implemented');
   },

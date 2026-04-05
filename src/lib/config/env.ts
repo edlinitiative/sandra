@@ -18,6 +18,10 @@ const envSchema = z.object({
   OPENAI_MODEL: z.string().default('gpt-4o'),
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
+  // Anthropic
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
+
   // GitHub
   GITHUB_TOKEN: z.string().default(''),
   GITHUB_ORG: z.string().default('edlinitiative'),
