@@ -201,7 +201,7 @@ export async function executeApiTool(
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 
-function applyAuth(
+export function applyAuth(
   headers: Record<string, string>,
   url: URL,
   ctx: ApiToolExecutionContext,

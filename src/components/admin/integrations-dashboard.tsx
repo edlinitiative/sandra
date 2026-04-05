@@ -34,6 +34,14 @@ interface ConnectionDetail extends ApiConnection {
   rateLimitRpm: number;
 }
 
+interface TestResult {
+  ok: boolean;
+  status: number;
+  latencyMs: number;
+  message: string;
+  error?: string;
+}
+
 type AuthType = 'api_key' | 'bearer' | 'basic' | 'oauth2' | 'none';
 
 const AUTH_LABELS: Record<AuthType, string> = {
@@ -87,6 +95,10 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
   // Delete state
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  // Test state
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const tenantId = tenantIdProp ?? null;
 
@@ -276,6 +288,28 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
       }
     } finally {
       setTogglingTool(null);
+    }
+  }
+
+  // ─── Connection test ───────────────────────────────────────────────────────
+
+  async function handleTestConnection(id: string) {
+    setTesting(id);
+    // Optimistically clear any stale result
+    setTestResults((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    try {
+      const res = await fetch(`/api/tools/connections/${id}/test`, { method: 'POST' });
+      const json = await res.json() as TestResult & { error?: string };
+      setTestResults((prev) => ({ ...prev, [id]: json }));
+      // Refresh the connection list so the health badge updates
+      await loadConnections();
+    } catch {
+      setTestResults((prev) => ({
+        ...prev,
+        [id]: { ok: false, status: 0, latencyMs: 0, message: 'Request failed' },
+      }));
+    } finally {
+      setTesting(null);
     }
   }
 
@@ -632,8 +666,10 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       <Badge variant={conn.isActive ? 'success' : 'default'}>
                         {conn.isActive ? 'Active' : 'Inactive'}
                       </Badge>
-                      {conn.lastHealthStatus === 'error' && (
-                        <Badge variant="error">Error</Badge>
+                      {conn.lastHealthCheck && (
+                        <Badge variant={conn.lastHealthStatus === 'ok' ? 'success' : conn.lastHealthStatus === 'error' ? 'error' : 'default'}>
+                          {conn.lastHealthStatus === 'ok' ? '✓ Healthy' : conn.lastHealthStatus === 'error' ? '✗ Failing' : 'Untested'}
+                        </Badge>
                       )}
                     </div>
                     <div className="mt-0.5 flex items-center gap-3 text-sm text-slate-500">
@@ -643,15 +679,35 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       <span>·</span>
                       <span>{conn.authType === 'api_key' ? '🔑 API Key' : conn.authType === 'bearer' ? '🎫 Bearer' : conn.authType === 'basic' ? '👤 Basic' : conn.authType === 'oauth2' ? '🔐 OAuth' : '🌐 Public'}</span>
                     </div>
+                    {(() => { const r = testResults[conn.id]; return r ? (
+                      <div className={`mt-1 flex items-center gap-1.5 text-xs ${
+                        r.ok ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        <span>{r.ok ? '✓' : '✗'}</span>
+                        <span>{r.message}</span>
+                        {r.ok && (
+                          <span className="text-slate-600">· {r.latencyMs}ms</span>
+                        )}
+                      </div>
+                    ) : null; })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleTestConnection(conn.id)}
+                    isLoading={testing === conn.id}
+                    disabled={!!testing || !!deleting}
+                  >
+                    🔍 Test
+                  </Button>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => handleToggleConnection(conn)}
                     isLoading={deleting === conn.id}
-                    disabled={!!deleting}
+                    disabled={!!deleting || !!testing}
                   >
                     {conn.isActive ? '⏸ Pause' : '▶ Resume'}
                   </Button>
@@ -660,7 +716,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                     size="sm"
                     onClick={() => handleDeleteConnection(conn.id)}
                     isLoading={deleting === conn.id}
-                    disabled={!!deleting}
+                    disabled={!!deleting || !!testing}
                   >
                     🗑
                   </Button>
