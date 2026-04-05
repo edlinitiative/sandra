@@ -57,18 +57,14 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
         <div className="absolute h-28 w-28 rounded-full bg-sandra-500/8 blur-xl" />
         {/* The orb */}
         <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sandra-400 to-sandra-700 animate-glow-pulse animate-orb-float shadow-2xl">
-          <svg
-            className="h-9 w-9 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
-            />
+          <svg className="h-10 w-10" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
+            <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.45" strokeWidth="1.5" fill="none" />
+            <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.2" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+            <line x1="16" y1="2" x2="16" y2="8" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
+            <line x1="16" y1="24" x2="16" y2="30" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
+            <line x1="2" y1="16" x2="8" y2="16" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
+            <line x1="24" y1="16" x2="30" y2="16" stroke="white" strokeOpacity="0.35" strokeWidth="1" strokeLinecap="round" />
           </svg>
         </div>
       </div>

@@ -10,12 +10,15 @@ export function Header() {
         <Link href="/" className="group flex items-center gap-2.5">
           {/* Glowing orb logo */}
           <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sandra-500 to-sandra-700 glow-blue-sm transition-all duration-300 group-hover:glow-blue">
-            {/* Audio equalizer mark — represents Sandra as a voice AI */}
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="1" y="11" width="4" height="11" rx="2" fill="white" fillOpacity="0.45" />
-              <rect x="6.5" y="5" width="4" height="17" rx="2" fill="white" />
-              <rect x="12" y="8" width="4" height="14" rx="2" fill="white" fillOpacity="0.8" />
-              <rect x="17.5" y="13" width="4" height="9" rx="2" fill="white" fillOpacity="0.5" />
+            {/* Abstract neural-wave mark */}
+            <svg className="h-5 w-5" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
+              <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.4" strokeWidth="1.5" fill="none" />
+              <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.2" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+              <line x1="16" y1="2" x2="16" y2="8" stroke="white" strokeOpacity="0.3" strokeWidth="1" strokeLinecap="round" />
+              <line x1="16" y1="24" x2="16" y2="30" stroke="white" strokeOpacity="0.3" strokeWidth="1" strokeLinecap="round" />
+              <line x1="2" y1="16" x2="8" y2="16" stroke="white" strokeOpacity="0.3" strokeWidth="1" strokeLinecap="round" />
+              <line x1="24" y1="16" x2="30" y2="16" stroke="white" strokeOpacity="0.3" strokeWidth="1" strokeLinecap="round" />
             </svg>
           </div>
           <div>
