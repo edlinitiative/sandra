@@ -142,7 +142,7 @@ describe('optimizeContextWindow', () => {
     const systemMessages = result.filter((m) => m.role === 'system');
     expect(systemMessages.length).toBeGreaterThanOrEqual(1);
     const hasSummary = result.some(
-      (m) => m.role === 'system' && m.content.includes('EdLight courses'),
+      (m) => m.role === 'system' && (m.content as string).includes('EdLight courses'),
     );
     expect(hasSummary).toBe(true);
   });

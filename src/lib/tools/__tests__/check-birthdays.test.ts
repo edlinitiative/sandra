@@ -153,7 +153,7 @@ describe('checkBirthdays', () => {
     const data = result.data as Record<string, unknown>;
     expect(data.count).toBe(1);
     const birthdays = data.birthdays as Array<{ name: string }>;
-    expect(birthdays[0].name).toBe('Jean');
+    expect(birthdays[0]!.name).toBe('Jean');
   });
 
   it('finds birthdays from Drive sheets source', async () => {
@@ -166,7 +166,7 @@ describe('checkBirthdays', () => {
     const data = result.data as Record<string, unknown>;
     expect(data.count).toBe(1);
     const birthdays = data.birthdays as Array<{ contactType: string }>;
-    expect(birthdays[0].contactType).toBe('eslp_alumni'); // inferred from "Alumni" in sheet name
+    expect(birthdays[0]!.contactType).toBe('eslp_alumni'); // inferred from "Alumni" in sheet name
   });
 
   it('deduplicates contacts across sources by email', async () => {

@@ -126,8 +126,8 @@ describe('sendWhatsAppGroupInvite', () => {
     expect(data.sent).toBe(1);
     expect(data.failed).toBe(1);
     const results = data.results as Array<{ phone: string; success: boolean; error?: string }>;
-    expect(results[1].success).toBe(false);
-    expect(results[1].error).toContain('Invalid number');
+    expect(results[1]!.success).toBe(false);
+    expect(results[1]!.error).toContain('Invalid number');
   });
 
   it('returns failure when all sends fail', async () => {

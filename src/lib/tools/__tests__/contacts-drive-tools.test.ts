@@ -88,8 +88,8 @@ describe('listContacts', () => {
     const data = result.data as Record<string, unknown>;
     const contacts = data.contacts as Array<{ name: string; email: string }>;
     expect(contacts.length).toBe(2);
-    expect(contacts[0].name).toBe('Rony Jean');
-    expect(contacts[0].email).toBe('rony@edlight.org');
+    expect(contacts[0]!.name).toBe('Rony Jean');
+    expect(contacts[0]!.email).toBe('rony@edlight.org');
   });
 
   it('filters out suspended and non-personal accounts', async () => {
@@ -106,7 +106,7 @@ describe('listContacts', () => {
     const data = result.data as Record<string, unknown>;
     const contacts = data.contacts as Array<{ email: string }>;
     expect(contacts.length).toBe(1);
-    expect(contacts[0].email).toBe('real@edlight.org');
+    expect(contacts[0]!.email).toBe('real@edlight.org');
   });
 
   it('returns empty message when no contacts found', async () => {
@@ -127,7 +127,7 @@ describe('listContacts', () => {
     expect(mockGetUserByEmail).toHaveBeenCalledWith(googleCtx, 'rony@edlight.org');
     const data = result.data as Record<string, unknown>;
     const contacts = data.contacts as Array<{ name: string }>;
-    expect(contacts[0].name).toBe('Rony Jean');
+    expect(contacts[0]!.name).toBe('Rony Jean');
   });
 
   it('returns empty when single email lookup finds nothing', async () => {
@@ -197,7 +197,7 @@ describe('searchDrive', () => {
     expect(mockGetFileContent).toHaveBeenCalled();
     const data = result.data as Record<string, unknown>;
     const files = data.files as Array<{ content?: string }>;
-    expect(files[0].content).toBe('This is the README content.');
+    expect(files[0]!.content).toBe('This is the README content.');
   });
 
   it('logs audit event', async () => {

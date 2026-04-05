@@ -183,7 +183,7 @@ describe('getPersonalizedRecommendations', () => {
     const { getPersonalizedRecommendations } = await import('../recommendations');
     await getPersonalizedRecommendations('user-1', 'I want to study history');
 
-    const [calledQuery] = mockRetrieveContext.mock.calls[0];
+    const [calledQuery] = mockRetrieveContext.mock.calls[0]!;
     expect(calledQuery).toContain('I want to study history');
   });
 

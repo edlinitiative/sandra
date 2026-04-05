@@ -118,7 +118,7 @@ describe('createZoomMeeting', () => {
     expect(result.success).toBe(true);
     expect(mockCreateZoomMeeting).toHaveBeenCalledTimes(2);
     // Second call should use default host
-    expect(mockCreateZoomMeeting.mock.calls[1][1]).toMatchObject({
+    expect(mockCreateZoomMeeting.mock.calls[1]![1]!).toMatchObject({
       hostEmail: 'admin@edlight.org',
     });
   });

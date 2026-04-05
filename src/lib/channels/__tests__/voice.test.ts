@@ -165,7 +165,7 @@ describe('synthesizeSpeech', () => {
       expect.objectContaining({ method: 'POST' }),
     );
 
-    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    const callBody = JSON.parse(mockFetch.mock.calls[0]![1]!.body as string);
     expect(callBody.input).toBe('Hello Sandra');
     expect(callBody.voice).toBe('alloy');
     expect(callBody.response_format).toBe('mp3');
@@ -179,7 +179,7 @@ describe('synthesizeSpeech', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     await synthesizeSpeech('test', 'nova', 'opus');
-    const callBody = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    const callBody = JSON.parse(mockFetch.mock.calls[0]![1]!.body as string);
     expect(callBody.voice).toBe('nova');
     expect(callBody.response_format).toBe('opus');
   });

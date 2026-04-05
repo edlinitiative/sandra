@@ -65,7 +65,7 @@ describe('ChatContainer', () => {
   it('renders the empty state when no messages', async () => {
     const { ChatContainer } = await import('../chat-container');
     render(<ChatContainer />);
-    expect(screen.getByText(/Sandra/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Sandra/i).length).toBeGreaterThan(0);
   });
 
   it('renders message input', async () => {

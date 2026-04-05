@@ -155,7 +155,7 @@ describe('detectAndRecordCapabilityGap', () => {
   it('truncates long messages to 1000 chars', async () => {
     const longMsg = 'Can you send ' + 'x'.repeat(1200);
     await detectAndRecordCapabilityGap({ ...base, message: longMsg });
-    const { data } = mockCreate.mock.calls[0][0];
+    const { data } = mockCreate.mock.calls[0]![0]!;
     expect(data.userMessage.length).toBe(1000);
   });
 

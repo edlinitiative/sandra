@@ -146,14 +146,14 @@ describe('detectAndRecordCorrection', () => {
   it('truncates long priorResponse to 500 chars', async () => {
     const longPrior = 'x'.repeat(600);
     await detectAndRecordCorrection({ ...base, priorResponse: longPrior });
-    const { data } = mockCreate.mock.calls[0][0];
+    const { data } = mockCreate.mock.calls[0]![0]!;
     expect(data.priorResponse.length).toBe(500);
   });
 
   it('truncates long userMessage to 1000 chars', async () => {
     const longMessage = "That's wrong: " + 'y'.repeat(1200);
     await detectAndRecordCorrection({ ...base, message: longMessage });
-    const { data } = mockCreate.mock.calls[0][0];
+    const { data } = mockCreate.mock.calls[0]![0]!;
     expect(data.userMessage.length).toBe(1000);
   });
 

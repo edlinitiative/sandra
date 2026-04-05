@@ -189,7 +189,7 @@ describe('dynamic-loader', () => {
     mockFindMany.mockResolvedValue([throwingTool]);
     await loadDynamicTools();
 
-    const registeredTool = mockRegisterFn.mock.calls[0]?.[0] as {
+    const registeredTool = mockRegisterFn.mock.calls[0]?.[0] as unknown as {
       handler: (input: unknown, context: unknown) => Promise<{ success: boolean; error?: string }>;
     };
 

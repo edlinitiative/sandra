@@ -123,8 +123,8 @@ describe('listUserNotes', () => {
     expect(result.success).toBe(true);
     const data = result.data as { count: number; notes: Array<{ key: string; source: string }> };
     expect(data.count).toBe(2);
-    expect(data.notes[0].key).toBe('preferred_language');
-    expect(data.notes[0].source).toBe('user_explicit');
+    expect(data.notes[0]!.key).toBe('preferred_language');
+    expect(data.notes[0]!.source).toBe('user_explicit');
   });
 
   it('filters to explicit notes only', async () => {

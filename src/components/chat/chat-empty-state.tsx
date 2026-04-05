@@ -57,7 +57,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
       </div>
 
       <h2 className="mb-1 text-xl font-semibold text-white">
-        How can I help?
+        Hi, I&apos;m Sandra
       </h2>
       <p className="mb-8 text-sm text-slate-500">
         Ask about EdLight programs, courses, or opportunities

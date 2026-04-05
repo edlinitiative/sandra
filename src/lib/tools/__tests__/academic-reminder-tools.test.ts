@@ -457,7 +457,7 @@ describe('listTasks', () => {
     expect(result.success).toBe(true);
     const data = result.data as { tasks: Array<{ id: string }>; count: number };
     expect(data.count).toBe(2);
-    expect(data.tasks[0].id).toBe('task-1');
+    expect(data.tasks[0]!.id).toBe('task-1');
   });
 
   it('filters to active tasks only by default', async () => {
