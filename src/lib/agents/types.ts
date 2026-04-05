@@ -19,6 +19,11 @@ export interface AgentInput {
   attachments?: MessageAttachment[];
   /** Permission scopes for tool execution. Defaults to ['knowledge:read', 'repos:read'] */
   scopes?: string[];
+  /**
+   * When the caller authenticated with a TenantApiKey, the resolved tenantId is
+   * passed here so the agent skips the resolveTenantForUser() DB lookup.
+   */
+  tenantId?: string;
   metadata?: Record<string, unknown>;
 }
 

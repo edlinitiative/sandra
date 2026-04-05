@@ -76,10 +76,12 @@ export async function POST(request: Request) {
 
     // Resolve auth scopes (optional — anonymous users get guest scopes)
     let scopes = getScopesForRole('guest');
+    let authTenantId: string | undefined;
     try {
       const authResult = await authenticateRequest(request);
       if (authResult.authenticated) {
         scopes = authResult.user.scopes;
+        authTenantId = authResult.user.tenantId;
       }
     } catch {
       // Continue with guest scopes
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
             language,
             channel,
             scopes,
+            tenantId: authTenantId,
           })) {
             switch (event.type) {
               case 'token':

@@ -13,6 +13,8 @@ export interface AuthenticatedUser {
   name?: string;
   role: UserRole;
   scopes: string[];
+  /** Set when the request was authenticated via a TenantApiKey */
+  tenantId?: string;
 }
 
 /** Decoded JWT token payload */

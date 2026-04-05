@@ -119,14 +119,18 @@ export async function runSandraAgent(
 
     let tenantConfig = undefined;
     let tenantTools: TenantTool[] = [];
-    let resolvedTenantId: string | null = null;
-    if (input.userId) {
+    let resolvedTenantId: string | null = input.tenantId ?? null;
+    if (!resolvedTenantId && input.userId) {
       try {
         resolvedTenantId = await resolveTenantForUser(input.userId);
-        if (resolvedTenantId) {
-          tenantConfig = await getTenantAgentConfig(resolvedTenantId) ?? undefined;
-          tenantTools = await loadTenantTools(resolvedTenantId);
-        }
+      } catch {
+        // best-effort
+      }
+    }
+    if (resolvedTenantId) {
+      try {
+        tenantConfig = await getTenantAgentConfig(resolvedTenantId) ?? undefined;
+        tenantTools = await loadTenantTools(resolvedTenantId);
       } catch {
         // best-effort — fall back to EdLight identity if tenant lookup fails
       }
@@ -465,13 +469,18 @@ export async function* runSandraAgentStream(
 
     let tenantConfigStream = undefined;
     let tenantToolsStream: TenantTool[] = [];
-    if (input.userId) {
+    let resolvedTenantIdStream: string | null = input.tenantId ?? null;
+    if (!resolvedTenantIdStream && input.userId) {
       try {
-        const tenantId = await resolveTenantForUser(input.userId);
-        if (tenantId) {
-          tenantConfigStream = await getTenantAgentConfig(tenantId) ?? undefined;
-          tenantToolsStream = await loadTenantTools(tenantId);
-        }
+        resolvedTenantIdStream = await resolveTenantForUser(input.userId);
+      } catch {
+        // best-effort
+      }
+    }
+    if (resolvedTenantIdStream) {
+      try {
+        tenantConfigStream = await getTenantAgentConfig(resolvedTenantIdStream) ?? undefined;
+        tenantToolsStream = await loadTenantTools(resolvedTenantIdStream);
       } catch {
         // best-effort — fall back to EdLight identity if tenant lookup fails
       }

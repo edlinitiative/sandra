@@ -15,6 +15,7 @@ import { getScopesForRole } from './permissions';
 import { db } from '@/lib/db';
 import { getUserByExternalId, resolveUserByExternalId } from '@/lib/db/users';
 import { createLogger } from '@/lib/utils';
+import { createHash } from 'crypto';
 
 const log = createLogger('auth:middleware');
 
@@ -31,6 +32,13 @@ export async function authenticateRequest(
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
+
+    // 1a. Tenant API key (starts with sk_live_ or sk_test_)
+    if (token.startsWith('sk_live_') || token.startsWith('sk_test_')) {
+      return authenticateApiKey(token);
+    }
+
+    // 1b. JWT token
     const payload = verifyToken(token);
 
     if (!payload) {
@@ -101,6 +109,65 @@ export async function authenticateRequest(
 
   // 3. Anonymous / guest
   return { authenticated: false, error: 'No authentication provided' };
+}
+
+// ─── Tenant API key authentication ───────────────────────────────────────────
+
+async function authenticateApiKey(plaintext: string): Promise<AuthResult> {
+  const keyHash = createHash('sha256').update(plaintext).digest('hex');
+
+  try {
+    const apiKey = await (db as unknown as { tenantApiKey: { findUnique: (args: unknown) => Promise<unknown> } }).tenantApiKey.findUnique({
+      where: { keyHash },
+      include: { tenant: { select: { id: true, name: true, isActive: true } } },
+    }) as {
+      id: string;
+      tenantId: string;
+      name: string;
+      scopes: string[];
+      isActive: boolean;
+      expiresAt: Date | null;
+      tenant: { id: string; name: string; isActive: boolean };
+    } | null;
+
+    if (!apiKey) {
+      return { authenticated: false, error: 'Invalid API key' };
+    }
+    if (!apiKey.isActive) {
+      return { authenticated: false, error: 'API key is revoked' };
+    }
+    if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+      return { authenticated: false, error: 'API key has expired' };
+    }
+    if (!apiKey.tenant.isActive) {
+      return { authenticated: false, error: 'Tenant is inactive' };
+    }
+
+    // Fire-and-forget: update lastUsedAt
+    void (db as unknown as { tenantApiKey: { update: (args: unknown) => Promise<unknown> } }).tenantApiKey.update({
+      where: { id: apiKey.id },
+      data: { lastUsedAt: new Date() },
+    }).catch(() => {});
+
+    log.info('Authenticated via tenant API key', {
+      keyId: apiKey.id,
+      tenantId: apiKey.tenantId,
+      name: apiKey.name,
+    });
+
+    return {
+      authenticated: true,
+      user: {
+        id: `apikey:${apiKey.id}`,
+        role: 'admin' as UserRole,
+        scopes: apiKey.scopes,
+        tenantId: apiKey.tenantId,
+      },
+    };
+  } catch (err) {
+    log.warn('API key lookup failed', { error: err instanceof Error ? err.message : 'unknown' });
+    return { authenticated: false, error: 'Authentication error' };
+  }
 }
 
 /**

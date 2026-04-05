@@ -430,6 +430,7 @@ model Tenant {
   providers   ConnectedProvider[]
   dynamicTools DynamicTool[]
   apiConnections ExternalApiConnection[]
+  apiKeys     TenantApiKey[]
 
   @@index([slug])
   @@index([domain])
@@ -544,4 +545,36 @@ model ExternalApiConnection {
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
+}
+
+// ── Tenant API Keys (Sandra-as-API) ──────────────────────────────────────────
+
+/// An API key that allows external callers to use Sandra on behalf of a tenant.
+/// The plaintext key is only returned at creation time and NEVER stored.
+/// keyHash  = SHA-256(plaintext) — used for lookup.
+/// keyPrefix = first 12 chars of plaintext — shown in the admin UI for identification.
+model TenantApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  /// Human-readable label: "Production", "Staging", "Website widget"
+  name        String
+  /// SHA-256 of the full plaintext key (hex). Never store plaintext.
+  keyHash     String    @unique
+  /// First 12 chars of plaintext for display. E.g. "sk_live_a1b2"
+  keyPrefix   String
+  /// Scopes granted to this key: ["chat:send", "knowledge:read", …]
+  scopes      String[]  @default(["chat:send", "knowledge:read"])
+  isActive    Boolean   @default(true)
+  /// Optional hard expiry. NULL = no expiry.
+  expiresAt   DateTime?
+  /// Updated on each successful use (rate limiting / audit).
+  lastUsedAt  DateTime?
+  createdBy   String?   // userId of the admin who created it
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
+  @@index([keyHash])
 }
