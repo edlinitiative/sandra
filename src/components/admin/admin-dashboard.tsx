@@ -602,6 +602,7 @@ export function AdminDashboard() {
   }
 
   return (
+    <div className="h-full overflow-y-auto">
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Sandra Admin</h1>
@@ -658,32 +659,24 @@ export function AdminDashboard() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex items-center gap-2">
-        <div className="flex flex-1 gap-1 overflow-x-auto rounded-xl bg-white/[0.04] p-1">
-          {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
-                activeTab === tab
-                  ? 'bg-white/[0.1] text-white shadow'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {tab === 'system'    ? '⚙️ System'
-             : tab === 'analytics' ? '📊 Analytics'
-             : tab === 'actions'   ? '🔐 Actions'
-             : tab === 'gaps'      ? '🧠 Gaps'
-             :                       '🔧 Tools'}
-            </button>
-          ))}
-        </div>
-        <a
-          href="/admin/integrations"
-          className="shrink-0 rounded-lg bg-sandra-600/20 px-3 py-2 text-sm font-medium text-sandra-400 transition-all hover:bg-sandra-600/30 hover:text-sandra-300"
-        >
-          🔌 Integrations
-        </a>
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white/[0.04] p-1">
+        {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
+              activeTab === tab
+                ? 'bg-white/[0.1] text-white shadow'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {tab === 'system'    ? '⚙️ System'
+           : tab === 'analytics' ? '📊 Analytics'
+           : tab === 'actions'   ? '🔐 Actions'
+           : tab === 'gaps'      ? '🧠 Gaps'
+           :                       '🔧 Tools'}
+          </button>
+        ))}
       </div>
 
       {/* ── SYSTEM TAB ────────────────────────────────────── */}
@@ -760,7 +753,7 @@ export function AdminDashboard() {
                 <select
                   value={testLanguage}
                   onChange={(e) => setTestLanguage(e.target.value)}
-                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none [&>option]:bg-[#1a1a1a] [&>option]:text-white"
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-base text-white focus:border-sandra-400 focus:outline-none [&>option]:bg-[#1a1a1a] [&>option]:text-white"
                 >
                   <option value="en">🇺🇸 EN</option>
                   <option value="fr">🇫🇷 FR</option>
@@ -871,7 +864,7 @@ export function AdminDashboard() {
                       type="date"
                       value={analyticsFrom}
                       onChange={(e) => setAnalyticsFrom(e.target.value)}
-                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none"
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-base text-white focus:border-sandra-400 focus:outline-none"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -880,7 +873,7 @@ export function AdminDashboard() {
                       type="date"
                       value={analyticsTo}
                       onChange={(e) => setAnalyticsTo(e.target.value)}
-                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white focus:border-sandra-400 focus:outline-none"
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-base text-white focus:border-sandra-400 focus:outline-none"
                     />
                   </label>
                   <Button
@@ -1313,6 +1306,7 @@ export function AdminDashboard() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

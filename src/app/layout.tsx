@@ -7,6 +7,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 };
 
 export const metadata: Metadata = {
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="flex h-full flex-col font-sans antialiased">
+    <html lang="en" className="h-dvh">
+      <body className="flex h-full flex-col overflow-hidden font-sans antialiased">
         <SessionProvider>
           <Header />
           <main className="flex flex-1 flex-col overflow-hidden">{children}</main>

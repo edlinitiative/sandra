@@ -33,7 +33,7 @@ export function StreamingMessage({ content, activeToolCall }: StreamingMessagePr
         <span className="text-xs font-semibold text-slate-500">Sandra</span>
       </div>
 
-      <div className="pl-8">
+      <div className="pl-6 sm:pl-8">
         {/* Tool call indicator */}
         {toolLabel && (
           <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">

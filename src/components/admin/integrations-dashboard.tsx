@@ -420,6 +420,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
+    <div className="h-full overflow-y-auto">
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -642,7 +643,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
               {/* Spec textarea */}
               <textarea
-                className="h-64 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] p-3 font-mono text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sandra-500 focus:ring-offset-1 focus:ring-offset-[#0d0d0d]"
+                className="h-64 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] p-3 font-mono text-base text-slate-300 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sandra-500 focus:ring-offset-1 focus:ring-offset-[#0d0d0d]"
                 placeholder={`# YAML\nopenapi: 3.0.0\ninfo:\n  title: Your API\n  version: 1.0.0\npaths:\n  /endpoint:\n    get:\n      operationId: getEndpoint\n      summary: Description here\n      responses:\n        '200':\n          description: OK\n\n# Or paste JSON:\n# { "openapi": "3.0.0", ... }`}
                 value={formSpec}
                 onChange={(e) => setFormSpec(e.target.value)}
@@ -931,6 +932,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
