@@ -1,6 +1,8 @@
 import type { AgentInput, AgentOutput, AgentConfig, AgentState, AgentStreamEvent } from './types';
 import { DEFAULT_AGENT_CONFIG } from './types';
 import { buildSandraSystemPrompt } from './prompts';
+import { getTenantAgentConfig } from './tenant-config';
+import { resolveTenantForUser } from '@/lib/google/context';
 import { generateFollowUps } from './follow-ups';
 import { getAIProvider } from '@/lib/ai';
 import type { ChatMessage, MessageContentPart } from '@/lib/ai/types';
@@ -110,9 +112,19 @@ export async function runSandraAgent(
       }
     }
 
-    // 4. Build system prompt
+    // 4. Build system prompt — load tenant config for platform-agnostic identity
     const toolDefinitions = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
     const toolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
+
+    let tenantConfig = undefined;
+    if (input.userId) {
+      try {
+        const tenantId = await resolveTenantForUser(input.userId);
+        if (tenantId) tenantConfig = await getTenantAgentConfig(tenantId) ?? undefined;
+      } catch {
+        // best-effort — fall back to EdLight identity if tenant lookup fails
+      }
+    }
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
@@ -123,6 +135,7 @@ export async function runSandraAgent(
       conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
+      tenantConfig,
     });
 
     // 5. Assemble messages — build multimodal content when image attachments are present
@@ -420,9 +433,19 @@ export async function* runSandraAgentStream(
       }
     }
 
-    // Build system prompt
+    // Build system prompt — load tenant config for platform-agnostic identity
     const toolDefinitions = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
     const toolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
+
+    let tenantConfigStream = undefined;
+    if (input.userId) {
+      try {
+        const tenantId = await resolveTenantForUser(input.userId);
+        if (tenantId) tenantConfigStream = await getTenantAgentConfig(tenantId) ?? undefined;
+      } catch {
+        // best-effort — fall back to EdLight identity if tenant lookup fails
+      }
+    }
 
     const systemPrompt = buildSandraSystemPrompt({
       language: input.language,
@@ -433,6 +456,7 @@ export async function* runSandraAgentStream(
       conversationSummary: conversationSummary || undefined,
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
+      tenantConfig: tenantConfigStream,
     });
 
     // Assemble messages — build multimodal content when image attachments are present

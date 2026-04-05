@@ -422,6 +422,7 @@ model Tenant {
   domain      String?  @unique // "edlight.org" — for auto-matching users
   isActive    Boolean  @default(true)
   metadata    Json?    // Billing plan, feature flags, etc.
+  agentConfig Json?    // TenantAgentConfig — AI identity, tool context, branding per tenant
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
