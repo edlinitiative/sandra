@@ -658,24 +658,32 @@ export function AdminDashboard() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-white/[0.04] p-1">
-        {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
-              activeTab === tab
-                ? 'bg-white/[0.1] text-white shadow'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            {tab === 'system'    ? '⚙️ System'
-           : tab === 'analytics' ? '📊 Analytics'
-           : tab === 'actions'   ? '🔐 Actions'
-           : tab === 'gaps'      ? '🧠 Gaps'
-           :                       '🔧 Tools'}
-          </button>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1 overflow-x-auto rounded-xl bg-white/[0.04] p-1">
+          {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
+                activeTab === tab
+                  ? 'bg-white/[0.1] text-white shadow'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {tab === 'system'    ? '⚙️ System'
+             : tab === 'analytics' ? '📊 Analytics'
+             : tab === 'actions'   ? '🔐 Actions'
+             : tab === 'gaps'      ? '🧠 Gaps'
+             :                       '🔧 Tools'}
+            </button>
+          ))}
+        </div>
+        <a
+          href="/admin/integrations"
+          className="shrink-0 rounded-lg bg-sandra-600/20 px-3 py-2 text-sm font-medium text-sandra-400 transition-all hover:bg-sandra-600/30 hover:text-sandra-300"
+        >
+          🔌 Integrations
+        </a>
       </div>
 
       {/* ── SYSTEM TAB ────────────────────────────────────── */}
