@@ -298,7 +298,13 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
       };
 
       // 4. Microphone input
-      const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ms = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       streamRef.current = ms;
       ms.getTracks().forEach(t => pc.addTrack(t, ms));
 
@@ -322,9 +328,9 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 700,
+              threshold: 0.25,
+              prefix_padding_ms: 500,
+              silence_duration_ms: 800,
             },
           },
         });
