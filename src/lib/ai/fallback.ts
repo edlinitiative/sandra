@@ -13,6 +13,7 @@
  */
 
 import { createLogger, ProviderError } from '@/lib/utils';
+import { env } from '@/lib/config';
 import type {
   AIProvider,
   ChatCompletionRequest,
@@ -120,6 +121,29 @@ function isRetriable(error: ProviderError): boolean {
   return RETRIABLE_CATEGORIES.has(classifyProviderError(error));
 }
 
+// ─── Generic model helpers (prefer AI_* aliases over provider-specific vars) ──
+
+/** Preferred chat model — respects AI_CHAT_MODEL alias, falls back to OPENAI_MODEL */
+export function getChatModel(): string {
+  return env.AI_CHAT_MODEL ?? env.OPENAI_MODEL;
+}
+
+/** Preferred embedding model — respects AI_EMBEDDING_MODEL alias, falls back to OPENAI_EMBEDDING_MODEL */
+export function getEmbeddingModel(): string {
+  return env.AI_EMBEDDING_MODEL ?? env.OPENAI_EMBEDDING_MODEL;
+}
+
+/**
+ * Parse AI_PROVIDER_PRIORITY into an ordered list.
+ * Returns e.g. ['openai', 'gemini', 'anthropic'].
+ */
+export function getProviderPriority(): string[] {
+  return env.AI_PROVIDER_PRIORITY
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 // ─── Fallback Provider ─────────────────────────────────────────────────────────
 
 export class FallbackProvider implements AIProvider {
@@ -132,9 +156,30 @@ export class FallbackProvider implements AIProvider {
     if (providers.length === 0) {
       throw new ProviderError('fallback', 'At least one AI provider must be configured');
     }
-    this.providers = providers;
+
+    // Re-order providers to match AI_PROVIDER_PRIORITY if configured
+    const priority = getProviderPriority();
+    if (priority.length > 0) {
+      const byName = new Map(providers.map((p) => [p.name, p]));
+      const ordered: AIProvider[] = [];
+      for (const name of priority) {
+        const p = byName.get(name);
+        if (p) {
+          ordered.push(p);
+          byName.delete(name);
+        }
+      }
+      // Append any providers not listed in the priority (preserve them)
+      for (const p of byName.values()) {
+        ordered.push(p);
+      }
+      this.providers = ordered;
+    } else {
+      this.providers = providers;
+    }
+
     log.info('Fallback provider initialized', {
-      chain: providers.map((p) => p.name).join(' → '),
+      chain: this.providers.map((p) => p.name).join(' → '),
     });
   }
 
@@ -225,7 +270,7 @@ export class FallbackProvider implements AIProvider {
     if (this.embeddingProvider) return this.embeddingProvider;
 
     // Honour explicit EMBEDDING_PROVIDER env var
-    const preferred = process.env.EMBEDDING_PROVIDER;
+    const preferred = env.EMBEDDING_PROVIDER;
     if (preferred) {
       for (const provider of this.providers) {
         if (provider.name === preferred && FallbackProvider.EMBEDDING_CAPABLE.has(provider.name)) {

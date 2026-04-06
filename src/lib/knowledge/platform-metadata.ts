@@ -43,6 +43,7 @@ export function repoIdForPlatform(platform: KnowledgePlatform): string {
   }
 }
 
+/** EdLight tenant display names. Other tenants configure this via TenantAgentConfig. */
 export function displayNameForPlatform(platform: KnowledgePlatform): string {
   switch (platform) {
     case 'academy':

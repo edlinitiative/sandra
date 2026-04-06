@@ -3,7 +3,7 @@
  */
 
 export const APP_NAME = 'Sandra';
-export const APP_DESCRIPTION = 'AI assistant for the EdLight ecosystem';
+export const APP_DESCRIPTION = 'AI assistant platform';
 export const APP_VERSION = '0.1.0';
 
 /** Maximum tokens for a single agent response */
@@ -39,7 +39,7 @@ export const DEFAULT_TOP_K = 5;
 /** Embedding dimension for text-embedding-3-small */
 export const EMBEDDING_DIMENSION = 1536;
 
-/** Supported EdLight platforms and programs */
+/** EdLight-specific platform list. Other tenants define platforms via TenantAgentConfig. */
 export const EDLIGHT_PLATFORMS = [
   'EdLight Code',
   'EdLight Academy',

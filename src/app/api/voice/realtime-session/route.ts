@@ -14,12 +14,19 @@ import { env } from '@/lib/config';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { getSandraSystemPrompt } from '@/lib/agents/prompts';
 
-const REALTIME_MODEL = 'gpt-4o-realtime-preview';
-
 export async function POST(req: Request) {
   // Auth is optional for voice routes during migration
   const auth = await authenticateRequest(req);
   const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
+
+  // ── Provider gate: only OpenAI supports realtime sessions today ──────────
+  const realtimeProvider = env.REALTIME_PROVIDER ?? 'openai';
+  if (realtimeProvider !== 'openai') {
+    return NextResponse.json(
+      { error: `Realtime not available for provider ${realtimeProvider}` },
+      { status: 501 },
+    );
+  }
 
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
@@ -46,7 +53,7 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: REALTIME_MODEL,
+        model: env.REALTIME_MODEL ?? 'gpt-4o-realtime-preview',
         voice: env.OPENAI_TTS_VOICE ?? 'alloy',
         instructions,
       }),

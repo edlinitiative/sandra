@@ -1,3 +1,5 @@
+import { APP_NAME } from '@/lib/config/constants';
+
 /**
  * Email message formatter.
  *
@@ -73,7 +75,7 @@ export function buildEmailBody(params: {
   if (params.signature) {
     parts.push('', '--', params.signature);
   } else {
-    parts.push('', '--', 'Sandra\nAI Assistant — EdLight Initiative');
+    parts.push('', '--', `${APP_NAME}\nAI Assistant`);
   }
 
   return parts.join('\n');

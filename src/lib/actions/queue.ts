@@ -53,7 +53,7 @@ export async function enqueueAction(
   });
 
   const message = input.requiresApproval
-    ? `Your request has been queued for review (ID: ${record.id}). An EdLight administrator will process it shortly.`
+    ? `Your request has been queued for review (ID: ${record.id}). An administrator will process it shortly.`
     : `Your request has been recorded successfully (ID: ${record.id}).`;
 
   return {

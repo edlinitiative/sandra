@@ -78,7 +78,7 @@ function classifyResult(result: SearchResult): { platform: string; type: 'course
     ['course', 'lesson', 'module', 'track'].some((kw) => contentType.includes(kw));
 
   return {
-    platform: platform || 'edlight',
+    platform: platform || 'general',
     type: isProgram ? 'program' : isCourse ? 'course' : 'other',
   };
 }
@@ -88,7 +88,7 @@ function buildRecommendationItem(
   interests: string[],
 ): RecommendationItem {
   const { platform, type } = classifyResult(result);
-  const title = result.chunk.title ?? result.chunk.path ?? 'EdLight Content';
+  const title = result.chunk.title ?? result.chunk.path ?? 'Content';
   const description = result.chunk.content.slice(0, 200).replace(/\n+/g, ' ').trim();
 
   // Build reason from user interests
@@ -133,7 +133,7 @@ export async function getPersonalizedRecommendations(
   const retrievalQuery = [
     query,
     interests.slice(0, 3).join(' '),
-    'EdLight courses programs learn',
+    'courses programs learn',
   ]
     .filter(Boolean)
     .join(' ');

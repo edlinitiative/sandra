@@ -27,8 +27,8 @@ export interface ConnectorInfo {
 }
 
 /**
- * Abstract base interface for all EdLight connectors.
- * Each connector represents a connection to an EdLight platform or external service.
+ * Abstract base interface for all platform connectors.
+ * Each connector represents a connection to a tenant platform or external service.
  */
 export interface Connector {
   /** Unique connector ID */

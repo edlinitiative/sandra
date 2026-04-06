@@ -1,6 +1,10 @@
 import type { SupportedLanguage } from '@/lib/i18n/types';
 
 /**
+ * Default follow-up suggestions. These use EdLight-specific content as defaults.
+ * When TenantAgentConfig is available, tenants can provide their own follow-up
+ * map via additionalContext.
+ *
  * Follow-up suggestion pools keyed by tool name and language.
  * Returns 2–3 contextually relevant next questions after a response.
  */
@@ -182,22 +186,22 @@ const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
 /** Default follow-ups when no tools were used */
 const DEFAULT_FOLLOW_UPS: Record<SupportedLanguage, string[]> = {
   en: [
-    'What EdLight platforms are available?',
+    'What platforms are available?',
     'What courses can I take?',
     'Are there any programs or opportunities?',
-    'How can EdLight help me?',
+    'How can I help you?',
   ],
   fr: [
-    'Quelles plateformes EdLight sont disponibles ?',
+    'Quelles plateformes sont disponibles ?',
     'Quels cours puis-je suivre ?',
     'Y a-t-il des programmes ou des opportunités ?',
-    'Comment EdLight peut-il m\'aider ?',
+    'Comment puis-je vous aider ?',
   ],
   ht: [
-    'Ki platfòm EdLight ki disponib?',
+    'Ki platfòm ki disponib?',
     'Ki kou mwen ka pran?',
     'Èske genyen pwogram oswa opòtinite?',
-    'Kijan EdLight ka ede mwen?',
+    'Kijan mwen ka ede ou?',
   ],
 };
 

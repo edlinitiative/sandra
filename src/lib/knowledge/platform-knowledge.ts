@@ -283,7 +283,7 @@ export function fallbackPlatformDescription(platform: KnowledgePlatform): string
     case 'code':
       return `${displayNameForPlatform(platform)} focuses on practical programming and coding skills.`;
     case 'news':
-      return `${displayNameForPlatform(platform)} shares announcements, stories, and updates across the EdLight ecosystem.`;
+      return `${displayNameForPlatform(platform)} shares announcements, stories, and updates.`;
     case 'initiative':
       return `${displayNameForPlatform(platform)} is the organizational hub for leadership programs, scholarships, and community work.`;
   }

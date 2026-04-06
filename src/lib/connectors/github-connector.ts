@@ -2,13 +2,14 @@ import type { Connector, ConnectorHealth, ConnectorInfo } from './types';
 import { getGitHubClient } from '@/lib/github';
 import { env } from '@/lib/config';
 
+/** @tenant EdLight — This connector is specific to the EdLight tenant. Other tenants configure connectors via ConnectedProvider in the database. */
 /**
- * GitHub Connector — provides access to EdLight repositories via GitHub API.
+ * GitHub Connector — provides access to organization repositories via GitHub API.
  */
 export class GitHubConnector implements Connector {
   readonly id = 'github';
   readonly name = 'GitHub';
-  readonly description = 'Access to EdLight organization repositories, code, and documentation via GitHub API.';
+  readonly description = 'Access to organization repositories, code, and documentation via GitHub API.';
   readonly platform = 'github';
   readonly version = '1.0.0';
   readonly capabilities = ['repo-listing', 'file-content', 'readme-fetch', 'docs-indexing'];

@@ -1,5 +1,6 @@
 import type { Connector, ConnectorHealth, ConnectorInfo } from './types';
 
+/** @tenant EdLight — This connector is specific to the EdLight tenant. Other tenants configure connectors via ConnectedProvider in the database. */
 /**
  * EdLight Initiative Connector — represents the EdLight Initiative organizational hub.
  */

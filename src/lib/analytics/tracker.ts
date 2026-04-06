@@ -15,6 +15,10 @@ const log = createLogger('analytics:tracker');
 /**
  * Emit an analytics event.
  * Fire-and-forget — always resolves, never rejects.
+ *
+ * IMPORTANT: Callers should pass the actual model name from the AIResponse,
+ * not a hardcoded string like 'gpt-4o'. The model field should reflect which
+ * provider actually handled the request.
  */
 export function trackEvent(event: AnalyticsEvent): void {
   // Intentionally not awaited — analytics is best-effort
@@ -23,11 +27,17 @@ export function trackEvent(event: AnalyticsEvent): void {
 
 async function _writeEvent(event: AnalyticsEvent): Promise<void> {
   try {
+    // Resolve tenantId from the event object or nested data payload
+    const tenantId =
+      ((event as unknown as Record<string, unknown>).tenantId as string | undefined) ??
+      ((event.data as Record<string, unknown> | undefined)?.tenantId as string | undefined);
+
     await (db as typeof db & {
       analyticsEvent: {
         create: (args: {
           data: {
             eventType: string;
+            tenantId?: string;
             sessionId?: string;
             userId?: string;
             channel?: string;
@@ -39,6 +49,7 @@ async function _writeEvent(event: AnalyticsEvent): Promise<void> {
     }).analyticsEvent.create({
       data: {
         eventType: event.eventType,
+        ...(tenantId ? { tenantId } : {}),
         sessionId: event.sessionId,
         userId: event.userId,
         channel: event.channel ?? ('data' in event && 'channel' in (event.data ?? {}) ? (event.data as Record<string, unknown>).channel as string : undefined),

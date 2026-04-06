@@ -1,3 +1,5 @@
+import { APP_NAME } from '@/lib/config/constants';
+
 /**
  * Supported languages for Sandra.
  */
@@ -40,21 +42,21 @@ export const LANGUAGE_CONFIGS: Record<Language, LanguageConfig> = {
     name: 'English',
     nativeName: 'English',
     direction: 'ltr',
-    greeting: "Hello! I'm Sandra, the AI assistant for the EdLight ecosystem. How can I help you today?",
+    greeting: `Hello! I'm ${APP_NAME}. How can I help you today?`,
   },
   fr: {
     code: 'fr',
     name: 'French',
     nativeName: 'Français',
     direction: 'ltr',
-    greeting: "Bonjour ! Je suis Sandra, l'assistante IA de l'écosystème EdLight. Comment puis-je vous aider ?",
+    greeting: `Bonjour ! Je suis ${APP_NAME}, votre assistante IA. Comment puis-je vous aider ?`,
   },
   ht: {
     code: 'ht',
     name: 'Haitian Creole',
     nativeName: 'Kreyòl Ayisyen',
     direction: 'ltr',
-    greeting: "Bonjou! Mwen se Sandra, asistan IA ekosistèm EdLight la. Kijan mwen ka ede ou jodi a?",
+    greeting: `Bonjou! Mwen se ${APP_NAME}, asistan IA ou. Kijan mwen ka ede ou jodi a?`,
   },
 };
 

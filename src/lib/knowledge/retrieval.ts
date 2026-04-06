@@ -105,5 +105,5 @@ export function formatRetrievalContext(results: SearchResult[]): string {
     return `${header}${source}${metadataSuffix}\n${r.chunk.content}`;
   });
 
-  return `Relevant context from EdLight knowledge base:\n\n${sections.join('\n\n---\n\n')}`;
+  return `Relevant context from the knowledge base:\n\n${sections.join('\n\n---\n\n')}`;
 }

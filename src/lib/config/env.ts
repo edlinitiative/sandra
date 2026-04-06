@@ -28,6 +28,10 @@ const envSchema = z.object({
   GEMINI_TTS_MODEL: z.string().default('gemini-2.5-flash-preview-tts'),
   GEMINI_EMBEDDING_MODEL: z.string().default('text-embedding-004'),
 
+  // ── Generic AI configuration (preferred) ──
+  AI_CHAT_MODEL: z.string().optional(),        // preferred over OPENAI_MODEL
+  AI_EMBEDDING_MODEL: z.string().optional(),    // preferred over OPENAI_EMBEDDING_MODEL
+
   // AI Provider priority — comma-separated list of providers to try in order
   // Available: openai, gemini, anthropic
   AI_PROVIDER_PRIORITY: z.string().default('openai,gemini,anthropic'),
@@ -71,6 +75,10 @@ const envSchema = z.object({
   OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),
   OPENAI_TTS_MODEL: z.string().default('tts-1'),
   OPENAI_TTS_VOICE: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).default('alloy'),
+
+  // Realtime voice sessions (WebRTC ephemeral key minting)
+  REALTIME_PROVIDER: z.string().optional(),    // defaults to 'openai'
+  REALTIME_MODEL: z.string().optional(),        // defaults to 'gpt-4o-realtime-preview'
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

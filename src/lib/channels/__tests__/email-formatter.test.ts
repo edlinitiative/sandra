@@ -64,7 +64,7 @@ describe('buildEmailBody', () => {
   it('appends default signature', () => {
     const result = buildEmailBody({ response: 'Here is your answer.' });
     expect(result).toContain('Sandra');
-    expect(result).toContain('EdLight');
+    expect(result).toContain('AI Assistant');
     expect(result).toContain('--');
   });
 

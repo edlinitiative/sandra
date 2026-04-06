@@ -6,7 +6,7 @@
  * 1. **Directory sync** — pulls phone numbers from the Workspace Directory API
  *    and builds a phone→email lookup table. Runs periodically or on-demand.
  *
- * 2. **Self-link** — a user tells Sandra "my email is x@edlight.org" in chat,
+ * 2. **Self-link** — a user tells Sandra "my email is user@example.com" in chat,
  *    and Sandra links their WhatsApp phone to that Workspace account.
  *
  * Once linked, Sandra knows:

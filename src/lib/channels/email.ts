@@ -1,6 +1,7 @@
 import type { ChannelAdapter, InboundMessage, OutboundMessage } from './types';
 import { buildEmailBody } from './email-formatter';
 import { env } from '@/lib/config';
+import { APP_NAME } from '@/lib/config/constants';
 import { createLogger } from '@/lib/utils';
 import type { GmailMessage } from '@/lib/google/gmail';
 import { sendEmail, replyToMessage } from '@/lib/google/gmail';
@@ -133,7 +134,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
   async formatOutbound(message: OutboundMessage): Promise<Record<string, unknown>> {
     const subject = (message.metadata?.subject as string | undefined)
       ? `Re: ${message.metadata!.subject as string}`
-      : 'Sandra — EdLight';
+      : `${APP_NAME}`;
     return {
       from: this.sandraEmail,
       to: message.recipientId,
@@ -150,7 +151,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
   async send(message: OutboundMessage): Promise<void> {
     const subject = (message.metadata?.subject as string | undefined)
       ? `Re: ${message.metadata!.subject as string}`
-      : 'Sandra — EdLight';
+      : `${APP_NAME}`;
     const textBody = buildEmailBody({ response: message.content });
     const threadId = message.metadata?.gmailThreadId as string | undefined;
     const inReplyToMessageId = message.metadata?.emailMessageId as string | undefined;

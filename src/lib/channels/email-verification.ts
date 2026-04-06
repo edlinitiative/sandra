@@ -2,7 +2,7 @@
  * Email Verification — secure self-linking for WhatsApp → Workspace identity.
  *
  * Flow:
- * 1. User says "my email is rony@edlight.org" on WhatsApp
+ * 1. User says "my email is user@example.com" on WhatsApp
  * 2. Sandra verifies the email exists in the Workspace Directory
  * 3. Sandra generates a 6-digit code and sends it to that email via Gmail API
  * 4. Sandra replies on WhatsApp: "I sent a code to r***@edlight.org. Reply with the code."
@@ -14,6 +14,7 @@
 
 import { createLogger } from '@/lib/utils';
 import { env } from '@/lib/config';
+import { APP_NAME } from '@/lib/config/constants';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 import { resolveGoogleContext } from '@/lib/google/context';
 import { getUserByEmail } from '@/lib/google/directory';
@@ -25,7 +26,7 @@ const log = createLogger('channels:email-verification');
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const VERIFICATION_SENDER = 'sandra@edlight.org';
+const VERIFICATION_SENDER = env.SANDRA_EMAIL_ADDRESS ?? 'sandra@edlight.org';
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
 
@@ -93,7 +94,7 @@ export async function startEmailVerification(
 
   if (!directoryUser) {
     log.info('Email not found in directory', { email });
-    return { success: false, error: `I couldn't find ${maskEmail(email)} in the EdLight Workspace. Are you sure that's the right email?` };
+    return { success: false, error: `I couldn't find ${maskEmail(email)} in the organization's Workspace. Are you sure that's the right email?` };
   }
 
   // 2. Generate code
@@ -118,7 +119,7 @@ export async function startEmailVerification(
         '',
         'If you didn\'t request this, you can safely ignore this email.',
         '',
-        '— Sandra, EdLight AI Assistant',
+        `— ${APP_NAME}, AI Assistant`,
       ].join('\n'),
     });
   } catch (err) {
@@ -219,7 +220,7 @@ export async function verifyCode(
 
   // No pending verification
   if (!codeMem?.value || !emailMem?.value || !expiresMem?.value) {
-    return { success: false, error: 'No pending verification. Say "my email is x@edlight.org" to start.' };
+    return { success: false, error: 'No pending verification. Say "my email is your-email@example.com" to start.' };
   }
 
   // Check expiration
