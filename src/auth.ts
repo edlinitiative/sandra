@@ -5,7 +5,7 @@
  * - Google OAuth
  * - Facebook OAuth (env-gated: AUTH_FACEBOOK_ID + AUTH_FACEBOOK_SECRET)
  * - Email OTP (Credentials provider — codes sent via SMTP)
- * - Phone/SMS OTP (Credentials provider — codes sent via Twilio)
+ * - Phone auth (Credentials provider — Firebase Authentication / Google)
  *
  * No DB adapter — users are upserted into Sandra's own User table via callbacks.
  */
@@ -17,6 +17,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { db } from '@/lib/db';
 import { resolveUserByExternalId } from '@/lib/db/users';
 import { verifyOtp } from '@/lib/auth/otp';
+import { verifyFirebaseToken } from '@/lib/auth/verify-firebase-token';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('auth:nextauth');
@@ -62,48 +63,37 @@ const providers = [
       })]
     : []),
 
-  // Email / Phone OTP — Credentials provider
+  // Email OTP — Credentials provider
   Credentials({
     id: 'otp',
-    name: 'One-Time Code',
+    name: 'Email Code',
     credentials: {
-      identifier: { label: 'Email or Phone', type: 'text' },
+      identifier: { label: 'Email', type: 'text' },
       code: { label: 'Verification Code', type: 'text' },
-      type: { label: 'Type', type: 'text' }, // "email" | "phone"
     },
     async authorize(credentials) {
       const identifier = credentials?.identifier as string | undefined;
       const code = credentials?.code as string | undefined;
-      const type = credentials?.type as string | undefined;
 
-      if (!identifier || !code || !type) return null;
+      if (!identifier || !code) return null;
 
       // Verify the OTP
       const valid = await verifyOtp(identifier, code);
       if (!valid) {
-        log.warn('OTP verification failed', { identifier, type });
+        log.warn('OTP verification failed', { identifier });
         return null;
       }
 
-      // Build external ID
-      const externalId =
-        type === 'phone' ? `phone:${identifier}` : `email:${identifier.toLowerCase().trim()}`;
+      // Build external ID (email OTP only)
+      const externalId = `email:${identifier.toLowerCase().trim()}`;
 
       // Resolve or create the user
       try {
         const sandraUser = await resolveUserByExternalId(db, {
           externalId,
-          email: type === 'email' ? identifier.toLowerCase().trim() : undefined,
+          email: identifier.toLowerCase().trim(),
           channel: 'web',
         });
-
-        // If phone login, store phone on the user
-        if (type === 'phone' && identifier) {
-          await db.user.update({
-            where: { id: sandraUser.id },
-            data: { phone: identifier.trim() },
-          }).catch(() => {}); // Ignore duplicate phone errors
-        }
 
         return {
           id: sandraUser.id,
@@ -116,6 +106,54 @@ const providers = [
       } catch (error) {
         log.error('OTP authorize: failed to resolve user', {
           identifier,
+          error: error instanceof Error ? error.message : 'unknown',
+        });
+        return null;
+      }
+    },
+  }),
+
+  // Phone auth — Firebase Authentication (Google handles SMS delivery + reCAPTCHA)
+  Credentials({
+    id: 'firebase-phone',
+    name: 'Phone',
+    credentials: {
+      idToken: { label: 'Firebase ID Token', type: 'text' },
+    },
+    async authorize(credentials) {
+      const idToken = credentials?.idToken as string | undefined;
+      if (!idToken) return null;
+
+      try {
+        const { uid, phone, email } = await verifyFirebaseToken(idToken);
+        if (!phone) {
+          log.warn('Firebase token has no phone number', { uid });
+          return null;
+        }
+
+        const externalId = `phone:${phone}`;
+
+        const sandraUser = await resolveUserByExternalId(db, {
+          externalId,
+          email: email ?? undefined,
+          channel: 'web',
+        });
+
+        // Store phone on the user
+        await db.user.update({
+          where: { id: sandraUser.id },
+          data: { phone: phone },
+        }).catch(() => {}); // Ignore duplicate phone errors
+
+        return {
+          id: sandraUser.id,
+          name: sandraUser.name,
+          email: sandraUser.email,
+          externalId: sandraUser.externalId,
+          role: sandraUser.role,
+        } as Record<string, unknown>;
+      } catch (error) {
+        log.error('Firebase phone authorize failed', {
           error: error instanceof Error ? error.message : 'unknown',
         });
         return null;
@@ -147,8 +185,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (!account) return false;
 
-      // Credentials (OTP) — user already resolved in authorize()
-      if (account.provider === 'otp') return true;
+      // Credentials (OTP / Firebase phone) — user already resolved in authorize()
+      if (account.provider === 'otp' || account.provider === 'firebase-phone') return true;
 
       // OAuth providers (Google, Facebook)
       if (!user.email) return false;
@@ -178,7 +216,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     async jwt({ token, account, user }) {
       if (account) {
-        if (account.provider === 'otp') {
+        if (account.provider === 'otp' || account.provider === 'firebase-phone') {
           // Credentials — user object has Sandra fields from authorize()
           const u = user as Record<string, unknown>;
           token.sandraUserId = u.id as string;

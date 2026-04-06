@@ -123,10 +123,10 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),          // "Sandra <noreply@example.com>"
 
-  // Phone/SMS OTP — Twilio REST API
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(), // E.164, e.g. "+15551234567"
+  // Phone auth — Firebase Authentication (Google handles SMS + reCAPTCHA)
+  NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

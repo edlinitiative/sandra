@@ -1,8 +1,8 @@
 /**
- * OTP delivery transports — email (SMTP / nodemailer) and SMS (Twilio REST).
+ * OTP delivery transports — email (SMTP / nodemailer).
  *
- * Both are env-var gated. If the corresponding env vars aren't set, the
- * transport logs the code instead (useful in development).
+ * Env-var gated. If SMTP vars aren't set, the transport logs the code instead.
+ * Phone/SMS auth is handled client-side via Firebase Authentication (Google).
  */
 
 import { createLogger } from '@/lib/utils';
@@ -62,44 +62,3 @@ export async function sendEmailOtp(email: string, code: string): Promise<void> {
   log.info('Email OTP sent', { email });
 }
 
-// ── SMS transport ────────────────────────────────────────────────────────────
-
-/**
- * Send an OTP code via SMS using Twilio REST API (no SDK needed).
- *
- * Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
- */
-export async function sendSmsOtp(phone: string, code: string): Promise<void> {
-  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
-
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-    log.warn('Twilio not configured — logging OTP code instead', { phone, code });
-    return;
-  }
-
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-  const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
-
-  const body = new URLSearchParams({
-    To: phone,
-    From: TWILIO_PHONE_NUMBER,
-    Body: `Your sign-in code is: ${code}. It expires in 10 minutes.`,
-  });
-
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: body.toString(),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    log.error('Failed to send SMS OTP', { phone, status: resp.status, body: text });
-    throw new Error(`Twilio SMS failed: ${resp.status}`);
-  }
-
-  log.info('SMS OTP sent', { phone });
-}

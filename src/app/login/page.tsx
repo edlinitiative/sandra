@@ -2,7 +2,14 @@
 
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useCallback, type FormEvent } from 'react';
+import {
+  Suspense,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type FormEvent,
+} from 'react';
 import { OracleOrb } from '@/components/ui/oracle-orb';
 
 const SITE_NAME = 'Sandra';
@@ -36,110 +43,188 @@ function FacebookIcon() {
   );
 }
 
+function Spinner() {
+  return (
+    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-on-primary/30 border-t-on-primary" />
+  );
+}
+
 // ── Login form ────────────────────────────────────────────────────────────────
 
 type AuthMethod = 'email' | 'phone';
-type Step = 'input' | 'verify';
 
 function LoginForm() {
   const params = useSearchParams();
   const callbackUrl = params.get('callbackUrl') ?? '/chat';
 
+  // Shared state
   const [method, setMethod] = useState<AuthMethod>('email');
-  const [step, setStep] = useState<Step>('input');
-  const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
-  const [sending, setSending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  // ── Email OTP state ──
+  const [emailStep, setEmailStep] = useState<'input' | 'verify'>('input');
+  const [email, setEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailCooldown, setEmailCooldown] = useState(0);
+
+  // ── Phone (Firebase) state ──
+  const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input');
+  const [phone, setPhone] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const confirmationRef = useRef<any>(null);
+  const recaptchaRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recaptchaVerifierRef = useRef<any>(null);
 
   // Start cooldown timer
   const startCooldown = useCallback(() => {
-    setCooldown(60);
+    setEmailCooldown(60);
     const t = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(t);
-          return 0;
-        }
+      setEmailCooldown((prev) => {
+        if (prev <= 1) { clearInterval(t); return 0; }
         return prev - 1;
       });
     }, 1000);
   }, []);
 
-  // Send OTP
-  const handleSendCode = useCallback(
-    async (e: FormEvent) => {
-      e.preventDefault();
-      setError(null);
-      setSending(true);
+  // Initialise invisible reCAPTCHA for Firebase phone auth
+  useEffect(() => {
+    if (method !== 'phone' || recaptchaVerifierRef.current) return;
 
+    let mounted = true;
+    (async () => {
       try {
-        const res = await fetch('/api/auth/otp/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: identifier.trim(), type: method }),
+        const { getFirebaseAuth } = await import('@/lib/firebase/client');
+        const { RecaptchaVerifier } = await import('firebase/auth');
+        const auth = getFirebaseAuth();
+
+        if (!mounted || !recaptchaRef.current) return;
+
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaRef.current, {
+          size: 'invisible',
         });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error ?? 'Failed to send code');
-          setSending(false);
-          return;
-        }
-
-        setStep('verify');
-        startCooldown();
       } catch {
-        setError('Network error. Please try again.');
-      } finally {
-        setSending(false);
+        // Firebase not configured — will show error on submit
       }
-    },
-    [identifier, method, startCooldown],
-  );
+    })();
 
-  // Verify OTP
-  const handleVerify = useCallback(
-    async (e: FormEvent) => {
-      e.preventDefault();
-      setError(null);
-      setVerifying(true);
+    return () => { mounted = false; };
+  }, [method]);
 
-      try {
-        await signIn('otp', {
-          identifier: identifier.trim(),
-          code: otp.trim(),
-          type: method,
-          callbackUrl,
-          redirect: true,
-        });
-        // If redirect: true, the page navigates away on success.
-        // If it returns here, something went wrong.
-        setError('Invalid or expired code. Please try again.');
-        setVerifying(false);
-      } catch {
-        setError('Verification failed. Please try again.');
-        setVerifying(false);
+  // ── Switch method ──
+  const switchMethod = useCallback((m: AuthMethod) => {
+    if (m === method) return;
+    setMethod(m);
+    setError(null);
+  }, [method]);
+
+  // ── Email: send OTP ──
+  const handleEmailSend = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? 'Failed to send code'); return; }
+      setEmailStep('verify');
+      startCooldown();
+    } catch { setError('Network error. Please try again.'); }
+    finally { setBusy(false); }
+  }, [email, startCooldown]);
+
+  // ── Email: verify OTP ──
+  const handleEmailVerify = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await signIn('otp', {
+        identifier: email.trim(),
+        code: emailOtp.trim(),
+        callbackUrl,
+        redirect: true,
+      });
+      setError('Invalid or expired code. Please try again.');
+    } catch { setError('Verification failed.'); }
+    finally { setBusy(false); }
+  }, [email, emailOtp, callbackUrl]);
+
+  // ── Phone: send SMS via Firebase ──
+  const handlePhoneSend = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const { getFirebaseAuth } = await import('@/lib/firebase/client');
+      const { signInWithPhoneNumber } = await import('firebase/auth');
+      const auth = getFirebaseAuth();
+
+      if (!recaptchaVerifierRef.current) {
+        setError('Phone auth is not configured. Please contact support.');
+        setBusy(false);
+        return;
       }
-    },
-    [identifier, otp, method, callbackUrl],
-  );
 
-  // Switch between email and phone
-  const switchMethod = useCallback(
-    (m: AuthMethod) => {
-      if (m === method) return;
-      setMethod(m);
-      setStep('input');
-      setIdentifier('');
-      setOtp('');
-      setError(null);
-    },
-    [method],
-  );
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        phone.trim(),
+        recaptchaVerifierRef.current,
+      );
+      confirmationRef.current = confirmation;
+      setPhoneStep('verify');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send SMS';
+      if (msg.includes('invalid-phone-number')) {
+        setError('Invalid phone number. Use format: +1234567890');
+      } else if (msg.includes('too-many-requests')) {
+        setError('Too many attempts. Please try again later.');
+      } else {
+        setError(msg);
+      }
+    } finally { setBusy(false); }
+  }, [phone]);
+
+  // ── Phone: verify code + get Firebase ID token → NextAuth ──
+  const handlePhoneVerify = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      if (!confirmationRef.current) {
+        setError('Session expired. Please resend the code.');
+        setBusy(false);
+        return;
+      }
+
+      const result = await confirmationRef.current.confirm(phoneCode.trim());
+      const idToken = await result.user.getIdToken();
+
+      // Send Firebase ID token to NextAuth credentials provider
+      await signIn('firebase-phone', {
+        idToken,
+        callbackUrl,
+        redirect: true,
+      });
+
+      setError('Verification failed. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid code';
+      if (msg.includes('invalid-verification-code')) {
+        setError('Invalid code. Please check and try again.');
+      } else {
+        setError(msg);
+      }
+    } finally { setBusy(false); }
+  }, [phoneCode, callbackUrl]);
+
+  // ── Render ──
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-12">
@@ -165,7 +250,7 @@ function LoginForm() {
             className="absolute inset-0 -m-6 animate-oracle-breathe rounded-full border border-primary/5"
             style={{ animationDelay: '-2s' }}
           />
-          <OracleOrb size={64} active={sending || verifying} />
+          <OracleOrb size={64} active={busy} />
         </div>
 
         <h1 className="mb-0.5 text-xl font-black tracking-tighter text-on-surface">
@@ -195,48 +280,29 @@ function LoginForm() {
           ))}
         </div>
 
-        {/* ── OTP flow ────────────────────────────────── */}
-        {step === 'input' ? (
-          <form onSubmit={handleSendCode} className="flex w-full flex-col gap-3">
-            {method === 'email' ? (
-              <input
-                type="email"
-                required
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
-                autoComplete="email"
-                autoFocus
-              />
-            ) : (
-              <input
-                type="tel"
-                required
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="+1 234 567 8900"
-                className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
-                autoComplete="tel"
-                autoFocus
-              />
-            )}
-            <button type="submit" disabled={sending || !identifier.trim()} className={primaryBtnClass}>
-              {sending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-on-primary/30 border-t-on-primary" />
-                  Sending…
-                </span>
-              ) : (
-                'Send Code'
-              )}
+        {/* ── Email OTP flow ──────────────────────────── */}
+        {method === 'email' && emailStep === 'input' && (
+          <form onSubmit={handleEmailSend} className="flex w-full flex-col gap-3">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+              autoComplete="email"
+              autoFocus
+            />
+            <button type="submit" disabled={busy || !email.trim()} className={primaryBtnClass}>
+              {busy ? <span className="flex items-center justify-center gap-2"><Spinner /> Sending…</span> : 'Send Code'}
             </button>
           </form>
-        ) : (
-          <form onSubmit={handleVerify} className="flex w-full flex-col gap-3">
+        )}
+
+        {method === 'email' && emailStep === 'verify' && (
+          <form onSubmit={handleEmailVerify} className="flex w-full flex-col gap-3">
             <p className="text-center text-xs text-on-surface-variant/60">
-              Code sent to{' '}
-              <span className="font-medium text-on-surface-variant">{identifier}</span>
+              Code sent to <span className="font-medium text-on-surface-variant">{email}</span>
             </p>
             <input
               type="text"
@@ -244,42 +310,77 @@ function LoginForm() {
               pattern="[0-9]*"
               maxLength={6}
               required
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              value={emailOtp}
+              onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
               className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-on-surface placeholder:text-on-surface-variant/20 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
               autoComplete="one-time-code"
               autoFocus
             />
-            <button type="submit" disabled={verifying || otp.length < 6} className={primaryBtnClass}>
-              {verifying ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-on-primary/30 border-t-on-primary" />
-                  Verifying…
-                </span>
-              ) : (
-                'Verify & Sign In'
-              )}
+            <button type="submit" disabled={busy || emailOtp.length < 6} className={primaryBtnClass}>
+              {busy ? <span className="flex items-center justify-center gap-2"><Spinner /> Verifying…</span> : 'Verify & Sign In'}
             </button>
             <div className="flex items-center justify-between text-xs">
-              <button
-                type="button"
-                onClick={() => { setStep('input'); setOtp(''); setError(null); }}
-                className="text-on-surface-variant/50 transition-colors hover:text-primary"
-              >
-                ← Change {method}
+              <button type="button" onClick={() => { setEmailStep('input'); setEmailOtp(''); setError(null); }} className="text-on-surface-variant/50 transition-colors hover:text-primary">
+                ← Change email
               </button>
-              <button
-                type="button"
-                onClick={(e) => handleSendCode(e)}
-                disabled={cooldown > 0}
-                className="text-on-surface-variant/50 transition-colors hover:text-primary disabled:opacity-30"
-              >
-                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+              <button type="button" onClick={(e) => handleEmailSend(e)} disabled={emailCooldown > 0} className="text-on-surface-variant/50 transition-colors hover:text-primary disabled:opacity-30">
+                {emailCooldown > 0 ? `Resend in ${emailCooldown}s` : 'Resend code'}
               </button>
             </div>
           </form>
         )}
+
+        {/* ── Phone (Firebase) flow ───────────────────── */}
+        {method === 'phone' && phoneStep === 'input' && (
+          <form onSubmit={handlePhoneSend} className="flex w-full flex-col gap-3">
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 234 567 8900"
+              className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+              autoComplete="tel"
+              autoFocus
+            />
+            <button type="submit" disabled={busy || !phone.trim()} className={primaryBtnClass}>
+              {busy ? <span className="flex items-center justify-center gap-2"><Spinner /> Sending…</span> : 'Send Code'}
+            </button>
+          </form>
+        )}
+
+        {method === 'phone' && phoneStep === 'verify' && (
+          <form onSubmit={handlePhoneVerify} className="flex w-full flex-col gap-3">
+            <p className="text-center text-xs text-on-surface-variant/60">
+              Code sent to <span className="font-medium text-on-surface-variant">{phone}</span>
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              required
+              value={phoneCode}
+              onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-on-surface placeholder:text-on-surface-variant/20 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+              autoComplete="one-time-code"
+              autoFocus
+            />
+            <button type="submit" disabled={busy || phoneCode.length < 6} className={primaryBtnClass}>
+              {busy ? <span className="flex items-center justify-center gap-2"><Spinner /> Verifying…</span> : 'Verify & Sign In'}
+            </button>
+            <div className="flex items-center justify-between text-xs">
+              <button type="button" onClick={() => { setPhoneStep('input'); setPhoneCode(''); setError(null); confirmationRef.current = null; }} className="text-on-surface-variant/50 transition-colors hover:text-primary">
+                ← Change number
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Invisible reCAPTCHA container for Firebase */}
+        <div ref={recaptchaRef} id="recaptcha-container" />
 
         {/* Error display */}
         {error && (
