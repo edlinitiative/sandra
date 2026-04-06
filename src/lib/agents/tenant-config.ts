@@ -98,6 +98,55 @@ export interface TenantAgentConfig {
    *    courses, and account questions. For anything else, visit edlight.org."
    */
   offTopicResponse?: string;
+
+  // ── Platform & Deployment ──────────────────────────────────────────────────
+
+  /**
+   * Platform/brand name shown in emails, WhatsApp mentions, layout title, etc.
+   * Defaults to APP_NAME from constants ('Sandra').
+   * This is the "public-facing" brand name — separate from agentName which is
+   * the AI assistant's persona name used in conversations.
+   */
+  platformName?: string;
+
+  /**
+   * Comma-separated list of allowed CORS origins.
+   * Merged with the ALLOWED_ORIGINS env var at runtime.
+   * Example: "https://app.acme.com,https://staging.acme.com"
+   */
+  allowedOrigins?: string;
+
+  /**
+   * Wildcard suffix for CORS origin matching.
+   * Merged with ALLOWED_ORIGIN_SUFFIX env var.
+   * Example: ".acme.com" allows all *.acme.com subdomains.
+   */
+  allowedOriginSuffix?: string;
+
+  /**
+   * The email address used as the "from" sender for outbound emails
+   * (verification codes, notifications, etc.).
+   * Falls back to SANDRA_EMAIL_ADDRESS env var → 'noreply@example.com'.
+   */
+  emailSenderAddress?: string;
+
+  // ── Channel Credentials ────────────────────────────────────────────────────
+
+  /**
+   * WhatsApp Cloud API credentials.
+   * Falls back to WHATSAPP_* env vars when not set.
+   */
+  whatsappPhoneNumberId?: string;
+  whatsappAccessToken?: string;
+  whatsappWebhookSecret?: string;
+
+  /**
+   * Instagram Graph API credentials.
+   * Falls back to INSTAGRAM_* env vars when not set.
+   */
+  instagramPageAccessToken?: string;
+  instagramAppSecret?: string;
+  instagramVerifyToken?: string;
 }
 
 // ── Loader ───────────────────────────────────────────────────────────────────

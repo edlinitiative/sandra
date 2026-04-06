@@ -13,6 +13,7 @@ import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-pri
 import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
 import { env } from '@/lib/config/env';
+import { getPlatformConfig } from '@/lib/config/platform';
 import {
   hasPendingVerification,
   verifyCode,
@@ -58,7 +59,8 @@ export async function POST(request: Request) {
   }
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
-  const appSecret = env.WHATSAPP_WEBHOOK_SECRET ?? '';
+  const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
+  const appSecret = platformConfig.whatsapp.webhookSecret;
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {

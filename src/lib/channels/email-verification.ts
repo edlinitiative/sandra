@@ -15,6 +15,7 @@
 import { createLogger } from '@/lib/utils';
 import { env } from '@/lib/config';
 import { APP_NAME } from '@/lib/config/constants';
+import { getPlatformConfig } from '@/lib/config/platform';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 import { resolveGoogleContext } from '@/lib/google/context';
 import { getUserByEmail } from '@/lib/google/directory';
@@ -93,6 +94,11 @@ export async function startEmailVerification(
   const email = claimedEmail.toLowerCase().trim();
   log.info('Starting email verification', { userId, email });
 
+  // Resolve platform config for sender address and brand name
+  const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
+  const senderAddress = platformConfig.emailSenderAddress;
+  const brandName = platformConfig.platformName;
+
   // 1. Verify the email exists in the Workspace directory
   let directoryUser: DirectoryUser | null;
   try {
@@ -118,21 +124,21 @@ export async function startEmailVerification(
   try {
     const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID!);
     await sendEmail(ctx, {
-      from: VERIFICATION_SENDER,
+      from: senderAddress,
       to: [email],
-      subject: 'Sandra — Your verification code',
+      subject: `${brandName} — Your verification code`,
       body: [
         `Hi ${directoryUser.givenName ?? directoryUser.name},`,
         '',
         `Your verification code is: ${code}`,
         '',
-        `Enter this code in your ${channelDisplayName(channel)} conversation with ${APP_NAME} to link your account.`,
+        `Enter this code in your ${channelDisplayName(channel)} conversation with ${brandName} to link your account.`,
         '',
         'This code expires in 10 minutes.',
         '',
         'If you didn\'t request this, you can safely ignore this email.',
         '',
-        `— ${APP_NAME}, AI Assistant`,
+        `— ${brandName}, AI Assistant`,
       ].join('\n'),
     });
   } catch (err) {

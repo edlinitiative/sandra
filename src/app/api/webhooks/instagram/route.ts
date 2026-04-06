@@ -10,6 +10,7 @@ import { generateRequestId, createLogger, verifyMetaSignature, isDuplicate } fro
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
 import { env } from '@/lib/config/env';
+import { getPlatformConfig } from '@/lib/config/platform';
 import {
   hasPendingVerification,
   verifyCode,
@@ -65,7 +66,8 @@ export async function POST(request: Request) {
   }
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
-  const appSecret = env.INSTAGRAM_APP_SECRET ?? '';
+  const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
+  const appSecret = platformConfig.instagram.appSecret;
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {

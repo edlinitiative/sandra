@@ -31,6 +31,18 @@ const patchSchema = z.object({
   enabledTools: z.array(z.string().min(1).max(80)).optional().nullable(),
   allowedTopics: z.array(z.string().min(1).max(200)).optional().nullable(),
   offTopicResponse: z.string().max(500).optional().nullable(),
+  // Platform & Deployment
+  platformName: z.string().min(1).max(60).optional().nullable(),
+  allowedOrigins: z.string().max(2000).optional().nullable(),
+  allowedOriginSuffix: z.string().max(200).optional().nullable(),
+  emailSenderAddress: z.string().email().max(200).optional().nullable(),
+  // Channel Credentials
+  whatsappPhoneNumberId: z.string().max(200).optional().nullable(),
+  whatsappAccessToken: z.string().max(500).optional().nullable(),
+  whatsappWebhookSecret: z.string().max(500).optional().nullable(),
+  instagramPageAccessToken: z.string().max(500).optional().nullable(),
+  instagramAppSecret: z.string().max(500).optional().nullable(),
+  instagramVerifyToken: z.string().max(500).optional().nullable(),
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
