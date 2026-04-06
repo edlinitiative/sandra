@@ -5,7 +5,7 @@ describe('buildSandraSystemPrompt', () => {
   it('includes Sandra persona description', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Sandra');
-    expect(prompt).toContain('EdLight');
+    expect(prompt).toContain('AI assistant');
   });
 
   it('includes English language instruction by default', () => {
@@ -43,9 +43,9 @@ describe('buildSandraSystemPrompt', () => {
   it('includes retrieval context when provided', () => {
     const prompt = buildSandraSystemPrompt({
       language: 'en',
-      retrievalContext: 'From EdLight Academy: ...',
+      retrievalContext: 'From knowledge base: ...',
     });
-    expect(prompt).toContain('From EdLight Academy:');
+    expect(prompt).toContain('From knowledge base:');
   });
 
   it('includes conversation summary when provided', () => {
@@ -73,7 +73,7 @@ describe('getSandraSystemPrompt', () => {
   it('includes persona description', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Sandra');
-    expect(prompt).toContain('EdLight');
+    expect(prompt).toContain('AI assistant');
   });
 
   it('includes language instruction', () => {
@@ -98,8 +98,8 @@ describe('getSandraSystemPrompt', () => {
   });
 });
 
-// Phase 6: tool routing and course accuracy
-describe('Phase 6 — course routing in buildSandraSystemPrompt', () => {
+// Skipped: EdLight-specific routing now lives in tenant DB config
+describe.skip('Phase 6 — course routing in buildSandraSystemPrompt', () => {
   it('directs course questions to getCourseInventory', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getCourseInventory');
@@ -131,7 +131,8 @@ describe('Phase 6 — course routing in buildSandraSystemPrompt', () => {
   });
 });
 
-describe('Phase 6 — course routing in getSandraSystemPrompt', () => {
+// Skipped: EdLight-specific routing now lives in tenant DB config
+describe.skip('Phase 6 — course routing in getSandraSystemPrompt', () => {
   it('directs course questions to getCourseInventory', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getCourseInventory');

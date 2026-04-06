@@ -4,6 +4,9 @@ import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
+// TODO: read from API or env when tenant-aware login is implemented
+const SITE_NAME = 'Sandra';
+
 function LoginForm() {
   const params = useSearchParams();
   const callbackUrl = params.get('callbackUrl') ?? '/chat';
@@ -21,10 +24,10 @@ function LoginForm() {
       </div>
 
       <h1 className="mb-2 text-2xl font-black tracking-tighter text-on-surface">
-        Sign in to Sandra
+        Sign in to {SITE_NAME}
       </h1>
       <p className="mb-8 text-sm text-on-surface-variant">
-        Use your EdLight Google account to continue
+        Use your Google account to continue
       </p>
 
       <button
@@ -53,7 +56,7 @@ function LoginForm() {
       </button>
 
       <p className="mt-8 max-w-xs text-center text-xs leading-relaxed text-outline">
-        By signing in you agree to EdLight&apos;s{' '}
+        By signing in you agree to the{' '}
         <a href="/privacy" className="underline underline-offset-2 hover:text-primary">
           Privacy Policy
         </a>

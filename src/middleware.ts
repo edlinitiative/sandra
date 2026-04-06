@@ -87,9 +87,9 @@ const RESOLVED_TENANT_HEADER = 'x-resolved-tenant-id';
 
 /**
  * Extract a tenant slug from the hostname.
- * E.g. `acme.sandra.edlight.org` → `acme`
- *      `sandra.edlight.org`      → null (no sub-tenant)
- *      `localhost:3000`           → null
+ * E.g. `acme.app.example.com` → `acme`
+ *      `app.example.com`      → null (no sub-tenant)
+ *      `localhost:3000`        → null
  */
 function extractTenantSlug(hostname: string): string | null {
   // Strip port
@@ -103,7 +103,7 @@ function extractTenantSlug(hostname: string): string | null {
   const parts = host.split('.');
 
   // Need at least 4 parts for a sub-tenant: <slug>.<app>.<domain>.<tld>
-  // e.g. acme.sandra.edlight.org → ["acme", "sandra", "edlight", "org"]
+  // e.g. acme.app.example.com → ["acme", "app", "example", "com"]
   if (parts.length >= 4) {
     return parts[0] ?? null;
   }
@@ -164,18 +164,26 @@ function applyTenantHeader(response: NextResponse, request: NextRequest): NextRe
 
 // ── CORS Configuration ────────────────────────────────────────────────────────
 
-const ALLOWED_ORIGINS = new Set([
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://sandra.edlight.org',
-  'https://edlight.org',
-]);
+/** 
+ * CORS allowed origins. 
+ * Set ALLOWED_ORIGINS env var as a comma-separated list for production.
+ * Falls back to localhost-only in development.
+ */
+const ALLOWED_ORIGINS = new Set(
+  (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000,http://localhost:3001')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean),
+);
+
+/** Optional wildcard suffix for CORS (e.g. ".mycompany.com" allows all subdomains). */
+const ALLOWED_ORIGIN_SUFFIX = process.env.ALLOWED_ORIGIN_SUFFIX ?? '';
 
 function getCorsHeaders(request: NextRequest): Record<string, string> {
   const origin = request.headers.get('origin') ?? '';
   const isAllowed =
     ALLOWED_ORIGINS.has(origin) ||
-    origin.endsWith('.edlight.org') ||
+    (ALLOWED_ORIGIN_SUFFIX && origin.endsWith(ALLOWED_ORIGIN_SUFFIX)) ||
     process.env.NODE_ENV === 'development';
 
   return {

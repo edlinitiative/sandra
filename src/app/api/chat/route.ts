@@ -8,26 +8,26 @@ import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/cano
 import { authenticateRequest, getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { errorResponse, SandraError, ProviderError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
-import { env } from '@/lib/config';
+import { env, APP_NAME } from '@/lib/config';
 
 const DEMO_RESPONSES: Record<string, Record<string, string>> = {
   en: {
     default:
-      "👋 Hi! I'm Sandra, the AI assistant for the EdLight ecosystem. I'm currently running in demo mode because the AI provider hasn't been configured yet. Once an OpenAI API key is set, I'll be able to answer your questions about EdLight platforms, documentation, and resources.\n\n**To activate me fully:**\n1. Add your OpenAI API key to the `.env` file\n2. Restart the server\n\nIn the meantime, feel free to explore the admin dashboard!",
+      `👋 Hi! I'm ${APP_NAME}, your AI assistant. I'm currently running in demo mode because no AI provider has been configured yet.\n\n**To activate me:**\n1. Add your AI API key to the \`.env\` file\n2. Restart the server\n\nIn the meantime, feel free to explore the admin dashboard!`,
     greeting:
-      "👋 Hello! I'm Sandra, your EdLight AI assistant. I'm in demo mode right now — set up the OpenAI API key to unlock my full capabilities!",
+      `👋 Hello! I'm ${APP_NAME}, your AI assistant. I'm in demo mode right now — set up an AI API key to unlock my full capabilities!`,
   },
   fr: {
     default:
-      "👋 Bonjour ! Je suis Sandra, l'assistante IA de l'écosystème EdLight. Je fonctionne actuellement en mode démo car le fournisseur d'IA n'a pas encore été configuré. Une fois qu'une clé API OpenAI sera définie, je pourrai répondre à vos questions sur les plateformes EdLight.\n\n**Pour m'activer complètement :**\n1. Ajoutez votre clé API OpenAI au fichier `.env`\n2. Redémarrez le serveur",
+      `👋 Bonjour ! Je suis ${APP_NAME}, votre assistant IA. Je fonctionne en mode démo car aucun fournisseur d'IA n'a été configuré.\n\n**Pour m'activer :**\n1. Ajoutez votre clé API IA au fichier \`.env\`\n2. Redémarrez le serveur`,
     greeting:
-      "👋 Bonjour ! Je suis Sandra, votre assistante IA EdLight. Je suis en mode démo — configurez la clé API OpenAI pour débloquer toutes mes capacités !",
+      `👋 Bonjour ! Je suis ${APP_NAME}, votre assistant IA. Mode démo — configurez une clé API IA pour débloquer toutes mes capacités !`,
   },
   ht: {
     default:
-      "👋 Bonjou! Mwen se Sandra, asistan AI pou ekosistèm EdLight la. Mwen ap fonksyone nan mòd demonstrasyon kounye a paske founisè AI a poko konfigire. Lè yo mete yon kle API OpenAI, m ap kapab reponn kesyon ou yo sou platfòm EdLight.\n\n**Pou aktive m nèt :**\n1. Ajoute kle API OpenAI ou nan fichye `.env` la\n2. Redmare sèvè a",
+      `👋 Bonjou! Mwen se ${APP_NAME}, asistan AI ou. Mwen ap fonksyone nan mòd demo paske pa gen okenn founisè AI ki konfigire.\n\n**Pou aktive m :**\n1. Ajoute kle API IA ou nan fichye \`.env\` la\n2. Redmare sèvè a`,
     greeting:
-      "👋 Bonjou! Mwen se Sandra, asistan AI EdLight ou. Mwen nan mòd demo kounye a — mete kle API OpenAI pou debloke tout kapasite mwen yo!",
+      `👋 Bonjou! Mwen se ${APP_NAME}, asistan AI ou. Mwen nan mòd demo — mete yon kle API IA pou debloke tout kapasite m yo!`,
   },
 };
 

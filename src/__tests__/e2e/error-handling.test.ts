@@ -54,6 +54,7 @@ vi.mock('@/lib/memory/session-store', () => ({
 
 vi.mock('@/lib/config', () => ({
   env: { OPENAI_API_KEY: 'sk-test-validkeyfortesting' },
+  APP_NAME: 'Sandra',
 }));
 
 vi.mock('@/lib/auth/middleware', () => ({

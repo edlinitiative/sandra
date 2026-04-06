@@ -1,29 +1,26 @@
 import { useEffect, useState } from 'react';
 
+// TODO: load from tenant config
+const AGENT_NAME = 'Sandra';
+
 const SUGGESTED_QUESTIONS: Record<string, string[]> = {
   en: [
-    'What courses can I take on EdLight?',
-    'What programs and opportunities does EdLight offer?',
-    'Tell me about the EdLight Summer Leadership Program',
-    'Where should a complete beginner start learning to code?',
-    'What is EdLight Academy?',
-    "What's new at EdLight?",
+    'What can you help me with?',
+    'What tools do you have?',
+    'Search the knowledge base',
+    'Show me available programs',
   ],
   fr: [
-    'Quels cours puis-je suivre sur EdLight ?',
-    'Quels programmes et opportunités EdLight offre-t-il ?',
-    "Parlez-moi du Programme de Leadership d'\u00c9t\u00e9 EdLight",
-    'Par o\u00f9 un d\u00e9butant complet devrait-il commencer \u00e0 apprendre \u00e0 coder\u00a0?',
-    "Qu'est-ce qu'EdLight Academy\u00a0?",
-    'Quoi de neuf chez EdLight\u00a0?',
+    'Comment pouvez-vous m\'aider ?',
+    'Quels outils avez-vous ?',
+    'Chercher dans la base de connaissances',
+    'Montrer les programmes disponibles',
   ],
   ht: [
-    'Ki kou mwen ka suiv sou EdLight?',
-    'Ki pwogram ak opotinite EdLight ofri?',
-    'Pale mwen sou Pwogram Lid\u00e8chip Et\u00e9 EdLight la',
-    'Ki kote yon debutant n\u00e8t ta dwe k\u00f2manse aprann kode?',
-    'Kisa EdLight Academy ye?',
-    'Ki sa ki nouvo nan EdLight?',
+    'Kisa ou ka ede mwen ak?',
+    'Ki zouti ou genyen?',
+    'Chèche nan baz konesans la',
+    'Montre pwogram ki disponib yo',
   ],
 };
 
@@ -57,10 +54,10 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
       </div>
 
       <h2 className="mb-1 text-xl font-semibold text-white">
-        Hi, I&apos;m Sandra
+        Hi, I&apos;m {AGENT_NAME}
       </h2>
       <p className="mb-5 text-sm text-on-surface-variant sm:mb-8">
-        Ask about EdLight programs, courses, or opportunities
+        Ask me anything — I can search, schedule, email, and more
       </p>
 
       {/* Suggestion cards */}

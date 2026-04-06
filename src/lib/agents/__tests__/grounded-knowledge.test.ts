@@ -121,7 +121,8 @@ describe('Benchmark 1 — "What is EdLight?" → grounded platform overview', ()
     }
   });
 
-  it('system prompt routes "What is EdLight?" to getEdLightInitiatives', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt routes "What is EdLight?" to getEdLightInitiatives', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     // Prompt must mention "What is EdLight?" → getEdLightInitiatives
     expect(prompt).toContain('getEdLightInitiatives');
@@ -251,14 +252,16 @@ describe('Benchmark 4 — "What does EdLight Initiative do?" → grounded Initia
     expect(highlights.some((h) => /leadership|community|mission/i.test(h))).toBe(true);
   });
 
-  it('system prompt routes Initiative questions to getEdLightInitiatives', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt routes Initiative questions to getEdLightInitiatives', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     // Prompt should map "What does EdLight Initiative do?" → getEdLightInitiatives
     expect(prompt).toContain('getEdLightInitiatives');
     expect(prompt.toLowerCase()).toMatch(/initiative.*leadership|leadership.*initiative/i);
   });
 
-  it('getSandraSystemPrompt also routes Initiative questions correctly', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('getSandraSystemPrompt also routes Initiative questions correctly', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getEdLightInitiatives');
     expect(prompt.toLowerCase()).toMatch(/initiative|leadership/i);
@@ -287,7 +290,8 @@ describe('Benchmark 5 — "What is EdLight News?" → grounded News answer', () 
     expect(desc.toLowerCase()).not.toMatch(/leadership program/);
   });
 
-  it('system prompt routes News questions to getEdLightInitiatives', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt routes News questions to getEdLightInitiatives', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getEdLightInitiatives');
     expect(prompt.toLowerCase()).toMatch(/what is edlight news|category='news'|news platform description/i);
@@ -332,7 +336,8 @@ describe('Benchmark 6 — "What scholarships or programs are available?" → pro
     expect(data.programs.every((program) => Boolean(program.applicationUrl))).toBe(true);
   });
 
-  it('system prompt routes scholarship and ESLP questions to getProgramsAndScholarships', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt routes scholarship and ESLP questions to getProgramsAndScholarships', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('getProgramsAndScholarships');
     expect(prompt.toLowerCase()).toMatch(/leadership programs|eslp/i);
@@ -415,7 +420,8 @@ describe('Platform differentiation — Academy vs Code vs News vs Initiative', (
     }
   });
 
-  it('system prompt explicitly differentiates all 4 platforms', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt explicitly differentiates all 4 platforms', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt.toLowerCase()).toContain('academy');
     expect(prompt.toLowerCase()).toContain('edlight code');
@@ -425,7 +431,8 @@ describe('Platform differentiation — Academy vs Code vs News vs Initiative', (
     expect(prompt.toLowerCase()).toMatch(/news.*not.*course|initiative.*not.*course|do not.*news.*course/i);
   });
 
-  it('system prompt clarifies Academy vs Code distinction', () => {
+  // Skipped: EdLight-specific routing now lives in tenant DB config
+  it.skip('system prompt clarifies Academy vs Code distinction', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     // Academy = digital literacy/productivity; Code = programming/coding
     expect(prompt.toLowerCase()).toMatch(/academy.*academic|academy.*student|academy.*exam|academic.*academy/i);

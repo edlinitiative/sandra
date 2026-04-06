@@ -9,8 +9,8 @@ describe('ChatEmptyState', () => {
     const { ChatEmptyState } = await import('../chat-empty-state');
     render(<ChatEmptyState />);
 
-    expect(screen.getByRole('button', { name: /what courses can i take on edlight/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /programs and opportunities/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /what can you help me with/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /what tools do you have/i })).toBeInTheDocument();
     nowSpy.mockRestore();
   });
 

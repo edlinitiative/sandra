@@ -8,25 +8,29 @@
  *  - Privacy controls for cross-context info sharing
  */
 
+import { APP_NAME } from '@/lib/config/constants';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('channels:whatsapp-group');
 
 // ─── Mention Detection ──────────────────────────────────────────────────────
 
+/** Agent name used for mention detection, lowercased. */
+const AGENT_NAME = APP_NAME.toLowerCase();
+
 /**
- * Names/aliases that trigger Sandra to respond in a group chat.
- * Case-insensitive matching. Includes common variations.
+ * Names/aliases that trigger the agent to respond in a group chat.
+ * Built dynamically from APP_NAME so any deployment works.
  */
 const MENTION_TRIGGERS = [
-  'sandra',
-  '@sandra',
-  'hey sandra',
-  'hi sandra',
-  'ok sandra',
-  'okay sandra',
-  'yo sandra',
-  'dear sandra',
+  AGENT_NAME,
+  `@${AGENT_NAME}`,
+  `hey ${AGENT_NAME}`,
+  `hi ${AGENT_NAME}`,
+  `ok ${AGENT_NAME}`,
+  `okay ${AGENT_NAME}`,
+  `yo ${AGENT_NAME}`,
+  `dear ${AGENT_NAME}`,
 ];
 
 /**
@@ -48,8 +52,9 @@ export function isSandraMentioned(text: string): boolean {
     if (regex.test(normalised)) return true;
   }
 
-  // Also match if the entire message is just "Sandra" with optional punctuation
-  if (/^@?sandra[!?.,:;]*$/i.test(normalised)) return true;
+  // Also match if the entire message is just the agent name with optional punctuation
+  const nameEscaped = AGENT_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (new RegExp(`^@?${nameEscaped}[!?.,:;]*$`, 'i').test(normalised)) return true;
 
   return false;
 }
@@ -61,8 +66,10 @@ export function isSandraMentioned(text: string): boolean {
 export function stripMention(text: string): string {
   if (!text) return text;
 
-  // Remove leading mentions: "@Sandra " / "Sandra, " / "Hey Sandra " etc.
-  let cleaned = text.replace(/^(?:@sandra|hey\s+sandra|hi\s+sandra|ok(?:ay)?\s+sandra|yo\s+sandra|dear\s+sandra|sandra)[,!?.;:\s]*/i, '').trim();
+  // Remove leading mentions dynamically based on APP_NAME
+  const escaped = AGENT_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^(?:@${escaped}|hey\\s+${escaped}|hi\\s+${escaped}|ok(?:ay)?\\s+${escaped}|yo\\s+${escaped}|dear\\s+${escaped}|${escaped})[,!?.;:\\s]*`, 'i');
+  let cleaned = text.replace(pattern, '').trim();
 
   // If stripping emptied the message, return original (they just said "Sandra")
   if (!cleaned) cleaned = text;

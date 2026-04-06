@@ -71,7 +71,11 @@ export async function POST(request: Request) {
   // The voice bridge runs on a separate VM and handles WhatsApp Calling API
   // events. We forward the payload and respond 200 immediately regardless.
   if (isCallsWebhookEvent(rawBody)) {
-    const voiceBridgeUrl = env.VOICE_BRIDGE_URL ?? 'https://voice.edlight.org';
+    const voiceBridgeUrl = env.VOICE_BRIDGE_URL ?? '';
+    if (!voiceBridgeUrl) {
+      log.warn('VOICE_BRIDGE_URL not configured — cannot forward voice call');
+      return NextResponse.json({ status: 'voice_not_configured' }, { status: 503 });
+    }
     void fetch(`${voiceBridgeUrl}/webhook/calls`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

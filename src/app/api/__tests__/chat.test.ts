@@ -46,6 +46,7 @@ vi.mock('@/lib/config', () => ({
     OPENAI_API_KEY: 'sk-test-validkeyfortesting',
     OPENAI_MODEL: 'gpt-4o',
   },
+  APP_NAME: 'Sandra',
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

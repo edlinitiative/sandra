@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { APP_NAME } from '@/lib/config/constants';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Sandra | EdLight',
+  title: `Privacy Policy — ${APP_NAME}`,
 };
 
 export default function PrivacyPolicyPage() {
@@ -17,9 +18,9 @@ export default function PrivacyPolicyPage() {
               1. Introduction
             </h2>
             <p>
-              Sandra (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is an AI
-              assistant built by the EdLight Initiative. This Privacy Policy explains how we
-              collect, use, and protect information when you interact with Sandra through our
+              {APP_NAME} (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is an AI
+              assistant platform. This Privacy Policy explains how we
+              collect, use, and protect information when you interact with {APP_NAME} through our
               website, APIs, or integrated messaging channels.
             </p>
           </section>
@@ -80,8 +81,9 @@ export default function PrivacyPolicyPage() {
             <p>
               Conversation data is retained for the duration of your account. You may request
               deletion of your data by contacting us at{' '}
-              <a href="mailto:privacy@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
-                privacy@edlight.org
+              {/* TODO: make configurable per tenant */}
+              <a href="mailto:privacy@example.com" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                privacy@example.com
               </a>
               .
             </p>
@@ -104,8 +106,9 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               For questions about this Privacy Policy, please contact us at{' '}
-              <a href="mailto:privacy@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
-                privacy@edlight.org
+              {/* TODO: make configurable per tenant */}
+              <a href="mailto:privacy@example.com" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                privacy@example.com
               </a>
               .
             </p>

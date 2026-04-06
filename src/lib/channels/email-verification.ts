@@ -39,7 +39,7 @@ function channelDisplayName(channel: string): string {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const VERIFICATION_SENDER = env.SANDRA_EMAIL_ADDRESS ?? 'sandra@edlight.org';
+const VERIFICATION_SENDER = env.SANDRA_EMAIL_ADDRESS ?? 'noreply@example.com';
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
 
@@ -60,7 +60,7 @@ export function generateVerificationCode(): string {
 }
 
 /**
- * Mask an email for privacy: rony@edlight.org → r***@edlight.org
+ * Mask an email for privacy: user@example.com → u***@example.com
  */
 export function maskEmail(email: string): string {
   const [local, domain] = email.split('@');

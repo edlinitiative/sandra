@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+// TODO: read from API or env when tenant branding is implemented
+const SITE_NAME = 'Sandra';
+
 const navLinks = [
   { href: '/chat', label: 'Chat' },
   { href: '/docs', label: 'Developers' },
@@ -16,7 +19,7 @@ export function Header() {
     <header className="shrink-0 border-b border-outline-variant/15 bg-surface/70 px-8 py-4 backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <Link href="/" className="text-xl font-black tracking-tighter text-primary">
-          Sandra
+          {SITE_NAME}
         </Link>
         <div className="flex items-center gap-8">
           {navLinks.map(({ href, label }) => {

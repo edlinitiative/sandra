@@ -105,25 +105,28 @@ describe('middleware', () => {
     const { middleware } = await import('../middleware');
     const request = makeRequest('/api/chat', {
       headers: {
-        origin: 'https://sandra.edlight.org',
+        origin: 'http://localhost:3000',
         'x-forwarded-for': '172.16.0.1',
       },
     });
     const response = middleware(request);
 
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://sandra.edlight.org');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
   });
 
-  it('sets CORS headers for *.edlight.org subdomains', async () => {
+  it('sets CORS headers when ALLOWED_ORIGIN_SUFFIX matches', async () => {
+    process.env.ALLOWED_ORIGIN_SUFFIX = '.example.com';
+    vi.resetModules();
     const { middleware } = await import('../middleware');
     const request = makeRequest('/api/chat', {
       headers: {
-        origin: 'https://academy.edlight.org',
+        origin: 'https://app.example.com',
         'x-forwarded-for': '172.16.0.2',
       },
     });
     const response = middleware(request);
 
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://academy.edlight.org');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://app.example.com');
+    delete process.env.ALLOWED_ORIGIN_SUFFIX;
   });
 });

@@ -273,7 +273,7 @@ export function ChatContainer() {
         {/* Footer row: language selector + disclaimer */}
         <div className="mt-2 flex items-center justify-between px-1">
           <LanguageSelector language={language} onChange={setLanguageState} />
-          <span className="text-[10px] text-outline">Sandra can make mistakes</span>
+          <span className="text-[10px] text-outline">AI can make mistakes</span>
         </div>
       </div>
     </div>

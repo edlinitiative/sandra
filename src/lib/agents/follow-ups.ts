@@ -1,185 +1,52 @@
 import type { SupportedLanguage } from '@/lib/i18n/types';
 
 /**
- * Default follow-up suggestions. These use EdLight-specific content as defaults.
- * When TenantAgentConfig is available, tenants can provide their own follow-up
- * map via additionalContext.
+ * Default follow-up suggestions. These are generic and work for any tenant.
+ * Tenants can provide their own follow-up map via TenantAgentConfig.additionalContext.
  *
  * Follow-up suggestion pools keyed by tool name and language.
  * Returns 2–3 contextually relevant next questions after a response.
  */
 const FOLLOW_UP_POOLS: Record<string, Record<SupportedLanguage, string[]>> = {
   getCourseInventory: {
-    en: [
-      'How do I enroll in a course?',
-      'Which course should a complete beginner start with?',
-      'Are EdLight courses free?',
-      'Do I get a certificate after completing a course?',
-      'What is the difference between EdLight Academy and EdLight Code?',
-    ],
-    fr: [
-      'Comment m\'inscrire à un cours ?',
-      'Quel cours un débutant complet devrait-il commencer ?',
-      'Les cours EdLight sont-ils gratuits ?',
-      'Reçoit-on un certificat après avoir terminurs ?',
-      'Quelle est la différence entre EdLight Academy et EdLight Code ?',
-    ],
-    ht: [
-      'Kijan mwen ka enskri nan yon kou?',
-      'Ki kou yon debutant ta dwe kòmanse ak?',
-      'Èske kou EdLight yo gratis?',
-      'Èske mwen resevwa yon sètifika apre yon kou?',
-      'Ki diferans ant EdLight Academy ak EdLight Code?',
-    ],
-  },
-  getEdLightInitiatives: {
-    en: [
-      'What courses does EdLight offer?',
-      'How can I apply to EdLight programs?',
-      'Are there any scholarships available?',
-      'How do I contact EdLight?',
-      'What is the EdLight Summer Leadership Program?',
-    ],
-    fr: [
-      'Quels cours EdLight propose-t-il ?',
-      'Comment postuler aux programmes EdLight ?',
-      'Y a-t-il des bourses disponibles ?',
-      'Comment contacter EdLight ?',
-      'Qu\'est-ce que le programme ESLP ?',
-    ],
-    ht: [
-      'Ki kou EdLight ofri?',
-      'Kijan mwen ka aplike pou pwogram EdLight?',
-      'Èske genyen bous ki disponib?',
-      'Kijan mwen ka kontakte EdLight?',
-      'Kisa ESLP ye?',
-    ],
-  },
-  getProgramsAndScholarships: {
-    en: [
-      'How do I apply for the ESLP program?',
-      'Are these programs free?',
-      'When is the next application deadline?',
-      'What courses can I take on EdLight Code?',
-      'Are there external scholarships I can apply for?',
-    ],
-    fr: [
-      'Comment postuler au programme ESLP ?',
-      'Ces programmes sont-ils gratuits ?',
-      'Quelle est la prochaine date limite de candidature ?',
-      'Quels cours puis-je suivre sur EdLight Code ?',
-      'Y a-t-il des bourses externes auxquelles je peux postuler ?',
-    ],
-    ht: [
-      'Kijan mwen ka aplike pou pwogram ESLP la?',
-      'Èske pwogram sa yo gratis?',
-      'Ki dat limit pwochèn aplikasyon an?',
-      'Ki kou mwen ka suiv sou EdLight Code?',
-      'Èske genyen bous eksèn mwen ka aplike pou yo?',
-    ],
+    en: ['How do I enroll in a course?', 'Which course should a beginner start with?', 'Are these courses free?', 'Do I get a certificate?'],
+    fr: ['Comment m\'inscrire à un cours ?', 'Quel cours un débutant devrait-il commencer ?', 'Ces cours sont-ils gratuits ?', 'Reçoit-on un certificat ?'],
+    ht: ['Kijan mwen ka enskri nan yon kou?', 'Ki kou yon debutant ta dwe kòmanse?', 'Èske kou sa yo gratis?', 'Èske mwen resevwa yon sètifika?'],
   },
   searchKnowledgeBase: {
-    en: [
-      'Can you explain that in more detail?',
-      'What EdLight platform would help me with this?',
-      'Are there courses related to this topic?',
-      'How can I get started?',
-    ],
-    fr: [
-      'Pouvez-vous expliquer cela plus en détail ?',
-      'Quelle plateforme EdLight m\'aiderait avec cela ?',
-      'Y a-t-il des cours liés à ce sujet ?',
-      'Comment puis-je commencer ?',
-    ],
-    ht: [
-      'Èske ou ka eksplike sa pi detaye?',
-      'Ki platfòm EdLight ki ka ede mwen ak sa?',
-      'Èske genyen kou ki konsène sijè sa a?',
-      'Kijan mwen ka kòmanse?',
-    ],
+    en: ['Can you explain that in more detail?', 'Are there courses on this topic?', 'How can I get started?', 'What else can you help with?'],
+    fr: ['Pouvez-vous expliquer plus en détail ?', 'Y a-t-il des cours sur ce sujet ?', 'Comment commencer ?', 'Quoi d\'autre pouvez-vous aider ?'],
+    ht: ['Èske ou ka eksplike sa pi detaye?', 'Èske genyen kou sou sijè sa a?', 'Kijan mwen ka kòmanse?', 'Ki lòt bagay ou ka ede ak?'],
   },
   lookupRepoInfo: {
-    en: [
-      'What documentation is available in these repos?',
-      'How often are the repos updated?',
-      'Can I contribute to EdLight repositories?',
-    ],
-    fr: [
-      'Quelle documentation est disponible dans ces dépôts ?',
-      'À quelle fréquence les dépôts sont-ils mis à jour ?',
-      'Puis-je contribuer aux dépôts EdLight ?',
-    ],
-    ht: [
-      'Ki dokimantasyon ki disponib nan depo sa yo?',
-      'Akilè depo yo mete ajou?',
-      'Èske mwen ka kontribye nan depo EdLight yo?',
-    ],
+    en: ['What documentation is available?', 'How often are the repos updated?', 'Can I contribute to these repos?'],
+    fr: ['Quelle documentation est disponible ?', 'À quelle fréquence les dépôts sont-ils mis à jour ?', 'Puis-je contribuer ?'],
+    ht: ['Ki dokimantasyon ki disponib?', 'Akilè depo yo mete ajou?', 'Èske mwen ka kontribye?'],
   },
   getLatestNews: {
-    en: [
-      'Are there any programs or scholarships I can apply for?',
-      'When is the next ESLP application deadline?',
-      'What courses are currently available on EdLight?',
-      'How can I get involved with EdLight?',
-      'Where can I read more EdLight news?',
-    ],
-    fr: [
-      'Y a-t-il des programmes ou des bourses auxquels je peux postuler ?',
-      'Quelle est la prochaine date limite pour l\'ESLP ?',
-      'Quels cours sont actuellement disponibles sur EdLight ?',
-      'Comment puis-je m\'impliquer dans EdLight ?',
-      'Où puis-je lire plus d\'actualités EdLight ?',
-    ],
-    ht: [
-      'Èske genyen pwogram oswa bous mwen ka aplike pou yo?',
-      'Ki dat limit pou ESLP la?',
-      'Ki kou ki disponib sou EdLight kounye a?',
-      'Kijan mwen ka enplike nan EdLight?',
-      'Ki kote mwen ka li plis nouvèl EdLight?',
-    ],
+    en: ['Are there programs I can apply for?', 'What courses are available?', 'How can I get involved?'],
+    fr: ['Y a-t-il des programmes auxquels postuler ?', 'Quels cours sont disponibles ?', 'Comment m\'impliquer ?'],
+    ht: ['Èske genyen pwogram mwen ka aplike pou?', 'Ki kou ki disponib?', 'Kijan mwen ka enplike?'],
   },
   getProgramDeadlines: {
-    en: [
-      'How do I apply for the ESLP?',
-      'Are any of these programs free?',
-      'Can I apply for multiple programs at once?',
-      'Where do I submit my application?',
-      'Are there external scholarships listed on EdLight News?',
-    ],
-    fr: [
-      'Comment postuler à l\'ESLP ?',
-      'Ces programmes sont-ils gratuits ?',
-      'Puis-je postuler à plusieurs programmes en même temps ?',
-      'Où dois-je soumettre ma candidature ?',
-      'Y a-t-il des bourses externes sur EdLight News ?',
-    ],
-    ht: [
-      'Kijan mwen ka aplike pou ESLP la?',
-      'Èske pwogram sa yo gratis?',
-      'Èske mwen ka aplike pou plizyè pwogram anmenmtan?',
-      'Ki kote mwen ka soumèt aplikasyon mwen?',
-      'Èske genyen bous eksèn sou EdLight News?',
-    ],
+    en: ['How do I apply?', 'Are any programs free?', 'Can I apply for multiple programs?'],
+    fr: ['Comment postuler ?', 'Y a-t-il des programmes gratuits ?', 'Puis-je postuler à plusieurs ?'],
+    ht: ['Kijan mwen ka aplike?', 'Èske genyen pwogram gratis?', 'Èske mwen ka aplike pou plizyè?'],
+  },
+  getProgramsAndScholarships: {
+    en: ['When is the next deadline?', 'Are these programs free?', 'What courses are available?'],
+    fr: ['Quelle est la prochaine date limite ?', 'Ces programmes sont-ils gratuits ?', 'Quels cours sont disponibles ?'],
+    ht: ['Ki dat limit pwochen an?', 'Èske pwogram sa yo gratis?', 'Ki kou ki disponib?'],
   },
   getContactInfo: {
-    en: [
-      'What programs and opportunities does EdLight offer?',
-      'What courses can I take on EdLight?',
-      'What is the EdLight Summer Leadership Program?',
-      'What\'s new at EdLight?',
-    ],
-    fr: [
-      'Quels programmes et opportunités EdLight propose-t-il ?',
-      'Quels cours puis-je suivre sur EdLight ?',
-      'Qu\'est-ce que le programme ESLP ?',
-      'Quoi de neuf chez EdLight ?',
-    ],
-    ht: [
-      'Ki pwogram ak opòtinite EdLight ofri?',
-      'Ki kou mwen ka pran sou EdLight?',
-      'Kisa ESLP la ye?',
-      'Ki sa ki nouvo nan EdLight?',
-    ],
+    en: ['What programs are available?', 'What courses can I take?', 'What\'s new?'],
+    fr: ['Quels programmes sont disponibles ?', 'Quels cours puis-je suivre ?', 'Quoi de neuf ?'],
+    ht: ['Ki pwogram ki disponib?', 'Ki kou mwen ka pran?', 'Ki sa ki nouvo?'],
+  },
+  getEdLightInitiatives: {
+    en: ['What courses are available?', 'How can I apply to programs?', 'How can I get involved?'],
+    fr: ['Quels cours sont disponibles ?', 'Comment postuler aux programmes ?', 'Comment m\'impliquer ?'],
+    ht: ['Ki kou ki disponib?', 'Kijan mwen ka aplike pou pwogram?', 'Kijan mwen ka enplike?'],
   },
 };
 

@@ -101,7 +101,7 @@ export function buildTypingIndicatorText(toolName: string): string {
     getProgramsAndScholarships: '🎓 Looking up programs…',
     getLatestNews: '📰 Fetching latest news…',
     getProgramDeadlines: '📅 Checking deadlines…',
-    getEdLightInitiatives: '💡 Looking up initiatives…',
+    getEdLightInitiatives: '💡 Looking up information…',
     getContactInfo: '📞 Finding contact info…',
     getUserProfileSummary: '👤 Loading your profile…',
     getUserEnrollments: '📋 Fetching your enrollments…',

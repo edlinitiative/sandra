@@ -47,7 +47,7 @@ const envSchema = z.object({
 
   // GitHub
   GITHUB_TOKEN: z.string().default(''),
-  GITHUB_ORG: z.string().default('edlinitiative'),
+  GITHUB_ORG: z.string().default(''),
 
   // Vector Store
   VECTOR_STORE_PROVIDER: z.enum(['memory', 'postgres', 'pinecone', 'qdrant', 'weaviate']).default('memory'),
@@ -72,9 +72,10 @@ const envSchema = z.object({
   INSTAGRAM_VERIFY_TOKEN: z.string().optional(),
   INSTAGRAM_API_VERSION: z.string().default('v19.0'),
 
-  // Email — inbox address for the Sandra Gmail account
+  // Email — inbox address for the agent's Gmail account (outbound sender)
   // Outbound and inbound both go through the Google Workspace Gmail API (no SendGrid).
-  SANDRA_EMAIL_ADDRESS: z.string().email().optional(), // e.g. sandra@edlight.org
+  SANDRA_EMAIL_ADDRESS: z.string().email().optional(),
+  // Alias: AGENT_EMAIL_ADDRESS (both are accepted for backwards compat)
 
   // Voice (OpenAI Whisper STT + TTS — reuses OPENAI_API_KEY)
   OPENAI_WHISPER_MODEL: z.string().default('whisper-1'),

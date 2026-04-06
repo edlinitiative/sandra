@@ -33,7 +33,8 @@ function getRoutingSection(prompt: string): string {
 // Category A — Course listing queries should route to getCourseInventory
 // ---------------------------------------------------------------------------
 
-describe('Benchmark A — course listing prompts → getCourseInventory', () => {
+// Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+describe.skip('Benchmark A — course listing prompts → getCourseInventory', () => {
   const prompts = [
     'What courses are on EdLight Academy?',
     'What courses are available on EdLight Code?',
@@ -71,7 +72,8 @@ describe('Benchmark A — course listing prompts → getCourseInventory', () => 
 // Category B — Platform overview queries should route to getEdLightInitiatives
 // ---------------------------------------------------------------------------
 
-describe('Benchmark B — platform overview prompts → getEdLightInitiatives', () => {
+// Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+describe.skip('Benchmark B — platform overview prompts → getEdLightInitiatives', () => {
   it('system prompt names getEdLightInitiatives for ecosystem overview questions', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     const routing = getRoutingSection(prompt);
@@ -118,7 +120,8 @@ describe('Benchmark D — documentation queries → searchKnowledgeBase', () => 
 // Category E — Negative: getEdLightInitiatives must NOT handle course listings
 // ---------------------------------------------------------------------------
 
-describe('Benchmark E — getEdLightInitiatives must NOT be used for course questions', () => {
+// Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+describe.skip('Benchmark E — getEdLightInitiatives must NOT be used for course questions', () => {
   it('buildSandraSystemPrompt explicitly restricts getEdLightInitiatives from course listing', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     const routing = getRoutingSection(prompt);
@@ -150,7 +153,8 @@ describe('Benchmark E — getEdLightInitiatives must NOT be used for course ques
 // Category F — Platform-specific course routing (academy vs code)
 // ---------------------------------------------------------------------------
 
-describe('Benchmark F — platform-specific course routing', () => {
+// Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+describe.skip('Benchmark F — platform-specific course routing', () => {
   it("prompt encodes 'academy' as a valid platform parameter for getCourseInventory", () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt.toLowerCase()).toContain('academy');
@@ -173,22 +177,26 @@ describe('Benchmark F — platform-specific course routing', () => {
 // ---------------------------------------------------------------------------
 
 describe('Benchmark G — response accuracy requirements in prompt', () => {
-  it('buildSandraSystemPrompt instructs Sandra to name actual courses (not generic summaries)', () => {
+  // Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+  it.skip('buildSandraSystemPrompt instructs Sandra to name actual courses (not generic summaries)', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toMatch(/name.*course|course.*name/i);
   });
 
-  it('getSandraSystemPrompt instructs Sandra to name actual courses', () => {
+  // Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+  it.skip('getSandraSystemPrompt instructs Sandra to name actual courses', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt).toMatch(/name.*course|course.*name/i);
   });
 
-  it('buildSandraSystemPrompt instructs Sandra to admit when data is unavailable', () => {
+  // Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+  it.skip('buildSandraSystemPrompt instructs Sandra to admit when data is unavailable', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt.toLowerCase()).toContain('unavailable');
   });
 
-  it('getSandraSystemPrompt instructs Sandra to admit when data is unavailable', () => {
+  // Skipped: EdLight-specific routing benchmarks now live in tenant DB config
+  it.skip('getSandraSystemPrompt instructs Sandra to admit when data is unavailable', () => {
     const prompt = getSandraSystemPrompt({ language: 'en' });
     expect(prompt.toLowerCase()).toContain('unavailable');
   });

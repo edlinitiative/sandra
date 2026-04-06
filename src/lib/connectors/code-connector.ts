@@ -1,7 +1,9 @@
 import type { Connector, ConnectorHealth, ConnectorInfo } from './types';
 
-/** @tenant EdLight — This connector is specific to the EdLight tenant. Other tenants configure connectors via ConnectedProvider in the database. */
 /**
+ * @seed EdLight tenant — This connector is seed data for the EdLight tenant.
+ * Other tenants configure connectors via ConnectedProvider in the database.
+ *
  * EdLight Code Connector — represents the connection to the EdLight Code platform.
  * Currently reads data from indexed GitHub content. Will evolve to connect to a live API.
  */

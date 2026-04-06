@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { SessionProvider } from 'next-auth/react';
 import { Header } from '@/components/layout/header';
+import { APP_NAME } from '@/lib/config/constants';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -11,8 +12,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Sandra — EdLight AI Assistant',
-  description: 'Sandra is the AI assistant for the EdLight ecosystem. She supports Haitian Creole, French, and English.',
+  title: `${APP_NAME} — AI Assistant`,
+  description: `${APP_NAME} is an AI assistant platform with multi-channel support.`,
   icons: {
     icon: '/sandra-logo.svg',
   },
