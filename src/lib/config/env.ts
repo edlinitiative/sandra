@@ -22,6 +22,15 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
 
+  // Google Gemini
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
+  GEMINI_TTS_MODEL: z.string().default('gemini-2.5-flash-preview-tts'),
+
+  // AI Provider priority — comma-separated list of providers to try in order
+  // Available: openai, gemini, anthropic
+  AI_PROVIDER_PRIORITY: z.string().default('openai,gemini,anthropic'),
+
   // GitHub
   GITHUB_TOKEN: z.string().default(''),
   GITHUB_ORG: z.string().default('edlinitiative'),

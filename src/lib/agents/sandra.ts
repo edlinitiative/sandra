@@ -5,7 +5,7 @@ import { getTenantAgentConfig } from './tenant-config';
 import { resolveTenantForUser, resolveTenantForContext } from '@/lib/google/context';
 import { loadTenantTools, type TenantTool } from '@/lib/tools/tenant-tool-loader';
 import { generateFollowUps } from './follow-ups';
-import { getAIProvider } from '@/lib/ai';
+import { getAIProvider, classifyProviderError } from '@/lib/ai';
 import type { ChatMessage, MessageContentPart } from '@/lib/ai/types';
 import { toolRegistry, executeTool } from '@/lib/tools';
 import { getSessionStore } from '@/lib/memory/session-store';
@@ -385,7 +385,27 @@ export async function runSandraAgent(
 
     let errorMessage: string;
     if (err instanceof ProviderError) {
-      errorMessage = "I'm temporarily unable to process your request. Please try again.";
+      const category = classifyProviderError(err);
+      switch (category) {
+        case 'quota':
+          errorMessage = "I'm currently unavailable due to a service limit. The administrator has been notified. Please try again later.";
+          log.error('AI provider quota exceeded — all fallback providers exhausted', { error: err.message });
+          break;
+        case 'rate_limit':
+          errorMessage = "I'm receiving too many requests right now. Please wait a moment and try again.";
+          break;
+        case 'auth':
+          errorMessage = "I'm unable to connect to the AI service. Please contact the administrator to check the API configuration.";
+          break;
+        case 'server':
+          errorMessage = "The AI service is temporarily experiencing issues. Please try again in a few minutes.";
+          break;
+        case 'timeout':
+          errorMessage = "My response took too long. Please try again with a simpler question.";
+          break;
+        default:
+          errorMessage = "I'm temporarily unable to process your request. Please try again.";
+      }
     } else {
       errorMessage = 'Something went wrong. Please try again later.';
     }
@@ -720,9 +740,31 @@ export async function* runSandraAgentStream(
       error: err instanceof Error ? err.message : 'unknown',
     });
 
-    const errorMessage = err instanceof ProviderError
-      ? "I'm temporarily unable to process your request. Please try again."
-      : 'Something went wrong. Please try again later.';
+    let errorMessage: string;
+    if (err instanceof ProviderError) {
+      const category = classifyProviderError(err);
+      switch (category) {
+        case 'quota':
+          errorMessage = "I'm currently unavailable due to a service limit. The administrator has been notified. Please try again later.";
+          break;
+        case 'rate_limit':
+          errorMessage = "I'm receiving too many requests right now. Please wait a moment and try again.";
+          break;
+        case 'auth':
+          errorMessage = "I'm unable to connect to the AI service. Please contact the administrator.";
+          break;
+        case 'server':
+          errorMessage = "The AI service is temporarily experiencing issues. Please try again in a few minutes.";
+          break;
+        case 'timeout':
+          errorMessage = "My response took too long. Please try again with a simpler question.";
+          break;
+        default:
+          errorMessage = "I'm temporarily unable to process your request. Please try again.";
+      }
+    } else {
+      errorMessage = 'Something went wrong. Please try again later.';
+    }
 
     yield { type: 'error', data: errorMessage };
   }

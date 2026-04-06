@@ -1,17 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAIProvider, registerAIProvider } from '../provider';
+import { getAIProvider, registerAIProvider, resetAIProvider } from '../provider';
 import type { AIProvider } from '../types';
 
 describe('getAIProvider', () => {
+  beforeEach(() => {
+    resetAIProvider();
+  });
+
   it('returns an AIProvider instance for openai', () => {
     const provider = getAIProvider('openai');
     expect(provider).toBeDefined();
     expect(provider.name).toBe('openai');
   });
 
-  it('returns the same instance on repeated calls (singleton)', () => {
-    const p1 = getAIProvider('openai');
-    const p2 = getAIProvider('openai');
+  it('returns the same instance on repeated calls without name (singleton fallback chain)', () => {
+    const p1 = getAIProvider();
+    const p2 = getAIProvider();
     expect(p1).toBe(p2);
   });
 

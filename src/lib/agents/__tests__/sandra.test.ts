@@ -40,6 +40,7 @@ vi.mock('@/lib/ai', () => ({
     chatCompletion: mockChatCompletion,
     streamChatCompletion: mockStreamChatCompletion,
   }),
+  classifyProviderError: () => 'unknown',
 }));
 
 vi.mock('@/lib/memory/session-store', () => ({

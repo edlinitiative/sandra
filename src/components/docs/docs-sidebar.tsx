@@ -20,6 +20,19 @@ const sections = [
       { href: '/docs/multi-tenant', label: 'Multi-Tenant' },
     ],
   },
+  {
+    label: 'Admin Guides',
+    items: [
+      { href: '/docs/admin', label: 'Overview' },
+      { href: '/docs/admin/google-workspace', label: 'Google Workspace' },
+      { href: '/docs/admin/zoom', label: 'Zoom' },
+      { href: '/docs/admin/whatsapp', label: 'WhatsApp' },
+      { href: '/docs/admin/instagram', label: 'Instagram' },
+      { href: '/docs/admin/github', label: 'GitHub' },
+      { href: '/docs/admin/external-apis', label: 'External APIs' },
+      { href: '/docs/admin/agent-settings', label: 'Agent Settings' },
+    ],
+  },
 ];
 
 export function DocsSidebar() {

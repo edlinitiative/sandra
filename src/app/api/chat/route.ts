@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { runSandraAgent } from '@/lib/agents';
+import { classifyProviderError } from '@/lib/ai';
 import { resolveLanguage } from '@/lib/i18n';
 import { ensureSessionContinuity, getSessionLanguage } from '@/lib/memory/session-continuity';
 import { getCanonicalUserLanguage, resolveCanonicalUser } from '@/lib/users/canonical-user';
 import { authenticateRequest, getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
-import { errorResponse, SandraError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
+import { errorResponse, SandraError, ProviderError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env } from '@/lib/config';
 
 const DEMO_RESPONSES: Record<string, Record<string, string>> = {
@@ -150,13 +151,12 @@ export async function POST(request: Request) {
       ),
     );
   } catch (error) {
-    // If the error is a provider auth error, fall back to demo mode gracefully
-    const isAuthError =
-      error instanceof SandraError &&
-      error.code === 'PROVIDER_ERROR' &&
-      error.message.includes('401');
+    // If the error is a provider auth or quota error, fall back to demo mode gracefully
+    const isGracefulFallback =
+      error instanceof ProviderError &&
+      ['auth', 'quota'].includes(classifyProviderError(error));
 
-    if (isAuthError) {
+    if (isGracefulFallback) {
       return NextResponse.json(
         successResponse(
           {

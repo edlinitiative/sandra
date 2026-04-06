@@ -24,10 +24,11 @@ const MIME_FOR_FORMAT: Record<TtsFormat, string> = {
   opus: 'audio/ogg; codecs=opus',
   aac: 'audio/aac',
   flac: 'audio/flac',
+  wav: 'audio/wav',
 };
 
 const VALID_VOICES: TtsVoice[] = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
-const VALID_FORMATS: TtsFormat[] = ['mp3', 'opus', 'aac', 'flac'];
+const VALID_FORMATS: TtsFormat[] = ['mp3', 'opus', 'aac', 'flac', 'wav'];
 
 export async function POST(request: Request) {
   const requestId = generateRequestId();

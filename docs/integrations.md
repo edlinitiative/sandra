@@ -1,6 +1,6 @@
 # Sandra — Integrations
 
-> Last updated: April 5, 2026 — V5 production release.
+> Last updated: April 6, 2026 — Multi-provider fallback (AI + Voice).
 > All integrations listed here are live and verified in production unless otherwise noted.
 
 ---
@@ -89,14 +89,32 @@ Fully live. Messages flow through the web channel adapter which normalizes form 
 - Outbound: `sendGmail`, `draftGmail`, `replyGmail` tools
 - Inbound messages are processed as agent conversations and replied to via Gmail API
 
-### Voice ✅
+### Voice ✅ (Multi-Provider Fallback)
 - Live via WebRTC + OpenAI Realtime API
 - `POST /api/voice/realtime-session` — mints ephemeral key with Sandra's full system prompt injected
-- `POST /api/voice/transcribe` — Whisper-based transcription
-- `POST /api/voice/tts` — OpenAI TTS synthesis
+- `POST /api/voice/transcribe` — Speech-to-text (STT)
+- `POST /api/voice/speak` — Text-to-speech (TTS)
 - `POST /api/voice/process` — full voice round-trip (transcribe → agent → TTS)
 - Haitian Creole, French, and English supported
 - Voice Bridge (`voice-bridge/`) — standalone Node.js/WebSocket service at `https://voice.edlight.org`; relays WebRTC to OpenAI Realtime
+
+**Voice Provider Abstraction** (`src/lib/channels/voice-providers/`):
+
+Voice STT and TTS now use the same fallback pattern as the AI chat providers.
+
+| Provider | STT | TTS | Voices |
+|----------|-----|-----|--------|
+| **OpenAI** | Whisper API | `tts-1` API | alloy, echo, fable, onyx, nova, shimmer |
+| **Google Gemini** | Multimodal `generateContent` | `gemini-2.5-flash-preview-tts` REST API | Kore, Charon, Aoede, Orus, Leda, Zephyr (mapped from OpenAI names) |
+
+The `FallbackVoiceProvider` tries OpenAI first, then Gemini on retriable errors. Voice mapping:
+`alloy→Kore`, `echo→Charon`, `fable→Aoede`, `onyx→Orus`, `nova→Leda`, `shimmer→Zephyr`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GEMINI_TTS_MODEL` | `gemini-2.5-flash-preview-tts` | Gemini TTS model |
+
+Gemini TTS outputs 24kHz 16-bit PCM, auto-wrapped into WAV format.
 
 ---
 
@@ -144,15 +162,50 @@ Brave Search API. Required env var: `BRAVE_SEARCH_API_KEY`.
 
 ---
 
-## AI Provider Integration
+## AI Provider Integration (Multi-Provider Fallback) ✅
 
-### Current: OpenAI ✅
-- Chat completions via `gpt-4o` (configurable via `OPENAI_MODEL`)
-- Embeddings via `text-embedding-3-small` (configurable via `OPENAI_EMBEDDING_MODEL`)
-- Realtime API for voice sessions
-- Tool/function calling with full 66-tool support
+Sandra uses a **FallbackProvider** that wraps multiple AI providers and automatically retries with the next provider when a retriable error is detected (quota exhaustion, rate limiting, server errors).
 
-All AI calls go through the `AIProvider` interface in `src/lib/ai/`. The interface is provider-agnostic; swapping to Anthropic or Google Gemini requires only a new implementation of that interface.
+### Provider Chain
+
+Priority order is set via `AI_PROVIDER_PRIORITY` env var (default: `openai,gemini,anthropic`). Only providers with a valid API key are included.
+
+| Provider | Module | Model | Capabilities |
+|----------|--------|-------|--------------|
+| **OpenAI** ✅ | `src/lib/ai/openai.ts` | `gpt-4o` | Chat, streaming, tools, embeddings (`text-embedding-3-small`) |
+| **Google Gemini** ✅ | `src/lib/ai/gemini.ts` | `gemini-2.0-flash` | Chat, streaming, tools |
+| **Anthropic** ✅ | `src/lib/ai/anthropic.ts` | `claude-3-5-sonnet-20241022` | Chat, streaming, tools |
+
+### Error Classification
+
+`classifyProviderError()` in `src/lib/ai/fallback.ts` inspects error messages and categorizes them:
+- `quota` — billing / usage limit reached
+- `rate_limit` — 429 too many requests
+- `server` — 500-504 backend errors
+- `timeout` — request timed out
+- `auth` — 401/403 authentication failure
+- `invalid` — malformed request (not retried)
+- `unknown` — unrecognized errors
+
+Retriable categories (`quota`, `rate_limit`, `server`, `timeout`) trigger automatic failover to the next provider.
+
+### Embedding Routing
+
+Embeddings are always routed to the first embedding-capable provider in the chain (currently OpenAI's `text-embedding-3-small`), regardless of which chat provider is active.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | — | OpenAI API key |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI chat model |
+| `GEMINI_API_KEY` | — | Google Gemini API key |
+| `GEMINI_MODEL` | `gemini-2.0-flash` | Gemini chat/STT model |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key |
+| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20241022` | Anthropic chat model |
+| `AI_PROVIDER_PRIORITY` | `openai,gemini,anthropic` | Comma-separated fallback order |
+
+All AI calls go through the `AIProvider` interface in `src/lib/ai/`. The `FallbackProvider` is built automatically at startup by `getAIProvider()` in `src/lib/ai/provider.ts`.
 
 ---
 
@@ -178,9 +231,6 @@ Tenant management is available via the admin dashboard and `manageTenantUsers` t
 | Reminder processing | `GET /api/cron/process-reminders` | `* * * * *` | Dispatches due reminders to users |
 
 Configured in `vercel.json`.
-
-- Implement `AIProvider` interface with Gemini API
-- Swap via configuration
 
 ## Vector Store Integration
 

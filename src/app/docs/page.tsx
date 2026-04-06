@@ -36,6 +36,13 @@ const cards = [
     description: 'Isolate data, tools, and credentials per customer. Full white-label support.',
     label: 'Set up tenants',
   },
+  {
+    href: '/docs/admin',
+    icon: 'admin_panel_settings',
+    title: 'Admin Guides',
+    description: 'Connect Google Workspace, Zoom, WhatsApp, Instagram, GitHub, and more from the Admin Portal.',
+    label: 'Setup integrations',
+  },
 ];
 
 export default function DocsPage() {

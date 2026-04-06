@@ -27,10 +27,12 @@ Sandra is built as a Next.js application with a modular library layer that conta
 │   │                                      │   │
 │   │  ┌─────────┐  ┌──────────────────┐   │   │
 │   │  │   AI    │  │    Channels      │   │   │
-│   │  │Provider │  │  - Web           │   │   │
-│   │  │- OpenAI │  │  - WhatsApp      │   │   │
-│   │  │- (...)  │  │  - Instagram     │   │   │
-│   │  └─────────┘  │  - Email/Voice   │   │   │
+│   │  │Fallback │  │  - Web           │   │   │
+│   │  │Provider │  │  - WhatsApp      │   │   │
+│   │  │- OpenAI │  │  - Instagram     │   │   │
+│   │  │- Gemini │  │  - Email         │   │   │
+│   │  │-Anthropc│  │  - Voice (STT/   │   │   │
+│   │  └─────────┘  │    TTS fallback) │   │   │
 │   │               └──────────────────┘   │   │
 │   │                                      │   │
 │   │  ┌─────────┐  ┌──────────────────┐   │   │
@@ -57,8 +59,22 @@ Sandra is built as a Next.js application with a modular library layer that conta
 
 ## Key Design Decisions
 
-### 1. Provider Abstraction
-All AI functionality goes through the `AIProvider` interface. The OpenAI implementation is the first, but Anthropic and Google can be added by implementing the same interface. No code outside `src/lib/ai/` knows which provider is being used.
+### 1. Provider Abstraction (Multi-Provider Fallback)
+All AI functionality goes through the `AIProvider` interface. Three providers are implemented:
+
+| Provider | Module | Models | Status |
+|----------|--------|--------|--------|
+| **OpenAI** | `src/lib/ai/openai.ts` | `gpt-4o` (chat), `text-embedding-3-small` (embeddings) | Primary |
+| **Google Gemini** | `src/lib/ai/gemini.ts` | `gemini-2.0-flash` (chat) | Fallback |
+| **Anthropic** | `src/lib/ai/anthropic.ts` | `claude-3-5-sonnet-20241022` (chat) | Fallback |
+
+Providers are wrapped in a **`FallbackProvider`** (`src/lib/ai/fallback.ts`) that automatically retries with the next provider when it detects a retriable error (quota exhaustion, rate limiting, server errors, timeouts). The priority order is configured via `AI_PROVIDER_PRIORITY` env var (default: `openai,gemini,anthropic`).
+
+Error classification (`classifyProviderError()`) categorizes failures as: `quota`, `rate_limit`, `server`, `timeout`, `auth`, `invalid`, or `unknown` — enabling smart retry decisions.
+
+Embeddings are always routed to the first embedding-capable provider (currently OpenAI) regardless of which chat provider is active.
+
+No code outside `src/lib/ai/` knows which provider is being used.
 
 ### 2. Agent Loop Pattern
 Sandra uses a **ReAct-style agent loop**:

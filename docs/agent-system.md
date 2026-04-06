@@ -120,6 +120,12 @@ Agent behavior is controlled by `AgentConfig`:
 ## Error Handling
 
 - Tool failures are caught and returned as error results (agent sees them and can retry)
-- Provider failures throw `ProviderError` (surfaced to the user)
+- Provider failures throw `ProviderError` — the agent catches these and uses `classifyProviderError()` to produce user-friendly messages:
+  - **quota** → "AI service quota exhausted. Please try again later or contact your admin."
+  - **rate_limit** → "Too many requests — please wait a moment and try again."
+  - **auth** → "AI service authentication error. Please contact your admin."
+  - **server** / **timeout** → "AI service is temporarily unavailable. Please try again shortly."
+  - **unknown** → Generic fallback message
+- The `FallbackProvider` automatically retries with the next configured provider before surfacing errors
 - Max iterations produce a fallback response
 - All errors are logged with structured context

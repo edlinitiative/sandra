@@ -11,4 +11,8 @@ export type {
   ToolCall,
 } from './types';
 export { OpenAIProvider } from './openai';
-export { getAIProvider, registerAIProvider } from './provider';
+export { AnthropicProvider } from './anthropic';
+export { GeminiProvider } from './gemini';
+export { FallbackProvider, classifyProviderError } from './fallback';
+export type { ProviderErrorCategory } from './fallback';
+export { getAIProvider, registerAIProvider, resetAIProvider } from './provider';
