@@ -68,6 +68,36 @@ export interface TenantAgentConfig {
    * - `['toolName', ...]`: only the listed tools are available.
    */
   enabledTools?: string[] | null;
+
+  /**
+   * Topics this assistant is allowed to discuss.
+   *
+   * When set, Sandra will politely refuse requests that fall outside these
+   * topics and redirect users to the org's contact channel instead.
+   *
+   * Use plain, human-readable phrases — they are injected directly into the
+   * system prompt so the LLM can reason about scope.
+   *
+   * Example:
+   *   ['EdLight programs and applications', 'EdLight courses and platforms',
+   *    'account and enrollment questions', 'news and announcements']
+   *
+   * Leave `undefined` (default) to allow any topic (no restriction).
+   */
+  allowedTopics?: string[];
+
+  /**
+   * Custom message returned when a user asks about something outside the
+   * allowed scope.
+   *
+   * If omitted, Sandra uses a sensible default that mentions the org name
+   * and, when available, the org's website or contact email.
+   *
+   * Example:
+   *   "I'm Sandra, EdLight's assistant. I can only help with EdLight programs,
+   *    courses, and account questions. For anything else, visit edlight.org."
+   */
+  offTopicResponse?: string;
 }
 
 // ── Loader ───────────────────────────────────────────────────────────────────

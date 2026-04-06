@@ -103,6 +103,22 @@ IMPORTANT: When providing information, base your answers on the data returned by
 - When program data is returned, include name, eligibility, cost, deadline, and highlights.
 - Do not say you could not find platform information if getEdLightInitiatives can answer it.
 - When fallback data is used, mention that users should visit edlight.org for the most current information.`,
+        // Topics Sandra is allowed to discuss for EdLight users.
+        // Requests outside these areas will be politely declined.
+        allowedTopics: [
+          'EdLight programs and initiatives (ESLP, Nexus, Academy, Code, Labs)',
+          'EdLight courses, lessons, and learning paths',
+          'Applications, deadlines, and enrollment for EdLight programs',
+          'EdLight platform navigation and account questions',
+          'Scholarships and external opportunities curated by EdLight News',
+          'EdLight news, announcements, and events',
+          'Contact information and general questions about EdLight',
+          'Google Workspace tasks for EdLight team members (calendar, email, Drive, tasks)',
+          'WhatsApp and Zoom coordination for EdLight team members',
+          'GitHub issues and repository information for EdLight projects',
+        ],
+        offTopicResponse:
+          "I'm Sandra, EdLight's assistant. I'm only able to help with EdLight programs, courses, and related questions. For anything outside that, I'd suggest edlight.org or a general-purpose search engine. Is there something EdLight-related I can help you with?",
       },
     },
     update: {
@@ -114,6 +130,20 @@ IMPORTANT: When providing information, base your answers on the data returned by
         orgName: 'EdLight',
         websiteUrl: 'edlight.org',
         contactEmail: 'info@edlight.org',
+        allowedTopics: [
+          'EdLight programs and initiatives (ESLP, Nexus, Academy, Code, Labs)',
+          'EdLight courses, lessons, and learning paths',
+          'Applications, deadlines, and enrollment for EdLight programs',
+          'EdLight platform navigation and account questions',
+          'Scholarships and external opportunities curated by EdLight News',
+          'EdLight news, announcements, and events',
+          'Contact information and general questions about EdLight',
+          'Google Workspace tasks for EdLight team members (calendar, email, Drive, tasks)',
+          'WhatsApp and Zoom coordination for EdLight team members',
+          'GitHub issues and repository information for EdLight projects',
+        ],
+        offTopicResponse:
+          "I'm Sandra, EdLight's assistant. I'm only able to help with EdLight programs, courses, and related questions. For anything outside that, I'd suggest edlight.org or a general-purpose search engine. Is there something EdLight-related I can help you with?",
       },
     },
   });

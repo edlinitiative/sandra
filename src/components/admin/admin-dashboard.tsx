@@ -602,11 +602,10 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+    <div className="mx-auto max-w-5xl space-y-8 py-2">
       <div>
         <h1 className="text-2xl font-bold text-white">Sandra Admin</h1>
-        <p className="mt-1 text-slate-500">Manage repositories, indexing, and system status.</p>
+        <p className="mt-1 text-sm text-slate-400">Manage repositories, indexing, and system status.</p>
       </div>
 
       <Card>
@@ -1306,7 +1305,6 @@ export function AdminDashboard() {
           )}
         </div>
       )}
-    </div>
     </div>
   );
 }

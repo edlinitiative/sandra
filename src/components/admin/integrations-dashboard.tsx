@@ -420,8 +420,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-y-auto">
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
+    <div className="mx-auto max-w-5xl space-y-8 py-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -431,18 +430,13 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
             Just paste an OpenAPI spec and Sandra auto-generates the tools.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/admin'}>
-            ← Admin
-          </Button>
-          <Button
-            size="sm"
-            disabled={!tenantId}
-            onClick={() => { resetForm(); setShowForm(true); }}
-          >
-            + Connect API
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          disabled={!tenantId}
+          onClick={() => { resetForm(); setShowForm(true); }}
+        >
+          + Connect API
+        </Button>
       </div>
 
       {!tenantId && (
@@ -932,7 +926,6 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
           ))}
         </div>
       )}
-    </div>
     </div>
   );
 }

@@ -18,9 +18,9 @@ export default async function IntegrationsPage() {
   const tenantId = await resolveTenantForUser(session.user.id);
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
       <IntegrationsDashboard tenantId={tenantId ?? undefined} />
-      <div className="mx-auto max-w-6xl px-4">
+      <div className="mx-auto max-w-5xl">
         <div className="border-t border-white/[0.06] pt-10">
           <ApiKeysPanel />
         </div>

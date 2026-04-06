@@ -153,6 +153,13 @@
   animation: materialize 0.25s ease-out both;
 }
 
+/** Ambient glow for the hero AI orb */
+.ai-orb-glow {
+  box-shadow:
+    0 0 40px 8px rgba(56, 157, 246, 0.25),
+    0 0 80px 20px rgba(56, 157, 246, 0.10);
+}
+
 /** Neon terminal-style streaming cursor */
 .scan-cursor {
   display: inline-block;
