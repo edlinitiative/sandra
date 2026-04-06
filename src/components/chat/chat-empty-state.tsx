@@ -29,9 +29,10 @@ const SUGGESTED_QUESTIONS: Record<string, string[]> = {
 interface ChatEmptyStateProps {
   onSend?: (message: string) => void;
   language?: string;
+  isLoading?: boolean;
 }
 
-export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps) {
+export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: ChatEmptyStateProps) {
   const [bucket, setBucket] = useState(0);
   const allQuestions = SUGGESTED_QUESTIONS[language] ?? SUGGESTED_QUESTIONS['en']!;
 
@@ -55,7 +56,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
 
       {/* Oracle orb */}
       <div className="relative mb-8 animate-orb-float">
-        <OracleOrb size={120} />
+        <OracleOrb size={120} active={isLoading} />
       </div>
 
       {/* Greeting */}

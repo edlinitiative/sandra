@@ -224,7 +224,7 @@ export function ChatContainer() {
         {/* Ambient oracle particles */}
         <AmbientParticles className="pointer-events-none fixed inset-0 z-0 opacity-40" />
         {messages.length === 0 && !isLoading ? (
-          <ChatEmptyState onSend={handleSend} language={language} />
+          <ChatEmptyState onSend={handleSend} language={language} isLoading={isLoading} />
         ) : (
           <div className="mx-auto max-w-2xl space-y-1 px-4 py-4">
             {messages.map((msg) => (

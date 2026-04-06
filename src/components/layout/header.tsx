@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { OracleOrb } from '@/components/ui/oracle-orb';
 
-// TODO: read from API or env when tenant branding is implemented
 const SITE_NAME = 'Sandra';
 
 const navLinks = [
@@ -16,11 +16,19 @@ export function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="shrink-0 border-b border-outline-variant/15 bg-surface/70 px-8 py-4 backdrop-blur-xl">
+    <header className="shrink-0 border-b border-outline-variant/10 bg-surface/60 px-8 py-3 backdrop-blur-2xl">
       <div className="flex items-center justify-between">
-        <Link href="/" className="text-xl font-black tracking-tighter text-primary">
-          {SITE_NAME}
+        {/* Logo: mini orb + site name */}
+        <Link href="/" className="group flex items-center gap-2.5">
+          <div className="relative flex h-7 w-7 items-center justify-center">
+            <OracleOrb size={28} />
+          </div>
+          <span className="text-lg font-black tracking-tighter text-primary transition-colors group-hover:text-white">
+            {SITE_NAME}
+          </span>
         </Link>
+
+        {/* Navigation */}
         <div className="flex items-center gap-8">
           {navLinks.map(({ href, label }) => {
             const active =
@@ -42,7 +50,7 @@ export function Header() {
               </Link>
             );
           })}
-          <span className="material-symbols-outlined cursor-pointer text-2xl text-primary transition-colors hover:text-white">
+          <span className="material-symbols-outlined cursor-pointer text-2xl text-on-surface-variant transition-colors hover:text-primary">
             account_circle
           </span>
         </div>

@@ -1,5 +1,7 @@
 'use client';
 
+import { OracleOrb } from '@/components/ui/oracle-orb';
+
 /** Map internal tool names to user-friendly labels */
 const TOOL_LABELS: Record<string, string> = {
   searchKnowledgeBase:       'Searching knowledge base',
@@ -24,11 +26,8 @@ export function StreamingMessage({ content, activeToolCall }: StreamingMessagePr
     <div className="py-2.5">
       {/* Sandra label row */}
       <div className="mb-1.5 flex items-center gap-2">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container">
-          <svg className="h-3 w-3" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-            <circle cx="16" cy="16" r="6" fill="white" fillOpacity="0.9" />
-            <circle cx="16" cy="16" r="11" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
-          </svg>
+        <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+          <OracleOrb size={24} active />
         </div>
         <span className="text-xs font-semibold text-on-surface-variant">Sandra</span>
       </div>
@@ -37,10 +36,7 @@ export function StreamingMessage({ content, activeToolCall }: StreamingMessagePr
         {/* Tool call indicator */}
         {toolLabel && (
           <div className="mb-2 flex items-center gap-2 text-xs text-on-surface-variant">
-            <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-primary/30 border-t-primary" />
             <span>{toolLabel}…</span>
           </div>
         )}
