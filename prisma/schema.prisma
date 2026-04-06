@@ -52,6 +52,7 @@ model User {
   externalId     String?   @unique // ID from external auth provider
   name           String?
   email          String?   @unique
+  phone          String?   @unique
   role           UserRole  @default(guest)
   language       String    @default("en") // en | fr | ht
   channel        String    @default("web") // web | whatsapp | instagram | email | voice
@@ -68,7 +69,23 @@ model User {
   tenantMembers  TenantMember[]
 
   @@index([email])
+  @@index([phone])
   @@index([externalId])
+}
+
+// ── OTP Codes (email & phone verification for auth) ──────────────────────────
+
+model OtpCode {
+  id         String   @id @default(cuid())
+  identifier String   // email address or phone number (E.164)
+  code       String   // 6-digit code
+  type       String   // "email" | "phone"
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, code])
+  @@index([identifier])
 }
 
 // ── Sessions ─────────────────────────────────────────────────────────────────

@@ -110,6 +110,23 @@ const envSchema = z.object({
 
   // Multi-tenant — fallback tenant for single-tenant / dev setups
   DEFAULT_TENANT_ID: z.string().optional(),          // Replaces hardcoded EdLight tenant ID
+
+  // ── Auth providers (beyond Google which uses AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET) ──
+  // Facebook OAuth
+  AUTH_FACEBOOK_ID: z.string().optional(),
+  AUTH_FACEBOOK_SECRET: z.string().optional(),
+
+  // Email OTP — SMTP transport (nodemailer)
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),          // "Sandra <noreply@example.com>"
+
+  // Phone/SMS OTP — Twilio REST API
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(), // E.164, e.g. "+15551234567"
 });
 
 export type Env = z.infer<typeof envSchema>;
