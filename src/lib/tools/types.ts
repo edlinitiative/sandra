@@ -8,6 +8,8 @@ import { z } from 'zod';
 export interface ToolContext {
   sessionId: string;
   userId?: string;
+  /** Tenant ID for multi-tenant credential resolution */
+  tenantId?: string;
   scopes: string[];
   /**
    * Workspace email for channel users (WhatsApp/Instagram).

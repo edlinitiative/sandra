@@ -13,6 +13,10 @@ import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
 import { env } from '@/lib/config';
+import { db } from '@/lib/db';
+import { createLogger } from '@/lib/utils';
+
+const log = createLogger('tools:web-search');
 
 const inputSchema = z.object({
   query: z
@@ -58,9 +62,9 @@ const BRAVE_SUPPORTED_COUNTRIES = new Set([
 
 async function braveSearch(
   query: string,
-  options: { count?: number; country?: string; language?: string },
+  options: { count?: number; country?: string; language?: string; apiKey?: string },
 ): Promise<BraveSearchResult[]> {
-  const apiKey = env.BRAVE_SEARCH_API_KEY;
+  const apiKey = options.apiKey ?? env.BRAVE_SEARCH_API_KEY;
   if (!apiKey) {
     throw new Error('Web search is not configured (BRAVE_SEARCH_API_KEY missing).');
   }
@@ -135,11 +139,37 @@ const webSearchTool: SandraTool = {
   async handler(input: unknown, _context: ToolContext): Promise<ToolResult> {
     const params = inputSchema.parse(input);
 
+    // Resolve tenant-specific Brave Search API key if available
+    let tenantApiKey: string | undefined;
+    if (_context.tenantId) {
+      try {
+        const row = await db.$queryRaw<{ credentials: unknown }[]>`
+          SELECT credentials FROM "ConnectedProvider"
+          WHERE "tenantId" = ${_context.tenantId}
+            AND provider::text = 'brave_search'
+            AND "isActive" = true
+          LIMIT 1
+        `;
+        if (row.length > 0 && row[0]) {
+          const creds = row[0].credentials as Record<string, unknown>;
+          if (typeof creds?.apiKey === 'string') {
+            tenantApiKey = creds.apiKey;
+          }
+        }
+      } catch (error) {
+        log.warn('Failed to resolve tenant Brave Search key, falling back to env', {
+          tenantId: _context.tenantId,
+          error: error instanceof Error ? error.message : 'unknown',
+        });
+      }
+    }
+
     try {
       const results = await braveSearch(params.query, {
         count: params.maxResults,
         country: params.country ?? 'ALL',
         language: params.language === 'ht' ? 'fr' : params.language, // Brave doesn't support HT; use FR as closest
+        apiKey: tenantApiKey,
       });
 
       if (results.length === 0) {

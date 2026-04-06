@@ -1,3 +1,5 @@
+import { env } from './env';
+
 /**
  * Application-wide constants.
  */
@@ -36,8 +38,13 @@ export const DEFAULT_CHUNK_OVERLAP = 200;
 /** Maximum results from vector search */
 export const DEFAULT_TOP_K = 5;
 
-/** Embedding dimension for text-embedding-3-small */
-export const EMBEDDING_DIMENSION = 1536;
+/** 
+ * Embedding vector dimension. 
+ * Controlled by EMBEDDING_DIMENSION env var (default: 1536 for OpenAI text-embedding-3-small).
+ * Gemini text-embedding-004 uses 768. Cohere uses 1024.
+ * ⚠️  Changing this requires re-indexing all embeddings and may need a schema migration.
+ */
+export const EMBEDDING_DIMENSION = env.EMBEDDING_DIMENSION;
 
 /** EdLight-specific platform list. Other tenants define platforms via TenantAgentConfig. */
 export const EDLIGHT_PLATFORMS = [

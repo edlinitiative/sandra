@@ -2,9 +2,10 @@ import type { Connector, ConnectorHealth, ConnectorInfo } from './types';
 import { getGitHubClient } from '@/lib/github';
 import { env } from '@/lib/config';
 
-/** @tenant EdLight — This connector is specific to the EdLight tenant. Other tenants configure connectors via ConnectedProvider in the database. */
 /**
  * GitHub Connector — provides access to organization repositories via GitHub API.
+ * Tenant-specific tokens are resolved from ConnectedProvider in the database;
+ * falls back to env.GITHUB_TOKEN when no tenant override exists.
  */
 export class GitHubConnector implements Connector {
   readonly id = 'github';

@@ -1,11 +1,11 @@
 /**
- * Email Verification — secure self-linking for WhatsApp → Workspace identity.
+ * Email Verification — secure self-linking for any channel → Workspace identity.
  *
  * Flow:
- * 1. User says "my email is user@example.com" on WhatsApp
+ * 1. User says "my email is user@example.com" on any messaging channel
  * 2. Sandra verifies the email exists in the Workspace Directory
  * 3. Sandra generates a 6-digit code and sends it to that email via Gmail API
- * 4. Sandra replies on WhatsApp: "I sent a code to r***@edlight.org. Reply with the code."
+ * 4. Sandra replies on the channel: "I sent a code to r***@example.com. Reply with the code."
  * 5. User replies "123456"
  * 6. Sandra verifies the code and links their identity
  *
@@ -20,9 +20,22 @@ import { resolveGoogleContext } from '@/lib/google/context';
 import { getUserByEmail } from '@/lib/google/directory';
 import { sendEmail } from '@/lib/google/gmail';
 import { linkWorkspaceIdentity } from './identity-linker';
+import type { ChannelType } from './types';
 import type { DirectoryUser } from '@/lib/google/types';
 
 const log = createLogger('channels:email-verification');
+
+/** Map channel type to human-readable name for email body text. */
+function channelDisplayName(channel: string): string {
+  const names: Record<string, string> = {
+    whatsapp: 'WhatsApp',
+    instagram: 'Instagram',
+    web: 'web chat',
+    email: 'email',
+    voice: 'voice call',
+  };
+  return names[channel] ?? channel;
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -75,7 +88,7 @@ export interface VerificationStartResult {
 export async function startEmailVerification(
   userId: string,
   claimedEmail: string,
-  channel: 'whatsapp' | 'instagram' = 'whatsapp',
+  channel: ChannelType = 'whatsapp',
 ): Promise<VerificationStartResult> {
   const email = claimedEmail.toLowerCase().trim();
   log.info('Starting email verification', { userId, email });
@@ -113,7 +126,7 @@ export async function startEmailVerification(
         '',
         `Your verification code is: ${code}`,
         '',
-        `Enter this code in your ${channel === 'instagram' ? 'Instagram' : 'WhatsApp'} chat with Sandra to link your account.`,
+        `Enter this code in your ${channelDisplayName(channel)} conversation with ${APP_NAME} to link your account.`,
         '',
         'This code expires in 10 minutes.',
         '',

@@ -474,6 +474,10 @@ enum ProviderType {
   ai_openai
   ai_gemini
   ai_anthropic
+  github
+  whatsapp
+  instagram
+  brave_search
 }
 
 model Tenant {

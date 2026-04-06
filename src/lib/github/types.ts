@@ -2,7 +2,8 @@
  * GitHub integration type definitions.
  */
 
-/** Configuration for a registered EdLight repository */
+/** Configuration for a registered repository */
+
 export interface RepoConfig {
   owner: string;
   name: string;

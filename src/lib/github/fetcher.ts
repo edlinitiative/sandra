@@ -22,8 +22,8 @@ const MAX_FILE_SIZE = 100_000; // 100KB max per file
  * Fetch all indexable files from a repository.
  * Recursively traverses the repo tree and returns text content.
  */
-export async function fetchRepoContent(repo: RepoConfig): Promise<GitHubFile[]> {
-  const client = getGitHubClient();
+export async function fetchRepoContent(repo: RepoConfig, token?: string): Promise<GitHubFile[]> {
+  const client = getGitHubClient(token);
   const files: GitHubFile[] = [];
   const errors: string[] = [];
 
@@ -64,8 +64,8 @@ export async function fetchRepoContent(repo: RepoConfig): Promise<GitHubFile[]> 
  * Returns FetchedDocument[] (simplified, with URL).
  * Fetches README + all .md files from docsPath.
  */
-export async function fetchRepoDocuments(repo: RepoConfig): Promise<FetchedDocument[]> {
-  const client = getGitHubClient();
+export async function fetchRepoDocuments(repo: RepoConfig, token?: string): Promise<FetchedDocument[]> {
+  const client = getGitHubClient(token);
   const documents: FetchedDocument[] = [];
   const seen = new Set<string>();
 

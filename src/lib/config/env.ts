@@ -40,6 +40,11 @@ const envSchema = z.object({
   // Available: openai, gemini (anthropic does not support embeddings)
   EMBEDDING_PROVIDER: z.string().optional(),
 
+  // Embedding dimension — must match the vector column in the database.
+  // Default: 1536 (OpenAI text-embedding-3-small). Gemini text-embedding-004 uses 768.
+  // ⚠️  Changing this requires re-indexing all documents and an ALTER TABLE migration.
+  EMBEDDING_DIMENSION: z.coerce.number().int().positive().default(1536),
+
   // GitHub
   GITHUB_TOKEN: z.string().default(''),
   GITHUB_ORG: z.string().default('edlinitiative'),

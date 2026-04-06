@@ -62,6 +62,14 @@ interface InstagramOutboundBody {
   messaging_type: 'RESPONSE';
 }
 
+// ─── Tenant credentials ─────────────────────────────────────────────────────
+
+export interface InstagramCredentials {
+  pageAccessToken: string;
+  verifyToken: string;
+  apiVersion?: string;
+}
+
 // ─── Adapter ─────────────────────────────────────────────────────────────────
 
 /**
@@ -70,16 +78,25 @@ interface InstagramOutboundBody {
  */
 export class InstagramChannelAdapter implements ChannelAdapter {
   readonly channelType = 'instagram' as const;
+  private credentials?: InstagramCredentials;
+
+  constructor(credentials?: InstagramCredentials) {
+    this.credentials = credentials;
+  }
 
   private get apiBase(): string {
-    return `https://graph.instagram.com/${env.INSTAGRAM_API_VERSION}`;
+    const version = this.credentials?.apiVersion ?? env.INSTAGRAM_API_VERSION;
+    return `https://graph.instagram.com/${version}`;
   }
 
   private get pageAccessToken(): string {
-    return env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? '';
+    return this.credentials?.pageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? '';
   }
 
   isConfigured(): boolean {
+    if (this.credentials) {
+      return Boolean(this.credentials.pageAccessToken && this.credentials.verifyToken);
+    }
     return Boolean(
       env.INSTAGRAM_PAGE_ACCESS_TOKEN &&
       env.INSTAGRAM_VERIFY_TOKEN,
@@ -90,7 +107,7 @@ export class InstagramChannelAdapter implements ChannelAdapter {
    * Verify a Meta webhook subscription challenge.
    */
   verifyWebhook(params: { mode: string; token: string; challenge: string }): string | null {
-    const secret = env.INSTAGRAM_VERIFY_TOKEN;
+    const secret = this.credentials?.verifyToken ?? env.INSTAGRAM_VERIFY_TOKEN;
     if (!secret) return null;
 
     if (params.mode === 'subscribe' && params.token === secret) {
@@ -322,6 +339,11 @@ let _adapter: InstagramChannelAdapter | null = null;
 export function getInstagramAdapter(): InstagramChannelAdapter {
   if (!_adapter) _adapter = new InstagramChannelAdapter();
   return _adapter;
+}
+
+/** Create an adapter with tenant-specific credentials from ConnectedProvider. */
+export function createInstagramAdapter(credentials: InstagramCredentials): InstagramChannelAdapter {
+  return new InstagramChannelAdapter(credentials);
 }
 
 /**

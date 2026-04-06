@@ -1,13 +1,21 @@
 /**
- * Identity Linker — maps WhatsApp phone numbers to Google Workspace identities.
+ * Identity Linker — maps channel-specific identifiers to Workspace identities.
  *
- * Two linking strategies:
+ * Supported identifier types:
+ *
+ * 1. **Phone number** (WhatsApp) — matches against Workspace Directory phone fields
+ * 2. **Instagram PSID** — requires self-link via email verification (no directory match)
+ * 3. **Email** (web/email channels) — direct match against Workspace Directory email
+ *
+ * Linking strategies:
  *
  * 1. **Directory sync** — pulls phone numbers from the Workspace Directory API
  *    and builds a phone→email lookup table. Runs periodically or on-demand.
  *
- * 2. **Self-link** — a user tells Sandra "my email is user@example.com" in chat,
- *    and Sandra links their WhatsApp phone to that Workspace account.
+ * 2. **Self-link** — a user provides "my email is user@example.com" in chat,
+ *    and Sandra links their channel identity to that Workspace account.
+ *
+ * 3. **Direct email match** — for web/email channel users whose email is already known.
  *
  * Once linked, Sandra knows:
  *  - The user's full name, email, department, role
@@ -20,7 +28,7 @@ import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 import { resolveGoogleContext } from '@/lib/google/context';
-import { listUsers } from '@/lib/google/directory';
+import { getUserByEmail, listUsers } from '@/lib/google/directory';
 import type { DirectoryUser } from '@/lib/google/types';
 
 const log = createLogger('channels:identity-linker');
@@ -99,6 +107,24 @@ export function findWorkspaceUserByPhone(phone: string): DirectoryUser | null {
   }
 
   return null;
+}
+
+/**
+ * Look up a Workspace user by email address.
+ * Useful for web and email channel users whose email is already known.
+ */
+export async function findWorkspaceUserByEmail(
+  email: string,
+  tenantId?: string,
+): Promise<DirectoryUser | null> {
+  try {
+    const tid = tenantId ?? env.DEFAULT_TENANT_ID;
+    if (!tid) return null;
+    const ctx = await resolveGoogleContext(tid);
+    return await getUserByEmail(ctx, email);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -331,4 +357,42 @@ export async function tryAutoLink(
   // Auto-link!
   await linkWorkspaceIdentity(userId, wsUser);
   return { email: wsUser.email, name: wsUser.name };
+}
+
+/**
+ * Try to auto-link a user to their Workspace identity based on channel type.
+ * Dispatches to the appropriate lookup strategy:
+ * - 'whatsapp': phone→directory lookup
+ * - 'email'/'web': email→directory lookup (if email known)
+ * - 'instagram'/'voice': no auto-link (requires self-link via email verification)
+ */
+export async function tryAutoLinkByChannel(
+  userId: string,
+  channelType: string,
+  identifier: string,
+): Promise<{ email: string; name: string } | null> {
+  // Check if already linked
+  const existing = await getWorkspaceIdentity(userId);
+  if (existing) return existing;
+
+  switch (channelType) {
+    case 'whatsapp':
+      return tryAutoLink(userId, identifier);
+
+    case 'email':
+    case 'web': {
+      // identifier is the user's email
+      if (!identifier.includes('@')) return null;
+      const wsUser = await findWorkspaceUserByEmail(identifier);
+      if (!wsUser) return null;
+      await linkWorkspaceIdentity(userId, wsUser);
+      return { email: wsUser.email, name: wsUser.name };
+    }
+
+    case 'instagram':
+    case 'voice':
+    default:
+      // No auto-link for these channels — user must self-link via email verification
+      return null;
+  }
 }

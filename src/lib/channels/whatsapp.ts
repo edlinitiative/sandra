@@ -80,6 +80,15 @@ interface WhatsAppOutboundTextBody {
   text: { preview_url: boolean; body: string };
 }
 
+// ─── Tenant credentials ─────────────────────────────────────────────────────
+
+export interface WhatsAppCredentials {
+  phoneNumberId: string;
+  accessToken: string;
+  webhookSecret: string;
+  apiVersion?: string;
+}
+
 // ─── Adapter ────────────────────────────────────────────────────────────────
 
 /**
@@ -88,20 +97,29 @@ interface WhatsAppOutboundTextBody {
  */
 export class WhatsAppChannelAdapter implements ChannelAdapter {
   readonly channelType = 'whatsapp' as const;
+  private credentials?: WhatsAppCredentials;
+
+  constructor(credentials?: WhatsAppCredentials) {
+    this.credentials = credentials;
+  }
 
   private get apiBase(): string {
-    return `https://graph.facebook.com/${env.WHATSAPP_API_VERSION}`;
+    const version = this.credentials?.apiVersion ?? env.WHATSAPP_API_VERSION;
+    return `https://graph.facebook.com/${version}`;
   }
 
   private get phoneNumberId(): string {
-    return env.WHATSAPP_PHONE_NUMBER_ID ?? '';
+    return this.credentials?.phoneNumberId ?? env.WHATSAPP_PHONE_NUMBER_ID ?? '';
   }
 
   private get accessToken(): string {
-    return env.WHATSAPP_ACCESS_TOKEN ?? '';
+    return this.credentials?.accessToken ?? env.WHATSAPP_ACCESS_TOKEN ?? '';
   }
 
   isConfigured(): boolean {
+    if (this.credentials) {
+      return Boolean(this.credentials.phoneNumberId && this.credentials.accessToken && this.credentials.webhookSecret);
+    }
     return Boolean(
       env.WHATSAPP_PHONE_NUMBER_ID &&
       env.WHATSAPP_ACCESS_TOKEN &&
@@ -311,7 +329,7 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
    * Returns the hub.challenge string on success, null on failure.
    */
   verifyWebhook(params: { mode: string; token: string; challenge: string }): string | null {
-    const secret = env.WHATSAPP_WEBHOOK_SECRET;
+    const secret = this.credentials?.webhookSecret ?? env.WHATSAPP_WEBHOOK_SECRET;
     if (!secret) return null;
 
     if (params.mode === 'subscribe' && params.token === secret) {
@@ -329,6 +347,11 @@ let _adapter: WhatsAppChannelAdapter | null = null;
 export function getWhatsAppAdapter(): WhatsAppChannelAdapter {
   if (!_adapter) _adapter = new WhatsAppChannelAdapter();
   return _adapter;
+}
+
+/** Create an adapter with tenant-specific credentials from ConnectedProvider. */
+export function createWhatsAppAdapter(credentials: WhatsAppCredentials): WhatsAppChannelAdapter {
+  return new WhatsAppChannelAdapter(credentials);
 }
 
 /**

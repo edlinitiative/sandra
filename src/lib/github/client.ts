@@ -169,10 +169,18 @@ export class GitHubClient {
   }
 }
 
-// Singleton
+// Singleton (used when no token override is provided)
 let client: GitHubClient | null = null;
 
-export function getGitHubClient(): GitHubClient {
+/**
+ * Get a GitHubClient instance.
+ * If a token is provided, a fresh (non-cached) instance is returned.
+ * Without a token the module-level singleton is used (falls back to env.GITHUB_TOKEN).
+ */
+export function getGitHubClient(token?: string): GitHubClient {
+  if (token) {
+    return new GitHubClient(token);
+  }
   if (!client) {
     client = new GitHubClient();
   }

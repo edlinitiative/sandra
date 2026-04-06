@@ -112,7 +112,7 @@ export class PgVectorStore implements VectorStore {
     const fetchLimit = Math.max(k * 4, 40);
 
     if (query.length !== EMBEDDING_DIMENSION) {
-      log.warn(`Query vector dimension mismatch: got ${query.length}, expected ${EMBEDDING_DIMENSION}`);
+      log.warn(`Query vector dimension mismatch: got ${query.length}, expected ${EMBEDDING_DIMENSION}. Check EMBEDDING_DIMENSION env var and ensure it matches the database vector column.`);
       return [];
     }
 
