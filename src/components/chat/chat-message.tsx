@@ -213,36 +213,38 @@ export function ChatMessage({
             )}
           </div>
 
-          {/* Feedback — small thumbs */}
+          {/* Feedback — tiny, only visible on hover */}
           {!isLoading && messageId && onFeedback && (
-            <div className="mt-1.5 flex items-center gap-0.5 pl-6 sm:pl-8">
+            <div className={`mt-1 flex items-center gap-px pl-6 transition-opacity duration-200 sm:pl-8 ${
+              feedback ? 'opacity-60' : 'opacity-0 group-hover:opacity-50 hover:!opacity-100'
+            }`}>
               <button
                 onClick={() => handleFeedback('up')}
                 disabled={!!feedback}
                 title="Helpful"
-                className={`rounded-md px-1.5 py-1 text-xs transition-colors ${
+                className={`rounded p-0.5 text-[10px] leading-none transition-colors ${
                   feedback === 'up'
                     ? 'text-primary'
                     : feedback
-                      ? 'cursor-default text-outline'
-                      : 'text-outline hover:bg-surface-container-low hover:text-on-surface'
+                      ? 'cursor-default text-outline/50'
+                      : 'text-outline/60 hover:text-on-surface-variant'
                 }`}
               >
-                👍
+                ▲
               </button>
               <button
                 onClick={() => handleFeedback('down')}
                 disabled={!!feedback}
                 title="Not helpful"
-                className={`rounded-md px-1.5 py-1 text-xs transition-colors ${
+                className={`rounded p-0.5 text-[10px] leading-none transition-colors ${
                   feedback === 'down'
                     ? 'text-red-400'
                     : feedback
-                      ? 'cursor-default text-outline'
-                      : 'text-outline hover:bg-surface-container-low hover:text-on-surface'
+                      ? 'cursor-default text-outline/50'
+                      : 'text-outline/60 hover:text-on-surface-variant'
                 }`}
               >
-                👎
+                ▼
               </button>
             </div>
           )}
