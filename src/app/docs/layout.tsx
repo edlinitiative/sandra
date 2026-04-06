@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { DocsSidebar } from '@/components/docs/docs-sidebar';
 
 export const metadata: Metadata = {
-  title: 'Developer Docs — Sandra | EdLight',
+  title: 'Developer Docs — Sandra AI',
   description:
     'Integrate Sandra into your platform. Chat API, streaming, webhooks, voice, multi-tenant, and knowledge base guides.',
 };

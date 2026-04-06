@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Multi-Tenant — Sandra Developer Docs',
-  description: 'Isolate data, tools, and credentials per customer. Full white-label support.',
+  title: 'Multi-tenant — Sandra Developer Docs',
+  description: 'Run multiple isolated tenants on a single Sandra deployment.',
 };
 
-function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
+function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
-      <div className="border-b border-outline-variant/15 px-4 py-2">
+    <div className="my-4 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
+      <div className="flex items-center gap-2 border-b border-outline-variant/15 px-4 py-2">
         <span className="text-[0.625rem] font-medium uppercase tracking-widest text-on-surface-variant">{lang}</span>
       </div>
       <pre className="p-4 text-sm leading-relaxed text-on-surface">
@@ -18,210 +19,225 @@ function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
   );
 }
 
-function IsolationRow({ feature, description }: { feature: string; description: string }) {
-  return (
-    <tr>
-      <td className="px-4 py-2.5 text-sm font-medium text-white">{feature}</td>
-      <td className="px-4 py-2.5 text-sm text-on-surface-variant">{description}</td>
-    </tr>
-  );
-}
-
 export default function MultiTenantPage() {
   return (
-    <div>
+    <div className="prose-custom">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Reference</p>
-        <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">Multi-Tenant</h1>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Architecture</p>
+        <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">Multi-tenant</h1>
         <p className="text-base leading-relaxed text-on-surface-variant">
-          Deploy Sandra for multiple customers on the same infrastructure — fully isolated.
-          Each tenant has independent data, tools, credentials, and API keys.
+          Sandra supports full multi-tenancy on a single deployment. Each tenant gets isolated
+          data, tools, channel credentials, knowledge base, and branding &mdash; all on shared infrastructure.
         </p>
       </div>
 
-      {/* What is a tenant */}
+      {/* Isolation model */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">What is a tenant?</h2>
-        <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-          A <strong className="text-white">tenant</strong> is a fully isolated partition of Sandra.
-          If you are building a SaaS product that embeds Sandra, each of your customers is a separate tenant.
-          Tenants never see each other&apos;s conversations, memory, or configurations.
-        </p>
-        <div className="overflow-hidden rounded-xl border border-outline-variant/15">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">What is isolated</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04]">
-              <IsolationRow feature="Conversations & sessions" description="All chat history is scoped to a tenant. Tenant A's users never appear in Tenant B's data." />
-              <IsolationRow feature="User memory" description="Long-term memory (facts, preferences) is per-user per-tenant." />
-              <IsolationRow feature="Tool configuration" description="Each tenant can enable or disable any of Sandra's 66 tools independently." />
-              <IsolationRow feature="Google Workspace" description="Each tenant can have its own service account with its own domain delegation." />
-              <IsolationRow feature="Zoom credentials" description="Per-tenant Zoom server-to-server OAuth credentials." />
-              <IsolationRow feature="API keys" description="Each tenant has its own admin API key for indexing and repo management." />
-              <IsolationRow feature="Knowledge base" description="Indexed repositories and vector chunks are scoped per tenant." />
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Requesting a tenant */}
-      <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Requesting a tenant</h2>
-        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          Tenants are provisioned by EdLight. Contact{' '}
-          <a href="mailto:hello@edlight.org" className="text-primary hover:underline">hello@edlight.org</a>{' '}
-          with the following information:
-        </p>
+        <h2 className="mb-4 text-lg font-bold text-white">What&rsquo;s isolated per tenant</h2>
         <div className="overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-white/[0.04]">
+            <thead>
+              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Layer</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Isolation</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/10">
               {[
-                ['Organization name', 'Will become the tenant display name'],
-                ['Slug', 'e.g. acme-corp — used in internal references'],
-                ['Channels needed', 'Web chat, WhatsApp, Instagram, Email, Voice — any combination'],
-                ['Integrations needed', 'Google Workspace, Zoom, Web Search, Knowledge Base'],
-                ['Languages', 'English, French, Haitian Creole — any combination'],
-              ].map(([field, desc]) => (
-                <tr key={field}>
-                  <td className="px-4 py-2.5 text-xs font-medium text-white">{field}</td>
-                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{desc}</td>
+                ['Conversations & messages', 'Filtered by tenantId — no cross-tenant leakage'],
+                ['Knowledge base (RAG)', 'Embeddings are tagged per tenant; retrieval is tenant-scoped'],
+                ['Tools', 'Each tenant can have its own registered tools + enabled/disabled flags'],
+                ['Channel credentials', 'WhatsApp, Instagram, email, Zoom — all per-tenant via ProviderConfig'],
+                ['Google Workspace', 'Per-tenant service account delegation (Calendar, Drive, Gmail)'],
+                ['Agent personality', 'Per-tenant system prompt, name, and behavior config'],
+                ['Users & roles', 'Users belong to a tenant; roles (admin, user) are tenant-scoped'],
+                ['Analytics', 'Dashboard stats are tenant-filtered'],
+                ['API keys', 'Each tenant generates its own API keys'],
+              ].map(([layer, isolation]) => (
+                <tr key={layer} className="text-on-surface">
+                  <td className="px-4 py-2.5 text-xs font-medium text-on-surface">{layer}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{isolation}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-sm text-on-surface-variant">
-          You will receive a <strong className="text-white">tenantId</strong> and an{' '}
-          <strong className="text-white">admin API key</strong>.
-        </p>
       </section>
 
-      {/* Per-tenant tool configuration */}
+      {/* Creating tenants */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Per-tenant tool configuration</h2>
+        <h2 className="mb-3 text-lg font-bold text-white">Creating a tenant</h2>
         <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          Sandra has 66 tools. Not every tenant needs all of them. Tools are enabled or disabled
-          per tenant at runtime — no redeployment required.
+          Tenants are created through the admin dashboard or the admin API. No external provisioning needed.
         </p>
-        <div className="space-y-3">
-          {[
-            {
-              example: 'Customer support platform',
-              enabled: ['searchKnowledgeBase', 'webSearch', 'sendGmail', 'saveUserNote'],
-              disabled: ['createZoomMeeting', 'listZoomRecordings', 'manageTenantUsers'],
-            },
-            {
-              example: 'EdTech platform',
-              enabled: ['getCourses', 'getEnrollments', 'getCertificates', 'recommendCourses', 'getLearningPath', 'trackLearningProgress'],
-              disabled: ['createZoomMeeting', 'checkBirthdays'],
-            },
-            {
-              example: 'HR / scheduling platform',
-              enabled: ['createCalendarEvent', 'listCalendarEvents', 'createZoomMeeting', 'createTask', 'listTasks', 'queueReminder'],
-              disabled: ['getCourses', 'searchScholarships'],
-            },
-          ].map((row) => (
-            <div key={row.example} className="rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">{row.example}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {row.enabled.map((t) => (
-                  <span key={t} className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[0.6rem] text-emerald-400">{t}</span>
-                ))}
-                {row.disabled.map((t) => (
-                  <span key={t} className="rounded-full bg-surface-container-low px-2 py-0.5 font-mono text-[0.6rem] text-outline line-through">{t}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-on-surface-variant">
-          Tool configuration is managed via the admin dashboard or by contacting EdLight.
+
+        <h3 className="mb-2 mt-4 text-sm font-semibold text-white">Via Admin Dashboard</h3>
+        <p className="mb-3 text-sm text-on-surface-variant">
+          Navigate to <strong>Admin → Tenants → Create</strong>. Fill in the tenant name and slug.
+          The tenant is immediately active with default settings.
+        </p>
+
+        <h3 className="mb-2 mt-4 text-sm font-semibold text-white">Via API</h3>
+        <CodeBlock code={`curl -X POST $SANDRA_URL/api/admin/tenants \\
+  -H "Authorization: Bearer $ADMIN_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Acme Corp",
+    "slug": "acme",
+    "config": {
+      "agentName": "Aria",
+      "systemPrompt": "You are Aria, a helpful assistant for Acme Corp employees."
+    }
+  }'`} />
+
+        <h3 className="mb-2 mt-4 text-sm font-semibold text-white">Via database seed</h3>
+        <p className="mb-3 text-sm text-on-surface-variant">
+          For initial setup or CI/CD, use the Prisma seed script:
+        </p>
+        <CodeBlock lang="typescript" code={`// prisma/seed-tenant.ts
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+await prisma.tenant.create({
+  data: {
+    name: 'Acme Corp',
+    slug: 'acme',
+    settings: {
+      agentName: 'Aria',
+      defaultLanguage: 'en',
+    },
+  },
+});`} />
+      </section>
+
+      {/* Per-tenant tools */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-lg font-bold text-white">Per-tenant tool configuration</h2>
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          Each tenant can have its own set of tools. Register tools via the admin API and
+          assign them to specific tenants.
+        </p>
+        <CodeBlock lang="json" code={`// POST /api/admin/tools
+{
+  "name": "lookupOrder",
+  "description": "Look up a customer order by ID",
+  "endpoint": "https://api.acme.com/orders/{orderId}",
+  "tenantId": "tenant-acme-001",
+  "parameters": {
+    "orderId": { "type": "string", "description": "The order ID to look up" }
+  }
+}`} />
+        <p className="text-xs text-outline">
+          Sandra will only offer this tool to users in the Acme tenant.
+          Other tenants won&rsquo;t see or trigger it.
         </p>
       </section>
 
       {/* Per-tenant Google Workspace */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Per-tenant Google Workspace</h2>
+        <h2 className="mb-3 text-lg font-bold text-white">Per-tenant Google Workspace</h2>
         <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          Each tenant can connect its own Google Workspace domain. Sandra will use that tenant&apos;s
-          service account for all Gmail, Drive, Calendar, Tasks, and Directory operations —
-          completely isolated from other tenants.
+          Each tenant can connect their own Google Workspace for Calendar, Drive, and Gmail integration.
+          Store the service account credentials in the tenant&rsquo;s <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">ProviderConfig</code>:
         </p>
-        <CodeBlock lang="env" code={`# Tenant-level Google Workspace credentials
-GOOGLE_SERVICE_ACCOUNT_EMAIL=tenant-sa@your-project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-GOOGLE_WORKSPACE_DOMAIN=yourcustomer.com`} />
-        <p className="mt-2 text-xs text-on-surface-variant">
-          These are stored as tenant provider config — not shared environment variables.
-          Provide them to EdLight and they will be scoped to your tenant only.
-        </p>
+        <CodeBlock lang="json" code={`// In ProviderConfig for tenant
+{
+  "provider": "google",
+  "tenantId": "tenant-acme-001",
+  "config": {
+    "serviceAccountEmail": "sa@acme-project.iam.gserviceaccount.com",
+    "privateKey": "...",
+    "delegatedUser": "admin@acme.com",
+    "scopes": ["calendar", "drive", "gmail"]
+  }
+}`} />
       </section>
 
       {/* Per-tenant Zoom */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Per-tenant Zoom</h2>
+        <h2 className="mb-3 text-lg font-bold text-white">Per-tenant Zoom</h2>
         <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          Connect your own Zoom account so Sandra creates meetings under your organization.
+          Similarly, each tenant can bring their own Zoom credentials for meeting scheduling:
         </p>
-        <CodeBlock lang="env" code={`ZOOM_ACCOUNT_ID=...
-ZOOM_CLIENT_ID=...
-ZOOM_CLIENT_SECRET=...`} />
-        <p className="mt-2 text-xs text-on-surface-variant">
-          Create a Server-to-Server OAuth app in the{' '}
-          <a href="https://marketplace.zoom.us" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Zoom App Marketplace</a>{' '}
-          and share the credentials with EdLight for your tenant.
-        </p>
+        <CodeBlock lang="json" code={`{
+  "provider": "zoom",
+  "tenantId": "tenant-acme-001",
+  "config": {
+    "accountId": "...",
+    "clientId": "...",
+    "clientSecret": "..."
+  }
+}`} />
       </section>
 
       {/* Passing tenantId */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Passing your tenant context</h2>
+        <h2 className="mb-3 text-lg font-bold text-white">Passing tenantId in API calls</h2>
         <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          When calling Sandra from a multi-tenant deployment, include your <code className="rounded bg-white/[0.07] px-1.5 text-xs text-on-surface">tenantId</code> in
-          the request body so Sandra resolves the correct tool set, credentials, and knowledge base.
+          When calling the Chat API from a multi-tenant integration, include the{' '}
+          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">tenantId</code>{' '}
+          field so Sandra routes to the correct tenant context:
         </p>
-        <CodeBlock lang="json" code={`{
-  "message":  "Schedule a Zoom call for tomorrow at 2pm",
-  "sessionId": "session-abc",
-  "userId":    "user-xyz",
-  "tenantId":  "your-tenant-id",
-  "language":  "en"
-}`} />
+        <CodeBlock code={`curl -X POST $SANDRA_URL/api/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "message": "Schedule a team meeting for tomorrow at 2pm",
+    "sessionId": "s1",
+    "userId": "u1",
+    "tenantId": "tenant-acme-001"
+  }'`} />
+        <p className="text-xs text-outline">
+          If the API key is tenant-scoped (generated from that tenant&rsquo;s admin panel),
+          the tenantId is inferred automatically &mdash; you don&rsquo;t need to pass it explicitly.
+        </p>
       </section>
 
-      {/* Roles */}
+      {/* User roles */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-bold text-white">User roles</h2>
+        <h2 className="mb-3 text-lg font-bold text-white">User roles</h2>
         <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
-          Sandra&apos;s RBAC system supports four roles. Roles are assigned per user per tenant.
+          Users are scoped to a tenant and assigned a role:
         </p>
         <div className="overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Role</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Access</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Permissions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody className="divide-y divide-outline-variant/10">
               {[
-                ['student', 'Standard user — chat, personal memory, course tools'],
-                ['staff', 'Extended access — additional operational tools'],
-                ['admin', 'Tenant management, user management, indexing, tool config'],
-                ['superAdmin', 'Full platform access across all tenants'],
-              ].map(([role, access]) => (
-                <tr key={role}>
+                ['super_admin', 'Full access across all tenants. Can create tenants, manage global config.'],
+                ['admin', 'Full access within their tenant. Manage tools, channels, users, analytics.'],
+                ['user', 'Chat with Sandra. View own conversations and preferences.'],
+              ].map(([role, perms]) => (
+                <tr key={role} className="text-on-surface">
                   <td className="px-4 py-2.5 font-mono text-xs text-primary">{role}</td>
-                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{access}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{perms}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Footer */}
+      <section className="mt-12 flex flex-col gap-3 sm:flex-row">
+        <Link
+          href="/docs/knowledge-base"
+          className="flex-1 rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4 text-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.04]"
+        >
+          <p className="mb-1 font-semibold text-white">&larr; Knowledge Base</p>
+          <p className="text-xs text-on-surface-variant">Index your content for RAG retrieval.</p>
+        </Link>
+        <Link
+          href="/docs/quickstart"
+          className="flex-1 rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4 text-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.04]"
+        >
+          <p className="mb-1 font-semibold text-white">&larr; Quickstart</p>
+          <p className="text-xs text-on-surface-variant">Send your first message in 5 minutes.</p>
+        </Link>
       </section>
     </div>
   );

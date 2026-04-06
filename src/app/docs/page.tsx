@@ -5,28 +5,28 @@ const cards = [
     href: '/docs/quickstart',
     icon: 'trending_up',
     title: 'Quickstart',
-    description: 'Send your first message to Sandra in under 5 minutes using the Chat API.',
+    description: 'Send your first message to Sandra in under 5 minutes — just plain HTTP.',
     label: 'Start here',
   },
   {
     href: '/docs/api-reference',
     icon: 'code',
     title: 'API Reference',
-    description: 'Complete reference for all Sandra endpoints — chat, stream, webhooks, voice, admin.',
+    description: 'Complete reference for every endpoint — chat, stream, voice, webhooks, admin.',
     label: 'View reference',
   },
   {
     href: '/docs/channels',
     icon: 'forum',
     title: 'Channels',
-    description: 'Connect Sandra to WhatsApp, Instagram, email, and voice on your platform.',
+    description: 'Connect WhatsApp, Instagram, email, and voice — all self-service.',
     label: 'Setup channels',
   },
   {
     href: '/docs/knowledge-base',
     icon: 'menu_book',
     title: 'Knowledge Base',
-    description: 'Index your own content so Sandra can answer questions about your platform.',
+    description: 'Index your own content so Sandra answers questions about your platform.',
     label: 'Add your docs',
   },
   {
@@ -44,14 +44,14 @@ export default function DocsPage() {
       <div className="mb-10">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          Sandra V6 &middot; April 2026
+          Open Platform &middot; Self-Hostable
         </div>
         <h1 className="mb-4 text-4xl font-black tracking-tighter text-on-surface">
           Developer Docs
         </h1>
         <p className="max-w-xl text-lg leading-relaxed text-on-surface-variant">
-          Everything you need to integrate Sandra into your platform &mdash; from a simple chat
-          widget to full multi-channel, multi-tenant AI agent deployment.
+          Sandra is an open, self-hostable AI agent platform. Deploy your own instance, connect
+          any channel, index your own content, and white-label it for your customers.
         </p>
       </div>
 
@@ -61,11 +61,11 @@ export default function DocsPage() {
         </h2>
         <ul className="space-y-3">
           {[
-            "A chat widget on your website backed by Sandra's full agent loop",
+            'A chat widget on your website backed by Sandra\u2019s full agent loop — deploy on your own domain',
             'WhatsApp or Instagram automation that handles support, enrollment, or scheduling',
-            "A voice assistant with Sandra's identity and tools via WebRTC or REST",
-            'An AI layer over your own documentation — index your repos, get grounded answers',
-            'A fully isolated white-label AI assistant for each of your customers',
+            'A real-time voice assistant via WebRTC or a REST-based voice round-trip',
+            'An AI layer over your own documentation — index any GitHub repo, get grounded answers',
+            'A fully isolated white-label AI assistant for each of your customers (multi-tenant)',
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
               <span className="material-symbols-outlined mt-0.5 text-base text-primary">
@@ -82,12 +82,13 @@ export default function DocsPage() {
           Base URL
         </h2>
         <div className="rounded-xl border border-outline-variant/15 bg-surface-container-lowest px-4 py-3 font-mono text-sm text-primary">
-          https://sandra.edlight.org
+          https://&lt;your-sandra-instance&gt;
         </div>
         <p className="mt-2 text-xs text-outline">
-          All endpoints are relative to this base. No authentication is required for the chat and
-          voice endpoints. Admin endpoints require an{' '}
-          <code className="text-on-surface-variant">x-api-key</code> header.
+          All endpoints are relative to wherever you deploy Sandra. Chat and voice endpoints require
+          no authentication. Admin endpoints require an{' '}
+          <code className="text-on-surface-variant">x-api-key</code> header that you generate from
+          the admin dashboard.
         </p>
       </section>
 
