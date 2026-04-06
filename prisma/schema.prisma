@@ -413,6 +413,9 @@ enum ProviderType {
   microsoft_365
   zoom
   custom_api
+  ai_openai
+  ai_gemini
+  ai_anthropic
 }
 
 model Tenant {

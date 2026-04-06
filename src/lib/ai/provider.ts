@@ -5,21 +5,22 @@ import { GeminiProvider } from './gemini';
 import { FallbackProvider } from './fallback';
 import { ConfigurationError, createLogger } from '@/lib/utils';
 import { env } from '@/lib/config';
+import type { ResolvedAIConfig } from './config-resolver';
 
 const log = createLogger('ai:provider');
 
 type ProviderName = 'openai' | 'anthropic' | 'gemini';
 
-const providerFactories: Record<ProviderName, () => AIProvider> = {
-  openai:    () => new OpenAIProvider(),
-  anthropic: () => new AnthropicProvider(),
-  gemini:    () => new GeminiProvider(),
+const providerFactories: Record<ProviderName, (apiKey?: string) => AIProvider> = {
+  openai:    (apiKey) => new OpenAIProvider(apiKey),
+  anthropic: (apiKey) => new AnthropicProvider(apiKey),
+  gemini:    (apiKey) => new GeminiProvider(apiKey),
 };
 
 let defaultProvider: AIProvider | null = null;
 
 /**
- * Check whether a provider has a valid API key configured.
+ * Check whether a provider has a valid API key configured (env vars only).
  */
 function isProviderConfigured(name: ProviderName): boolean {
   switch (name) {
@@ -37,11 +38,7 @@ function isProviderConfigured(name: ProviderName): boolean {
 }
 
 /**
- * Build the provider fallback chain from AI_PROVIDER_PRIORITY config.
- *
- * Only providers with valid API keys are included. If multiple providers
- * are available, they are wrapped in a FallbackProvider that automatically
- * tries the next one on quota / rate-limit / server errors.
+ * Build the provider fallback chain from env vars only (original behavior).
  */
 function buildProviderChain(): AIProvider {
   const priorityStr = env.AI_PROVIDER_PRIORITY ?? 'openai,gemini,anthropic';
@@ -69,6 +66,48 @@ function buildProviderChain(): AIProvider {
 
   if (available.length === 0) {
     log.warn('No AI providers configured — falling back to OpenAI (may fail)');
+    return new OpenAIProvider();
+  }
+
+  if (available.length === 1) {
+    return available[0]!;
+  }
+
+  return new FallbackProvider(available);
+}
+
+/**
+ * Build a provider chain from a ResolvedAIConfig (DB + env var merged config).
+ *
+ * This is the DB-aware version used when a tenantId is available.
+ * The config already has DB keys merged with env var fallbacks.
+ */
+export function buildProviderChainFromConfig(config: ResolvedAIConfig): AIProvider {
+  const priority = config.priority
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is ProviderName => s in providerFactories);
+
+  const available: AIProvider[] = [];
+
+  for (const name of priority) {
+    const keyConfig = config[name];
+    if (!keyConfig?.apiKey || keyConfig.apiKey.length < 10) {
+      log.info(`Skipping provider ${name} — no key in resolved config`);
+      continue;
+    }
+    try {
+      available.push(providerFactories[name](keyConfig.apiKey));
+      log.info(`Provider ${name} added to chain (from resolved config)`);
+    } catch (err) {
+      log.warn(`Failed to initialize provider ${name}`, {
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+  }
+
+  if (available.length === 0) {
+    log.warn('No AI providers in resolved config — falling back to OpenAI (may fail)');
     return new OpenAIProvider();
   }
 
