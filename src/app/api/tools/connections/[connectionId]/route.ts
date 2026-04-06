@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { removeApiConnection } from '@/lib/tools/tenant-tool-loader';
+import { authenticateRequest } from '@/lib/auth/middleware';
+import type { AuthenticatedUser } from '@/lib/auth/types';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('api:tools:connections');
@@ -15,11 +17,26 @@ interface RouteContext {
   params: Promise<{ connectionId: string }>;
 }
 
+/** Verify authentication and return the user, or a 401 response */
+async function requireAuth(request: NextRequest): Promise<{ user: AuthenticatedUser } | NextResponse> {
+  const auth = await authenticateRequest(request);
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { error: auth.error },
+      { status: 401 },
+    );
+  }
+  return { user: auth.user };
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext,
 ) {
   try {
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { connectionId } = await context.params;
     const connection = await db.externalApiConnection.findUnique({
       where: { id: connectionId },
@@ -32,6 +49,12 @@ export async function GET(
     });
 
     if (!connection) {
+      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+    }
+
+    // Verify the caller owns this connection (tenant check)
+    const callerTenantId = authResult.user.tenantId;
+    if (callerTenantId && connection.tenantId !== callerTenantId) {
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
 
@@ -60,12 +83,21 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { connectionId } = await context.params;
     const body = await request.json();
     const { isActive, credentials, authConfig, defaultHeaders, rateLimitRpm } = body as Record<string, unknown>;
 
     const existing = await db.externalApiConnection.findUnique({ where: { id: connectionId } });
     if (!existing) {
+      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+    }
+
+    // Verify tenant ownership
+    const callerTenantId = authResult.user.tenantId;
+    if (callerTenantId && existing.tenantId !== callerTenantId) {
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
 
@@ -111,14 +143,23 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext,
 ) {
   try {
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) return authResult;
+
     const { connectionId } = await context.params;
 
     const existing = await db.externalApiConnection.findUnique({ where: { id: connectionId } });
     if (!existing) {
+      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+    }
+
+    // Verify tenant ownership
+    const callerTenantId = authResult.user.tenantId;
+    if (callerTenantId && existing.tenantId !== callerTenantId) {
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
 

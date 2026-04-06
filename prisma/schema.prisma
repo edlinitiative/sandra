@@ -75,6 +75,7 @@ model User {
 
 model Session {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String?
   channel        String    @default("web")
   language       String    @default("en")
@@ -84,9 +85,11 @@ model Session {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages       Message[]
 
+  @@index([tenantId])
   @@index([userId, isActive])
 }
 
@@ -94,6 +97,7 @@ model Session {
 
 model Message {
   id             String      @id @default(cuid())
+  tenantId       String?
   sessionId      String
   role           MessageRole
   content        String
@@ -103,8 +107,10 @@ model Message {
   metadata       Json?       // Token counts, latency, model used, etc.
   createdAt      DateTime    @default(now())
 
+  tenant         Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   session        Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([sessionId])
   @@index([createdAt])
 }
@@ -113,6 +119,7 @@ model Message {
 
 model Memory {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   key            String    // e.g., "preferred_language", "name", "interests"
   value          String
@@ -121,9 +128,11 @@ model Memory {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
+  @@index([tenantId])
   @@index([userId])
 }
 
@@ -131,6 +140,7 @@ model Memory {
 
 model IndexedSource {
   id             String    @id @default(cuid())
+  tenantId       String?
   name           String    // e.g., "EdLight Academy"
   type           String    // github_repo | website | document | manual
   url            String?
@@ -144,10 +154,13 @@ model IndexedSource {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   // documents relation removed — IndexedDocument.sourceId is now a repo full name,
   // not a cuid referencing this table. Relationship managed by application code.
 
   @@unique([type, url])
+  @@index([tenantId])
   @@index([status])
 }
 
@@ -155,6 +168,7 @@ model IndexedSource {
 
 model IndexedDocument {
   id             String    @id @default(cuid())
+  tenantId       String?
   sourceId       String    // Repo full name (e.g. "edlinitiative/code") — no FK
   title          String?
   path           String?   // File path or URL path within the source
@@ -169,9 +183,12 @@ model IndexedDocument {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   // FK removed — sourceId is now the repo full name, not an IndexedSource cuid.
   // Relationship managed by application code; see PgVectorStore and indexer.
 
+  @@index([tenantId])
   @@index([sourceId])
   @@index([contentHash])
   @@index([sourceId, contentHash])
@@ -182,6 +199,7 @@ model IndexedDocument {
 
 model RepoRegistry {
   id             String     @id @default(cuid())
+  tenantId       String?
   owner          String     // GitHub org or user
   name           String     // Repo name
   displayName    String     // Human-friendly name
@@ -196,7 +214,10 @@ model RepoRegistry {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
+  tenant         Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@unique([owner, name])
+  @@index([tenantId])
   @@index([isActive])
 }
 
@@ -204,6 +225,7 @@ model RepoRegistry {
 
 model Enrollment {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   courseId        String    // Platform-specific course identifier
   courseName     String
@@ -213,8 +235,10 @@ model Enrollment {
   completedAt    DateTime?
   metadata       Json?
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([userId])
   @@index([courseId])
 }
@@ -223,6 +247,7 @@ model Enrollment {
 
 model Certificate {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   courseName     String
   platform       String    // "academy" | "code"
@@ -230,8 +255,10 @@ model Certificate {
   certificateUrl String?
   metadata       Json?
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([userId])
 }
 
@@ -239,6 +266,7 @@ model Certificate {
 
 model ProgramApplication {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   programName    String    // e.g., "ESLP", "Nexus", "Academy Scholarship"
   programId      String?
@@ -247,8 +275,10 @@ model ProgramApplication {
   reviewedAt     DateTime?
   metadata       Json?
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([userId])
   @@index([programId])
 }
@@ -257,6 +287,7 @@ model ProgramApplication {
 
 model AuditLog {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String?
   sessionId      String?
   action         String    // tool_execution | permission_denied | auth_failure | data_access
@@ -266,16 +297,20 @@ model AuditLog {
   success        Boolean   @default(true)
   createdAt      DateTime  @default(now())
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([userId])
   @@index([sessionId])
   @@index([action])
   @@index([createdAt])
 }
 
-// ── Channel Identity ─────────────────────────────────────────────────────────
+// ── Action Requests ──────────────────────────────────────────────────────────
 
 model ActionRequest {
   id                String       @id @default(cuid())
+  tenantId          String?
   userId            String?
   sessionId         String?
   channel           String       @default("web")
@@ -292,6 +327,9 @@ model ActionRequest {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
+  tenant            Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([userId])
   @@index([status])
   @@index([tool])
@@ -302,6 +340,7 @@ model ActionRequest {
 
 model ChannelIdentity {
   id             String    @id @default(cuid())
+  tenantId       String?
   userId         String
   channel        String    // 'whatsapp' | 'instagram' | 'email' | 'voice'
   externalId     String    // Phone (WhatsApp), PSID (Instagram), email address, etc.
@@ -311,9 +350,11 @@ model ChannelIdentity {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([channel, externalId])
+  @@index([tenantId])
   @@index([userId])
   @@index([channel])
 }
@@ -322,6 +363,7 @@ model ChannelIdentity {
 
 model MessageFeedback {
   id          String   @id @default(cuid())
+  tenantId    String?
   sessionId   String
   userId      String?
   messageRef  String   // Client-assigned UUID for the response message
@@ -330,6 +372,9 @@ model MessageFeedback {
   metadata    Json?    // e.g. toolsUsed, retrievalUsed, responseSnippet
   createdAt   DateTime @default(now())
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([sessionId])
   @@index([userId])
   @@index([rating])
@@ -340,6 +385,7 @@ model MessageFeedback {
 
 model AnalyticsEvent {
   id         String   @id @default(cuid())
+  tenantId   String?
   eventType  String   // "message_sent" | "tool_executed" | "retrieval_completed" | "response_generated" | "session_started" | "cache_hit"
   sessionId  String?
   userId     String?
@@ -348,12 +394,16 @@ model AnalyticsEvent {
   data       Json?    // event-specific payload (tool name, latency, score, etc.)
   createdAt  DateTime @default(now())
 
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([eventType])
   @@index([sessionId])
   @@index([userId])
   @@index([channel])
   @@index([createdAt])
 }
+
 // ── Learning Signals ──────────────────────────────────────────────────────────
 
 /**
@@ -362,6 +412,7 @@ model AnalyticsEvent {
  */
 model KnowledgeCorrection {
   id            String   @id @default(cuid())
+  tenantId      String?
   sessionId     String
   userId        String?
   language      String?
@@ -371,6 +422,9 @@ model KnowledgeCorrection {
   reviewed      Boolean  @default(false)
   createdAt     DateTime @default(now())
 
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([sessionId])
   @@index([userId])
   @@index([reviewed])
@@ -385,6 +439,7 @@ model KnowledgeCorrection {
  */
 model CapabilityGap {
   id          String   @id @default(cuid())
+  tenantId    String?
   sessionId   String
   userId      String?
   channel     String?
@@ -394,6 +449,9 @@ model CapabilityGap {
   reviewed    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([sessionId])
   @@index([userId])
   @@index([reviewed])
@@ -429,11 +487,27 @@ model Tenant {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  members     TenantMember[]
-  providers   ConnectedProvider[]
-  dynamicTools DynamicTool[]
-  apiConnections ExternalApiConnection[]
-  apiKeys     TenantApiKey[]
+  members            TenantMember[]
+  providers          ConnectedProvider[]
+  dynamicTools       DynamicTool[]
+  apiConnections     ExternalApiConnection[]
+  apiKeys            TenantApiKey[]
+  sessions           Session[]
+  messages           Message[]
+  memories           Memory[]
+  indexedSources     IndexedSource[]
+  indexedDocuments   IndexedDocument[]
+  repoRegistries     RepoRegistry[]
+  enrollments        Enrollment[]
+  certificates       Certificate[]
+  applications       ProgramApplication[]
+  auditLogs          AuditLog[]
+  actionRequests     ActionRequest[]
+  channelIdentities  ChannelIdentity[]
+  messageFeedback    MessageFeedback[]
+  analyticsEvents    AnalyticsEvent[]
+  knowledgeCorrections KnowledgeCorrection[]
+  capabilityGaps     CapabilityGap[]
 
   @@index([slug])
   @@index([domain])

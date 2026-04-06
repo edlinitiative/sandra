@@ -2,6 +2,7 @@ import type { PrismaClient, IndexedDocument, IndexedSource, Prisma } from '@pris
 
 export type CreateIndexedDocumentInput = {
   sourceId: string;
+  tenantId?: string;
   title?: string;
   path?: string;
   content: string;
@@ -23,18 +24,19 @@ export async function createIndexedDocument(
 
   const rows: IndexedDocument[] = await prisma.$queryRawUnsafe(
     `INSERT INTO "IndexedDocument"
-       ("id", "sourceId", "title", "path", "content",
+       ("id", "sourceId", "tenantId", "title", "path", "content",
         "chunkIndex", "chunkTotal", "contentHash", "embedding", "metadata",
         "createdAt", "updatedAt")
      VALUES (
-       gen_random_uuid()::text, $1, $2, $3, $4,
-       $5, $6, $7, $8::vector, $9::jsonb,
+       gen_random_uuid()::text, $1, $2, $3, $4, $5,
+       $6, $7, $8, $9::vector, $10::jsonb,
        NOW(), NOW()
      )
-     RETURNING "id", "sourceId", "title", "path", "content",
+     RETURNING "id", "sourceId", "tenantId", "title", "path", "content",
        "chunkIndex", "chunkTotal", "contentHash", "metadata",
        "createdAt", "updatedAt"`,
     input.sourceId,
+    input.tenantId ?? null,
     input.title ?? null,
     input.path ?? null,
     input.content,
@@ -72,6 +74,7 @@ export async function getDocumentByHash(
 export type CreateOrUpdateSourceInput = {
   name: string;
   type: string;
+  tenantId?: string;
   url?: string;
   owner?: string;
   repo?: string;
@@ -97,6 +100,7 @@ export async function createOrUpdateSource(
     create: {
       name: input.name,
       type: input.type,
+      tenantId: input.tenantId,
       url: input.url,
       owner: input.owner,
       repo: input.repo,
@@ -117,6 +121,7 @@ export async function createOrUpdateSource(
 }
 
 export type SaveDocumentInput = {
+  tenantId?: string;
   title?: string;
   path?: string;
   content: string;
@@ -147,15 +152,16 @@ export async function saveIndexedDocuments(
 
     await prisma.$executeRawUnsafe(
       `INSERT INTO "IndexedDocument"
-         ("id", "sourceId", "title", "path", "content",
+         ("id", "sourceId", "tenantId", "title", "path", "content",
           "chunkIndex", "chunkTotal", "contentHash", "embedding", "metadata",
           "createdAt", "updatedAt")
        VALUES (
-         gen_random_uuid()::text, $1, $2, $3, $4,
-         $5, $6, $7, $8::vector, $9::jsonb,
+         gen_random_uuid()::text, $1, $2, $3, $4, $5,
+         $6, $7, $8, $9::vector, $10::jsonb,
          NOW(), NOW()
        )`,
       sourceId,
+      doc.tenantId ?? null,
       doc.title ?? null,
       doc.path ?? null,
       doc.content,

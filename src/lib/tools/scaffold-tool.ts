@@ -15,11 +15,11 @@
  */
 
 import { z } from 'zod';
-import OpenAI from 'openai';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
 import { reloadDynamicTool } from './dynamic-loader';
 import { logAuditEvent } from '@/lib/audit';
+import { getAIProvider } from '@/lib/ai';
 import { env } from '@/lib/config';
 import { db } from '@/lib/db';
 import { createLogger } from '@/lib/utils';
@@ -116,7 +116,7 @@ const scaffoldToolDef: SandraTool = {
     const existingTools = toolRegistry.getToolNames().join(', ');
 
     // ── 3. Generate the tool via LLM ───────────────────────────────────────
-    const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    const provider = getAIProvider();
 
     const systemPrompt = `You are a tool scaffolding engine for Sandra, an AI assistant platform.
 Your job is to generate a new JavaScript tool handler based on the user's intent.
@@ -156,18 +156,16 @@ forms:write, whatsapp:send, whatsapp:groups, zoom:meeting, repos:read`;
 
     let generated: GeneratedToolSpec;
     try {
-      const completion = await openai.chat.completions.create({
-        model: env.OPENAI_MODEL ?? 'gpt-4o',
+      const completion = await provider.chatCompletion({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        response_format: { type: 'json_object' },
         temperature: 0.2,
-        max_tokens: 1200,
+        maxTokens: 1200,
       });
 
-      const raw = completion.choices[0]?.message?.content ?? '';
+      const raw = completion.content ?? '';
       generated = JSON.parse(raw) as GeneratedToolSpec;
     } catch (error) {
       return {

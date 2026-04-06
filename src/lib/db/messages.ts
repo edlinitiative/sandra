@@ -1,6 +1,7 @@
 import type { PrismaClient, Message, MessageRole, Prisma } from '@prisma/client';
 
 export type CreateMessageInput = {
+  tenantId?: string;
   sessionId: string;
   role: MessageRole;
   content: string;
@@ -16,6 +17,7 @@ export async function createMessage(
 ): Promise<Message> {
   return prisma.message.create({
     data: {
+      tenantId: input.tenantId,
       sessionId: input.sessionId,
       role: input.role,
       content: input.content,
@@ -30,11 +32,14 @@ export async function createMessage(
 export async function getMessagesBySessionId(
   prisma: PrismaClient,
   sessionId: string,
-  options: { limit?: number; orderBy?: 'asc' | 'desc' } = {},
+  options: { tenantId?: string; limit?: number; orderBy?: 'asc' | 'desc' } = {},
 ): Promise<Message[]> {
-  const { limit, orderBy = 'asc' } = options;
+  const { tenantId, limit, orderBy = 'asc' } = options;
   return prisma.message.findMany({
-    where: { sessionId },
+    where: {
+      sessionId,
+      ...(tenantId ? { tenantId } : {}),
+    },
     orderBy: { createdAt: orderBy },
     ...(limit ? { take: limit } : {}),
   });

@@ -123,6 +123,13 @@ export class PgVectorStore implements VectorStore {
     const params: unknown[] = [queryVec, fetchLimit];
     let paramIdx = 3; // $1=queryVec, $2=fetchLimit
 
+    // Tenant isolation: scope results to the caller's tenant (or include unscoped docs)
+    if (filter?.tenantId) {
+      conditions.push(`("tenantId" = $${paramIdx} OR "tenantId" IS NULL)`);
+      params.push(filter.tenantId);
+      paramIdx++;
+    }
+
     if (filter?.sourceId) {
       conditions.push(`"sourceId" = $${paramIdx}`);
       params.push(filter.sourceId);

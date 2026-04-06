@@ -17,6 +17,13 @@ vi.mock('@/lib/memory/session-store', () => ({
   }),
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'user-1', role: 'admin', scopes: ['*'], tenantId: 'tenant-1' },
+  }),
+}));
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeContext(sessionId: string) {

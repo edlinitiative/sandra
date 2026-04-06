@@ -20,6 +20,7 @@
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
 import { db } from '@/lib/db';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 import { createLogger } from '@/lib/utils';
 import { logAuditEvent } from '@/lib/audit';
 import { resolveGoogleContext } from '@/lib/google/context';
@@ -27,7 +28,6 @@ import { sendEmail } from '@/lib/google/gmail';
 
 const log = createLogger('cron:process-reminders');
 
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
 const MAX_PER_RUN = 50;
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
   for (const reminder of due) {
     const input = reminder.input as Record<string, unknown>;
     const message = (input.message as string) ?? '(no message)';
-    const channel = (input.channel as string) ?? reminder.channel ?? 'web';
+    const channel = (input.channel as string) ?? reminder.channel ?? DEFAULT_CHANNEL;
 
     try {
       await deliverReminder(message, channel, reminder.userId, reminder.sessionId);
@@ -208,7 +208,11 @@ async function deliverViaEmail(userId: string | null, message: string): Promise<
   if (!toEmail) throw new Error(`No email address on record for user ${userId}`);
   if (!env.SANDRA_EMAIL_ADDRESS) throw new Error('SANDRA_EMAIL_ADDRESS not configured');
 
-  const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+  if (!env.DEFAULT_TENANT_ID) {
+    log.warn('DEFAULT_TENANT_ID not configured — cannot send email reminders');
+    return;
+  }
+  const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID);
   await sendEmail(ctx, {
     from: env.SANDRA_EMAIL_ADDRESS,
     to: [toEmail],

@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 import { toolRegistry } from './registry';
 import { enqueueAction } from '@/lib/actions/queue';
 import { actionRateLimiter } from '@/lib/actions/rate-limiter';
@@ -79,7 +80,7 @@ const queueReminder: SandraTool = {
     const result = await enqueueAction({
       userId:           context.userId,
       sessionId:        context.sessionId,
-      channel:          params.channel ?? 'web',
+      channel:          params.channel ?? DEFAULT_CHANNEL,
       tool:             'queueReminder',
       input:            { message: params.message, deliverAt: deliverAt.toISOString(), channel: params.channel },
       requiresApproval: false,
@@ -92,7 +93,7 @@ const queueReminder: SandraTool = {
         actionId:  result.actionId,
         message:   params.message,
         deliverAt: deliverAt.toISOString(),
-        channel:   params.channel ?? 'web',
+        channel:   params.channel ?? DEFAULT_CHANNEL,
         confirmation: `Reminder queued! I'll remind you at ${deliverAt.toUTCString()}.`,
       },
     };

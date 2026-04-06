@@ -7,6 +7,9 @@ import type { SupportedLanguage } from '@/lib/i18n/types';
 export const CHANNEL_TYPES = ['web', 'whatsapp', 'instagram', 'email', 'voice'] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
+/** Default channel when none is specified */
+export const DEFAULT_CHANNEL: ChannelType = 'web';
+
 /** Normalized inbound message from any channel */
 export interface InboundMessage {
   channelType: ChannelType;

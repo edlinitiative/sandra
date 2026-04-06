@@ -215,15 +215,27 @@ export class FallbackProvider implements AIProvider {
     throw lastError ?? new ProviderError('fallback', 'All AI providers failed');
   }
 
-  // ── Embeddings — route to the first provider that supports them ──────────
-  // Gemini and Anthropic don't offer embeddings, so we find the first
-  // provider in the chain that does (typically OpenAI).
+  // ── Embeddings — route to the configured or first capable provider ─────
+  // OpenAI and Gemini support embeddings. Anthropic does not.
 
   /** Providers known to support embeddings */
-  private static readonly EMBEDDING_CAPABLE = new Set(['openai']);
+  private static readonly EMBEDDING_CAPABLE = new Set(['openai', 'gemini']);
 
   private resolveEmbeddingProvider(): AIProvider {
     if (this.embeddingProvider) return this.embeddingProvider;
+
+    // Honour explicit EMBEDDING_PROVIDER env var
+    const preferred = process.env.EMBEDDING_PROVIDER;
+    if (preferred) {
+      for (const provider of this.providers) {
+        if (provider.name === preferred && FallbackProvider.EMBEDDING_CAPABLE.has(provider.name)) {
+          this.embeddingProvider = provider;
+          log.info(`Embedding provider resolved (env): ${provider.name}`);
+          return provider;
+        }
+      }
+      log.warn(`Configured EMBEDDING_PROVIDER="${preferred}" not found or not capable, falling back to auto-detect`);
+    }
 
     for (const provider of this.providers) {
       if (FallbackProvider.EMBEDDING_CAPABLE.has(provider.name)) {

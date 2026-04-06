@@ -32,6 +32,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { registerApiTools } from '@/lib/tools/tenant-tool-loader';
 import { parseOpenApiSpecFromText } from '@/lib/tools/openapi-parser';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { db } from '@/lib/db';
 import { createLogger } from '@/lib/utils';
 
@@ -39,6 +40,12 @@ const log = createLogger('api:tools:register');
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated || !auth.user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const contentType = request.headers.get('content-type') ?? '';
 
     let tenantId: string | undefined;
@@ -89,7 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required fields
-    if (!tenantId) return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
+    // tenantId comes from authenticated caller, not request body (security)
+    const authenticatedTenantId = auth.user.tenantId;
+    if (authenticatedTenantId) {
+      tenantId = authenticatedTenantId; // Always use auth-derived tenantId
+    }
+    if (!tenantId) return NextResponse.json({ error: 'tenantId is required (set via auth or request body)' }, { status: 400 });
     if (!connectionName) return NextResponse.json({ error: 'connectionName is required' }, { status: 400 });
     if (!baseUrl) return NextResponse.json({ error: 'baseUrl is required' }, { status: 400 });
     if (!openApiSpec && !openApiSpecText) {

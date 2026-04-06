@@ -5,6 +5,7 @@ import type { PrismaClient, Certificate, Prisma } from '@prisma/client';
 
 export type CreateCertificateInput = {
   userId: string;
+  tenantId?: string;
   courseName: string;
   platform: string;
   certificateUrl?: string;
@@ -18,6 +19,7 @@ export async function createCertificate(
   return prisma.certificate.create({
     data: {
       userId: input.userId,
+      tenantId: input.tenantId,
       courseName: input.courseName,
       platform: input.platform,
       certificateUrl: input.certificateUrl,
@@ -29,11 +31,12 @@ export async function createCertificate(
 export async function getCertificatesByUserId(
   prisma: PrismaClient,
   userId: string,
-  options?: { platform?: string },
+  options?: { tenantId?: string; platform?: string },
 ): Promise<Certificate[]> {
   return prisma.certificate.findMany({
     where: {
       userId,
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
       ...(options?.platform ? { platform: options.platform } : {}),
     },
     orderBy: { issuedAt: 'desc' },

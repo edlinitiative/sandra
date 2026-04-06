@@ -15,15 +15,24 @@ export interface RepoSummary {
   indexedDocumentCount: number;
 }
 
-export async function getActiveRepos(prisma: PrismaClient): Promise<RepoRegistry[]> {
+export async function getActiveRepos(
+  prisma: PrismaClient,
+  options?: { tenantId?: string },
+): Promise<RepoRegistry[]> {
   return prisma.repoRegistry.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
+    },
     orderBy: { createdAt: 'asc' },
   });
 }
 
-export async function getActiveRepoSummaries(prisma: PrismaClient): Promise<RepoSummary[]> {
-  const repos = await getActiveRepos(prisma);
+export async function getActiveRepoSummaries(
+  prisma: PrismaClient,
+  options?: { tenantId?: string },
+): Promise<RepoSummary[]> {
+  const repos = await getActiveRepos(prisma, options);
 
   if (repos.length === 0) {
     return [];
@@ -105,9 +114,10 @@ export async function getRepoById(
 export async function getRepoByRepoId(
   prisma: PrismaClient,
   repoId: string,
+  options?: { tenantId?: string },
 ): Promise<RepoRegistry | null> {
   const normalized = repoId.trim().toLowerCase();
-  const repos = await getActiveRepos(prisma);
+  const repos = await getActiveRepos(prisma, options);
 
   return (
     repos.find((repo) => `${repo.owner}/${repo.name}`.toLowerCase() === normalized) ??

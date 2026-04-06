@@ -32,8 +32,6 @@ import { resolveGoogleContext } from '@/lib/google/context';
 
 const log = createLogger('cron:email-poll');
 
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
-
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 function verifyCronAuth(request: Request): boolean {
@@ -66,7 +64,12 @@ export async function GET(request: Request) {
   let failed = 0;
 
   try {
-    const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID, adapter.sandraEmail);
+    const tenantId = env.DEFAULT_TENANT_ID;
+    if (!tenantId) {
+      return NextResponse.json({ error: 'DEFAULT_TENANT_ID not configured' }, { status: 500 });
+    }
+
+    const ctx = await resolveGoogleContext(tenantId, adapter.sandraEmail);
 
     // Fetch up to 20 unread inbox messages per run
     const messages = await listMessages(ctx, {

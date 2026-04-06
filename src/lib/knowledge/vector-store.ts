@@ -83,6 +83,14 @@ function stripEmbedding(chunk: EmbeddedChunk): DocumentChunk {
 function matchesFilter(entry: EmbeddedChunk, filter?: KnowledgeSearchFilter): boolean {
   if (!filter) return true;
 
+  // Tenant isolation: only return the tenant's own docs + unscoped (global) docs
+  if (filter.tenantId) {
+    const entryTenantId = metadataString(entry.metadata, 'tenantId');
+    if (entryTenantId && entryTenantId !== filter.tenantId) {
+      return false;
+    }
+  }
+
   if (filter.sourceId && entry.sourceId !== filter.sourceId) {
     return false;
   }

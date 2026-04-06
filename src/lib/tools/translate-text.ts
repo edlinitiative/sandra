@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import type { SandraTool, ToolResult, ToolContext } from './types';
 import { toolRegistry } from './registry';
-import OpenAI from 'openai';
+import { getAIProvider } from '@/lib/ai';
 import { env } from '@/lib/config';
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -72,24 +72,23 @@ const translateTextTool: SandraTool = {
         : '';
 
     try {
-      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      const provider = getAIProvider();
 
       const systemPrompt = `You are a professional translator specializing in English, French, and Haitian Creole (Kreyòl ayisyen). 
 Translate the provided text accurately${sourceLangNote} into ${targetLangName}.
 Return ONLY the translated text, with no explanations, notes, or prefixes.
 For Haitian Creole, use modern standardized Kreyòl orthography (IPN standard).`;
 
-      const response = await client.chat.completions.create({
-        model: env.OPENAI_MODEL,
+      const response = await provider.chatCompletion({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: params.text },
         ],
-        max_tokens: 1500,
+        maxTokens: 1500,
         temperature: 0.1,
       });
 
-      const translation = response.choices[0]?.message?.content?.trim() ?? '';
+      const translation = response.content?.trim() ?? '';
 
       if (!translation) {
         return { success: false, data: null, error: 'Translation returned empty result.' };

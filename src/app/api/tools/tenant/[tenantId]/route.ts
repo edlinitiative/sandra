@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('api:tools:tenant');
@@ -14,11 +15,21 @@ interface RouteContext {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext,
 ) {
   try {
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     const { tenantId } = await context.params;
+
+    // Verify the caller has access to this tenant
+    if (auth.user.tenantId && auth.user.tenantId !== tenantId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const tools = await db.dynamicTool.findMany({
       where: { tenantId },
@@ -47,7 +58,18 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     const { tenantId } = await context.params;
+
+    // Verify the caller has access to this tenant
+    if (auth.user.tenantId && auth.user.tenantId !== tenantId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { toolId, enabled } = body as { toolId?: string; enabled?: boolean };
 

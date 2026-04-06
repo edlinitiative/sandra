@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getPrismaSessionStore } from '@/lib/memory/session-store';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { apiErrorResponse, generateRequestId, successResponse, sessionIdSchema, ValidationError, NotFoundError } from '@/lib/utils';
 
 interface RouteContext {
   params: Promise<{ sessionId: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const requestId = generateRequestId();
 
   try {
+    // Require authentication
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, error: { code: 'UNAUTHORIZED', message: auth.error ?? 'Authentication required' } },
+        { status: 401 },
+      );
+    }
+
     const { sessionId } = await context.params;
 
     // Validate sessionId as UUID

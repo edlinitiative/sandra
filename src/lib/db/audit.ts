@@ -5,6 +5,7 @@ import type { PrismaClient, AuditLog } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 export type CreateAuditLogInput = {
+  tenantId?: string;
   userId?: string;
   sessionId?: string;
   action: string;
@@ -20,6 +21,7 @@ export async function createAuditLogEntry(
 ): Promise<AuditLog> {
   return prisma.auditLog.create({
     data: {
+      tenantId: input.tenantId ?? null,
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
       action: input.action,
@@ -34,6 +36,7 @@ export async function createAuditLogEntry(
 export async function getAuditLogs(
   prisma: PrismaClient,
   options?: {
+    tenantId?: string;
     userId?: string;
     sessionId?: string;
     action?: string;
@@ -46,6 +49,7 @@ export async function getAuditLogs(
 
   return prisma.auditLog.findMany({
     where: {
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
       ...(options?.userId ? { userId: options.userId } : {}),
       ...(options?.sessionId ? { sessionId: options.sessionId } : {}),
       ...(options?.action ? { action: options.action } : {}),

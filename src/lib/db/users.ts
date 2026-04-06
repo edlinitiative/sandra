@@ -1,4 +1,5 @@
 import type { PrismaClient, Prisma, User } from '@prisma/client';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 
 export type ResolveUserInput = {
   externalId: string;
@@ -34,7 +35,7 @@ export async function resolveUserByExternalId(
       name: input.name ?? undefined,
       email: input.email ?? undefined,
       language: input.language ?? 'en',
-      channel: input.channel ?? 'web',
+      channel: input.channel ?? DEFAULT_CHANNEL,
       metadata: input.metadata as Prisma.InputJsonValue | undefined,
     },
     update: {

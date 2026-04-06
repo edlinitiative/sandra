@@ -66,6 +66,13 @@ vi.mock('@/lib/config', () => ({
   env: { OPENAI_API_KEY: 'sk-test-validkeyfortesting' },
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'user-1', role: 'admin', scopes: ['*'], tenantId: 'tenant-1' },
+  }),
+}));
+
 vi.mock('@/lib/i18n', () => ({
   resolveLanguage: ({
     explicit,

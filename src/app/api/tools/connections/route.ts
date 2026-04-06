@@ -7,16 +7,23 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('api:tools:connections:list');
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = request.nextUrl.searchParams.get('tenantId');
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
+    // Use tenant from auth context; fall back to query param for admin users
+    const tenantId = auth.user.tenantId ?? request.nextUrl.searchParams.get('tenantId');
 
     if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId query parameter is required' }, { status: 400 });
+      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
     }
 
     const connections = await db.externalApiConnection.findMany({

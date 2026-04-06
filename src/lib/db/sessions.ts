@@ -1,7 +1,9 @@
 import type { PrismaClient, Session, Message, Prisma } from '@prisma/client';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 
 export type CreateSessionInput = {
   id?: string;
+  tenantId?: string;
   userId?: string;
   channel?: string;
   language?: string;
@@ -24,8 +26,9 @@ export async function createSession(
   return prisma.session.create({
     data: {
       id: input.id,
+      tenantId: input.tenantId,
       userId: input.userId,
-      channel: input.channel ?? 'web',
+      channel: input.channel ?? DEFAULT_CHANNEL,
       language: input.language ?? 'en',
       title: input.title,
       metadata: input.metadata as Prisma.InputJsonValue | undefined,
@@ -36,18 +39,27 @@ export async function createSession(
 export async function getSessionById(
   prisma: PrismaClient,
   id: string,
+  options?: { tenantId?: string },
 ): Promise<Session | null> {
-  return prisma.session.findUnique({ where: { id } });
+  return prisma.session.findFirst({
+    where: {
+      id,
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
+    },
+  });
 }
 
 export async function getSessionMessages(
   prisma: PrismaClient,
   sessionId: string,
-  options: { limit?: number; orderBy?: 'asc' | 'desc' } = {},
+  options: { tenantId?: string; limit?: number; orderBy?: 'asc' | 'desc' } = {},
 ): Promise<Message[]> {
-  const { limit, orderBy = 'asc' } = options;
+  const { tenantId, limit, orderBy = 'asc' } = options;
   return prisma.message.findMany({
-    where: { sessionId },
+    where: {
+      sessionId,
+      ...(tenantId ? { tenantId } : {}),
+    },
     orderBy: { createdAt: orderBy },
     ...(limit ? { take: limit } : {}),
   });

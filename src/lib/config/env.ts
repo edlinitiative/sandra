@@ -26,10 +26,15 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
   GEMINI_TTS_MODEL: z.string().default('gemini-2.5-flash-preview-tts'),
+  GEMINI_EMBEDDING_MODEL: z.string().default('text-embedding-004'),
 
   // AI Provider priority — comma-separated list of providers to try in order
   // Available: openai, gemini, anthropic
   AI_PROVIDER_PRIORITY: z.string().default('openai,gemini,anthropic'),
+
+  // Embedding provider — which provider to use for generating embeddings
+  // Available: openai, gemini (anthropic does not support embeddings)
+  EMBEDDING_PROVIDER: z.string().optional(),
 
   // GitHub
   GITHUB_TOKEN: z.string().default(''),
@@ -85,6 +90,9 @@ const envSchema = z.object({
 
   // Cron / scheduled jobs
   CRON_SECRET: z.string().optional(),                // Vercel Cron secret — protects /api/cron/* routes
+
+  // Multi-tenant — fallback tenant for single-tenant / dev setups
+  DEFAULT_TENANT_ID: z.string().optional(),          // Replaces hardcoded EdLight tenant ID
 });
 
 export type Env = z.infer<typeof envSchema>;

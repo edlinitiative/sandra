@@ -16,6 +16,7 @@ import {
 } from '@/lib/memory/session-insights';
 import { retrieveContext, formatRetrievalContext, inferKnowledgeQueryContext } from '@/lib/knowledge';
 import { createLogger, ProviderError } from '@/lib/utils';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 import { trackEvent } from '@/lib/analytics';
 import { detectAndRecordCorrection, detectAndRecordCapabilityGap } from '@/lib/learning';
 
@@ -56,7 +57,7 @@ export async function runSandraAgent(
     userId: input.userId,
     channel: input.channel,
     language: input.language,
-    data: { channel: input.channel ?? 'web', language: input.language, isNewSession: false },
+    data: { channel: input.channel ?? DEFAULT_CHANNEL, language: input.language, isNewSession: false },
   });
 
   trackEvent({
@@ -65,7 +66,7 @@ export async function runSandraAgent(
     userId: input.userId,
     channel: input.channel,
     language: input.language,
-    data: { messageLength: input.message.length, channel: input.channel ?? 'web', language: input.language },
+    data: { messageLength: input.message.length, channel: input.channel ?? DEFAULT_CHANNEL, language: input.language },
   });
 
   try {

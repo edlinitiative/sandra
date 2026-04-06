@@ -5,6 +5,7 @@ import type { PrismaClient, Enrollment, Prisma } from '@prisma/client';
 
 export type CreateEnrollmentInput = {
   userId: string;
+  tenantId?: string;
   courseId: string;
   courseName: string;
   platform: string;
@@ -19,6 +20,7 @@ export async function createEnrollment(
   return prisma.enrollment.create({
     data: {
       userId: input.userId,
+      tenantId: input.tenantId,
       courseId: input.courseId,
       courseName: input.courseName,
       platform: input.platform,
@@ -31,11 +33,12 @@ export async function createEnrollment(
 export async function getEnrollmentsByUserId(
   prisma: PrismaClient,
   userId: string,
-  options?: { platform?: string; status?: string },
+  options?: { tenantId?: string; platform?: string; status?: string },
 ): Promise<Enrollment[]> {
   return prisma.enrollment.findMany({
     where: {
       userId,
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
       ...(options?.platform ? { platform: options.platform } : {}),
       ...(options?.status ? { status: options.status } : {}),
     },

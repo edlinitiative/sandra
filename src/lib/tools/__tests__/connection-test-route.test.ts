@@ -19,6 +19,14 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
+// ── Auth mock ─────────────────────────────────────────────────────────────────
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'user-1', role: 'admin', scopes: ['*'], tenantId: 'tenant-1' },
+  }),
+}));
+
 // ── Fetch mock ────────────────────────────────────────────────────────────────
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);

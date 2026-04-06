@@ -5,6 +5,7 @@ import type { PrismaClient, ProgramApplication, Prisma } from '@prisma/client';
 
 export type CreateApplicationInput = {
   userId: string;
+  tenantId?: string;
   programName: string;
   programId?: string;
   status?: string;
@@ -18,6 +19,7 @@ export async function createApplication(
   return prisma.programApplication.create({
     data: {
       userId: input.userId,
+      tenantId: input.tenantId,
       programName: input.programName,
       programId: input.programId,
       status: input.status ?? 'submitted',
@@ -29,11 +31,12 @@ export async function createApplication(
 export async function getApplicationsByUserId(
   prisma: PrismaClient,
   userId: string,
-  options?: { status?: string; programName?: string },
+  options?: { tenantId?: string; status?: string; programName?: string },
 ): Promise<ProgramApplication[]> {
   return prisma.programApplication.findMany({
     where: {
       userId,
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
       ...(options?.status ? { status: options.status } : {}),
       ...(options?.programName ? { programName: options.programName } : {}),
     },

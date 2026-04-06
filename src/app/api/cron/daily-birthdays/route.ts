@@ -24,9 +24,6 @@ import { createLogger } from '@/lib/utils';
 
 const log = createLogger('cron:daily-birthdays');
 
-/** Hard-coded EdLight tenant — same as used in /api/index/drive */
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
-
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 function verifyCronAuth(request: Request): boolean {
@@ -56,8 +53,13 @@ export async function GET(request: Request) {
   try {
     log.info('Daily birthday cron started');
 
+    const tenantId = env.DEFAULT_TENANT_ID;
+    if (!tenantId) {
+      return NextResponse.json({ error: 'DEFAULT_TENANT_ID not configured' }, { status: 500 });
+    }
+
     // ── 1. Scan all sources ──────────────────────────────────────────────
-    const result = await scanBirthdays({ tenantId: EDLIGHT_TENANT_ID });
+    const result = await scanBirthdays({ tenantId });
 
     log.info('Birthday scan complete', {
       count: result.count,
@@ -90,7 +92,7 @@ export async function GET(request: Request) {
     const taskErrors: string[] = [];
 
     try {
-      const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+      const ctx = await resolveGoogleContext(tenantId);
 
       for (const b of result.birthdays) {
         try {

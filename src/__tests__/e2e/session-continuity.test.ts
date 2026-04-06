@@ -71,6 +71,13 @@ vi.mock('@/lib/knowledge', () => ({
   getVectorStore: vi.fn().mockReturnValue({ count: vi.fn().mockResolvedValue(0) }),
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'user-1', role: 'admin', scopes: ['*'], tenantId: 'tenant-1' },
+  }),
+}));
+
 vi.mock('@/lib/tools', () => ({
   toolRegistry: {
     getToolDefinitions: vi.fn().mockReturnValue([]),

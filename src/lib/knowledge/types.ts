@@ -50,6 +50,7 @@ export type KnowledgeContentType =
   | 'general';
 
 export interface KnowledgeSearchFilter {
+  tenantId?: string;
   sourceId?: string;
   platform?: KnowledgePlatform | string;
   repo?: string;

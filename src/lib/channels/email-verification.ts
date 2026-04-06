@@ -13,6 +13,7 @@
  */
 
 import { createLogger } from '@/lib/utils';
+import { env } from '@/lib/config';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 import { resolveGoogleContext } from '@/lib/google/context';
 import { getUserByEmail } from '@/lib/google/directory';
@@ -24,7 +25,6 @@ const log = createLogger('channels:email-verification');
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
 const VERIFICATION_SENDER = 'sandra@edlight.org';
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
@@ -82,7 +82,7 @@ export async function startEmailVerification(
   // 1. Verify the email exists in the Workspace directory
   let directoryUser: DirectoryUser | null;
   try {
-    const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+    const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID!);
     directoryUser = await getUserByEmail(ctx, email);
   } catch (err) {
     log.error('Directory lookup failed during verification', {
@@ -102,7 +102,7 @@ export async function startEmailVerification(
 
   // 3. Send verification email
   try {
-    const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+    const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID!);
     await sendEmail(ctx, {
       from: VERIFICATION_SENDER,
       to: [email],
@@ -262,7 +262,7 @@ export async function verifyCode(
 
   let directoryUser: DirectoryUser | null = null;
   try {
-    const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+    const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID!);
     directoryUser = await getUserByEmail(ctx, email);
   } catch {
     // Non-fatal — we still know the email is valid from the start step

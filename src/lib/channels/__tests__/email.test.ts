@@ -22,6 +22,7 @@ vi.mock('@/lib/config', () => ({
     GOOGLE_SERVICE_ACCOUNT_EMAIL: 'sa@edlight.iam.gserviceaccount.com',
     GOOGLE_SERVICE_ACCOUNT_KEY: 'base64key',
     GOOGLE_WORKSPACE_DOMAIN: 'edlight.org',
+    DEFAULT_TENANT_ID: 'tenant-1',
   },
 }));
 

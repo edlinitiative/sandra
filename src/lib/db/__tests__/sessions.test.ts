@@ -44,16 +44,16 @@ describe('session helpers', () => {
   describe('getSessionById', () => {
     it('returns session when found', async () => {
       const mockSession = { id: 'sess_1', isActive: true };
-      mockPrismaClient.session.findUnique.mockResolvedValue(mockSession);
+      mockPrismaClient.session.findFirst.mockResolvedValue(mockSession);
 
       const result = await getSessionById(prisma, 'sess_1');
 
-      expect(mockPrismaClient.session.findUnique).toHaveBeenCalledWith({ where: { id: 'sess_1' } });
+      expect(mockPrismaClient.session.findFirst).toHaveBeenCalledWith({ where: { id: 'sess_1' } });
       expect(result).toEqual(mockSession);
     });
 
     it('returns null when not found', async () => {
-      mockPrismaClient.session.findUnique.mockResolvedValue(null);
+      mockPrismaClient.session.findFirst.mockResolvedValue(null);
 
       const result = await getSessionById(prisma, 'missing');
       expect(result).toBeNull();

@@ -2,8 +2,7 @@
  * Google Gemini provider implementation.
  *
  * Implements the AIProvider interface using the @google/generative-ai SDK.
- * Gemini does not offer a native embeddings API comparable to OpenAI's
- * text-embedding-3 — so embeddings delegate to the OpenAI provider.
+ * Supports both chat completions and embeddings (text-embedding-004).
  *
  * Key format differences vs OpenAI that this adapter handles:
  *   1. System messages → systemInstruction config (not in message history)
@@ -285,20 +284,50 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  // ── Embeddings — delegate to OpenAI (Gemini embeddings are limited) ────────
+  // ── Embeddings — native Gemini text-embedding-004 ───────────────────────
 
-  async generateEmbedding(_text: string): Promise<number[]> {
-    throw new ProviderError(
-      'gemini',
-      'Gemini embeddings not supported — use OpenAI for embeddings.',
-    );
+  async generateEmbedding(text: string): Promise<number[]> {
+    const modelName = env.GEMINI_EMBEDDING_MODEL ?? 'text-embedding-004';
+    try {
+      const model = this.client.getGenerativeModel({ model: modelName });
+      const result = await model.embedContent(text);
+      const embedding = result.embedding?.values;
+      if (!embedding) throw new ProviderError('gemini', 'No embedding returned');
+      return embedding;
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown Gemini error';
+      log.error('Embedding generation failed', { error: msg, model: modelName });
+      throw new ProviderError('gemini', msg);
+    }
   }
 
-  async generateEmbeddings(_request: EmbeddingRequest): Promise<EmbeddingResponse> {
-    throw new ProviderError(
-      'gemini',
-      'Gemini embeddings not supported — use OpenAI for embeddings.',
-    );
+  async generateEmbeddings(request: EmbeddingRequest): Promise<EmbeddingResponse> {
+    const modelName = request.model ?? env.GEMINI_EMBEDDING_MODEL ?? 'text-embedding-004';
+    try {
+      const model = this.client.getGenerativeModel({ model: modelName });
+      const texts = Array.isArray(request.input) ? request.input : [request.input];
+
+      const result = await model.batchEmbedContents({
+        requests: texts.map((text) => ({
+          content: { role: 'user', parts: [{ text }] },
+        })),
+      });
+
+      return {
+        embeddings: result.embeddings.map((e) => e.values),
+        model: modelName,
+        usage: {
+          promptTokens: 0, // Gemini doesn't report token usage for embeddings
+          totalTokens: 0,
+        },
+      };
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      const msg = error instanceof Error ? error.message : 'Unknown Gemini error';
+      log.error('Embedding generation failed', { error: msg, model: modelName });
+      throw new ProviderError('gemini', msg);
+    }
   }
 
   // ── Health check ───────────────────────────────────────────────────────────

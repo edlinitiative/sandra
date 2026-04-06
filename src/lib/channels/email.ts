@@ -8,9 +8,6 @@ import { resolveGoogleContext } from '@/lib/google/context';
 
 const log = createLogger('channels:email');
 
-// Tenant that owns the sandra@edlight.org mailbox
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
-
 // ─── Email payload types ─────────────────────────────────────────────────────
 
 /** Normalised inbound email — used when parsing raw webhook form-data payloads. */
@@ -158,7 +155,10 @@ export class EmailChannelAdapter implements ChannelAdapter {
     const threadId = message.metadata?.gmailThreadId as string | undefined;
     const inReplyToMessageId = message.metadata?.emailMessageId as string | undefined;
 
-    const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID, this.sandraEmail);
+    if (!env.DEFAULT_TENANT_ID) {
+      throw new Error('DEFAULT_TENANT_ID not configured — cannot send email');
+    }
+    const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID, this.sandraEmail);
 
     if (threadId && inReplyToMessageId) {
       await replyToMessage(ctx, {

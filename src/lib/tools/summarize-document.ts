@@ -12,7 +12,7 @@ import { toolRegistry } from './registry';
 import { resolveGoogleContext, resolveTenantForUser } from '@/lib/google/context';
 import { getFileById, getFileContent } from '@/lib/google/drive';
 import { getMessage } from '@/lib/google/gmail';
-import OpenAI from 'openai';
+import { getAIProvider } from '@/lib/ai';
 import { env } from '@/lib/config';
 import { db } from '@/lib/db';
 
@@ -139,10 +139,9 @@ const summarizeDocumentTool: SandraTool = {
 
       // ── Summarize with AI ────────────────────────────────────────────────────
       const langName = params.language === 'fr' ? 'French' : params.language === 'ht' ? 'Haitian Creole (Kreyòl)' : 'English';
-      const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      const provider = getAIProvider();
 
-      const response = await client.chat.completions.create({
-        model: env.OPENAI_MODEL,
+      const response = await provider.chatCompletion({
         messages: [
           {
             role: 'system',
@@ -153,11 +152,11 @@ const summarizeDocumentTool: SandraTool = {
             content: contentToSummarize,
           },
         ],
-        max_tokens: 600,
+        maxTokens: 600,
         temperature: 0.2,
       });
 
-      const summary = response.choices[0]?.message?.content?.trim() ?? '';
+      const summary = response.content?.trim() ?? '';
 
       return {
         success: true,

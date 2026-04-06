@@ -2,6 +2,7 @@ import type { ChatMessage } from '@/lib/ai/types';
 import type { Session, Message } from '@prisma/client';
 import type { SessionMemoryStore, ISessionStore, ConversationEntry } from './types';
 import { MAX_CONTEXT_MESSAGES } from '@/lib/config';
+import { DEFAULT_CHANNEL } from '@/lib/channels/types';
 import { createLogger } from '@/lib/utils';
 import { db } from '@/lib/db';
 import {
@@ -96,7 +97,7 @@ export class PrismaSessionStore implements ISessionStore {
   }): Promise<Session> {
     const session = await dbCreateSession(db, {
       id: params.id,
-      channel: params.channel ?? 'web',
+      channel: params.channel ?? DEFAULT_CHANNEL,
       language: params.language ?? 'en',
       userId: params.userId,
       title: params.title,

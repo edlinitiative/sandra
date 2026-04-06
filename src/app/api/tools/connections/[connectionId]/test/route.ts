@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { applyAuth } from '@/lib/tools/api-tool-executor';
 import type { ApiCredentials, AuthConfig } from '@/lib/tools/api-tool-executor';
 import { createLogger } from '@/lib/utils';
@@ -26,9 +27,14 @@ interface RouteContext {
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext,
 ) {
+  const auth = await authenticateRequest(request);
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
   const { connectionId } = await context.params;
 
   // ── Load connection ──────────────────────────────────────────────────────
@@ -37,6 +43,12 @@ export async function POST(
   });
 
   if (!connection) {
+    return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+  }
+
+  // Verify tenant ownership
+  const callerTenantId = auth.user.tenantId;
+  if (callerTenantId && connection.tenantId !== callerTenantId) {
     return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
   }
 

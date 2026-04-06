@@ -16,6 +16,7 @@
  */
 
 import { db } from '@/lib/db';
+import { env } from '@/lib/config';
 import { createLogger } from '@/lib/utils';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
 import { resolveGoogleContext } from '@/lib/google/context';
@@ -109,7 +110,6 @@ export function isCacheStale(): boolean {
 
 // ─── Directory Refresh ──────────────────────────────────────────────────────
 
-const EDLIGHT_TENANT_ID = 'cmnhsjh850000a1y1b69ji257';
 let refreshInProgress: Promise<void> | null = null;
 
 /**
@@ -127,7 +127,11 @@ export async function refreshPhoneCache(): Promise<void> {
 
   refreshInProgress = (async () => {
     try {
-      const ctx = await resolveGoogleContext(EDLIGHT_TENANT_ID);
+      if (!env.DEFAULT_TENANT_ID) {
+        log.warn('DEFAULT_TENANT_ID not configured — skipping phone cache refresh');
+        return;
+      }
+      const ctx = await resolveGoogleContext(env.DEFAULT_TENANT_ID);
       await syncDirectoryPhones(async () => {
         const result = await listUsers(ctx, { maxResults: 200 });
         return result.users;
