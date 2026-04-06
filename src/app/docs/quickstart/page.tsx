@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 
 function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
   return (
-    <div className="my-4 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/50">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2">
-        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-slate-500">{lang}</span>
+    <div className="my-4 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
+      <div className="flex items-center gap-2 border-b border-outline-variant/15 px-4 py-2">
+        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-on-surface-variant">{lang}</span>
       </div>
-      <pre className="p-4 text-sm leading-relaxed text-slate-200">
+      <pre className="p-4 text-sm leading-relaxed text-on-surface">
         <code>{code}</code>
       </pre>
     </div>
@@ -21,7 +21,7 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-4 rounded-xl border border-sandra-500/20 bg-sandra-500/[0.06] px-4 py-3 text-sm leading-relaxed text-slate-300">
+    <div className="my-4 rounded-xl border border-primary/20 bg-sandra-500/[0.06] px-4 py-3 text-sm leading-relaxed text-on-surface">
       {children}
     </div>
   );
@@ -31,9 +31,9 @@ export default function QuickstartPage() {
   return (
     <div className="prose-custom">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-sandra-400">Getting Started</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Getting Started</p>
         <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">Quickstart</h1>
-        <p className="text-base leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-on-surface-variant">
           Send your first message to Sandra in under 5 minutes. No SDK required — just HTTP.
         </p>
       </div>
@@ -41,9 +41,9 @@ export default function QuickstartPage() {
       {/* Step 1 */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-bold text-white">1. Send a message (JSON)</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
-          The simplest integration: a single <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-slate-200">POST</code> to{' '}
-          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-slate-200">/api/chat</code>.
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          The simplest integration: a single <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">POST</code> to{' '}
+          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">/api/chat</code>.
           Sandra runs her full agent loop — RAG retrieval, 66 tools, memory — and returns a response.
         </p>
         <CodeBlock lang="bash" code={`curl -X POST https://sandra.edlight.org/api/chat \\
@@ -60,13 +60,13 @@ export default function QuickstartPage() {
   "toolsUsed": ["searchKnowledgeBase"],
   "language": "en"
 }`} />
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Field</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Required</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Description</th>
+              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Field</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Required</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Description</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -77,10 +77,10 @@ export default function QuickstartPage() {
                 ['language', 'Optional', 'en · fr · ht (Haitian Creole). Falls back to user preference or auto-detect'],
                 ['channel', 'Optional', 'web · whatsapp · instagram · email · voice. Controls response formatting'],
               ].map(([field, req, desc]) => (
-                <tr key={field} className="text-slate-300">
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-200">{field}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-400">{req}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-400">{desc}</td>
+                <tr key={field} className="text-on-surface">
+                  <td className="px-4 py-2.5 font-mono text-xs text-on-surface">{field}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{req}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{desc}</td>
                 </tr>
               ))}
             </tbody>
@@ -91,7 +91,7 @@ export default function QuickstartPage() {
       {/* Step 2 */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-bold text-white">2. Stream the response (SSE)</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
           For chat UIs, use the streaming endpoint. Sandra emits tokens as they are generated.
         </p>
         <CodeBlock lang="javascript" code={`const res = await fetch('https://sandra.edlight.org/api/chat/stream', {
@@ -122,13 +122,13 @@ while (true) {
     if (event.type === 'error')     handleError(event.message);
   }
 }`} />
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Event type</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Payload</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Description</th>
+              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Event type</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Payload</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Description</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -139,10 +139,10 @@ while (true) {
                 ['done', '{ response, sessionId, toolsUsed }', 'Final complete response; stream is finished'],
                 ['error', '{ message }', 'An error occurred'],
               ].map(([type, payload, desc]) => (
-                <tr key={type} className="text-slate-300">
-                  <td className="px-4 py-2.5 font-mono text-xs text-sandra-300">{type}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-400">{payload}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-400">{desc}</td>
+                <tr key={type} className="text-on-surface">
+                  <td className="px-4 py-2.5 font-mono text-xs text-primary">{type}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-on-surface-variant">{payload}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{desc}</td>
                 </tr>
               ))}
             </tbody>
@@ -153,8 +153,8 @@ while (true) {
       {/* Step 3 */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-bold text-white">3. Maintain conversation history</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
-          Pass the same <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-slate-200">sessionId</code> on every turn.
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          Pass the same <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">sessionId</code> on every turn.
           Sandra automatically loads the last N messages as context for each new request.
           Retrieve the full history at any time:
         </p>
@@ -164,7 +164,7 @@ while (true) {
       {/* Step 4 — language */}
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-bold text-white">4. Set the language</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
           Sandra responds natively in English, French, and Haitian Creole. Pass the language per request,
           or store it once in user memory and Sandra will use it automatically.
         </p>
@@ -173,7 +173,7 @@ while (true) {
 { "language": "en" }   // English (default)`} />
         <Callout>
           If you pass a <strong>userId</strong> and the user has a saved language preference, Sandra will use
-          that preference as a fallback for new sessions — even if you don't send a language field.
+          that preference as a fallback for new sessions — even if you don&apos;t send a language field.
         </Callout>
       </section>
 
@@ -181,17 +181,17 @@ while (true) {
       <section className="mt-12 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/docs/api-reference"
-          className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm transition-colors hover:border-sandra-500/30 hover:bg-sandra-500/[0.04]"
+          className="flex-1 rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4 text-sm transition-colors hover:border-primary/30 hover:bg-sandra-500/[0.04]"
         >
           <p className="mb-1 font-semibold text-white">API Reference →</p>
-          <p className="text-xs text-slate-400">Full endpoint reference with all parameters.</p>
+          <p className="text-xs text-on-surface-variant">Full endpoint reference with all parameters.</p>
         </Link>
         <Link
           href="/docs/channels"
-          className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm transition-colors hover:border-sandra-500/30 hover:bg-sandra-500/[0.04]"
+          className="flex-1 rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4 text-sm transition-colors hover:border-primary/30 hover:bg-sandra-500/[0.04]"
         >
           <p className="mb-1 font-semibold text-white">Channels →</p>
-          <p className="text-xs text-slate-400">Connect WhatsApp, Instagram, email, or voice.</p>
+          <p className="text-xs text-on-surface-variant">Connect WhatsApp, Instagram, email, or voice.</p>
         </Link>
       </section>
     </div>

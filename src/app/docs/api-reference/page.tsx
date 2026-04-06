@@ -9,7 +9,7 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
   const colors = {
     get: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
     post: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    default: 'bg-white/[0.06] text-slate-300 border-white/[0.1]',
+    default: 'bg-surface-container text-on-surface border-white/[0.1]',
   };
   return (
     <span className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[0.65rem] font-bold uppercase ${colors[variant]}`}>
@@ -20,14 +20,14 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
 
 function EndpointTable({ rows }: { rows: { method: 'GET' | 'POST'; path: string; description: string; auth: string }[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+    <div className="overflow-hidden rounded-xl border border-outline-variant/15">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Method</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Endpoint</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Description</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Auth</th>
+          <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Method</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Endpoint</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Description</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Auth</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/[0.04]">
@@ -36,9 +36,9 @@ function EndpointTable({ rows }: { rows: { method: 'GET' | 'POST'; path: string;
               <td className="px-4 py-2.5">
                 <Badge variant={row.method === 'GET' ? 'get' : 'post'}>{row.method}</Badge>
               </td>
-              <td className="px-4 py-2.5 font-mono text-xs text-slate-200">{row.path}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-400">{row.description}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-500">{row.auth}</td>
+              <td className="px-4 py-2.5 font-mono text-xs text-on-surface">{row.path}</td>
+              <td className="px-4 py-2.5 text-xs text-on-surface-variant">{row.description}</td>
+              <td className="px-4 py-2.5 text-xs text-on-surface-variant">{row.auth}</td>
             </tr>
           ))}
         </tbody>
@@ -49,11 +49,11 @@ function EndpointTable({ rows }: { rows: { method: 'GET' | 'POST'; path: string;
 
 function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/50">
-      <div className="border-b border-white/[0.06] px-4 py-2">
-        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-slate-500">{lang}</span>
+    <div className="my-3 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
+      <div className="border-b border-outline-variant/15 px-4 py-2">
+        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-on-surface-variant">{lang}</span>
       </div>
-      <pre className="p-4 text-sm leading-relaxed text-slate-200">
+      <pre className="p-4 text-sm leading-relaxed text-on-surface">
         <code>{code}</code>
       </pre>
     </div>
@@ -64,15 +64,15 @@ export default function ApiReferencePage() {
   return (
     <div>
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-sandra-400">Reference</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Reference</p>
         <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">API Reference</h1>
-        <p className="text-base leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-on-surface-variant">
           All endpoints are relative to{' '}
-          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-slate-200">
+          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">
             https://sandra.edlight.org
           </code>
           . Admin endpoints require an{' '}
-          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-slate-200">x-api-key</code>{' '}
+          <code className="rounded bg-white/[0.07] px-1.5 py-0.5 font-mono text-xs text-on-surface">x-api-key</code>{' '}
           header.
         </p>
       </div>
@@ -88,7 +88,7 @@ export default function ApiReferencePage() {
 
         <div className="mt-6 space-y-6">
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/chat — Request body</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/chat — Request body</h3>
             <CodeBlock lang="json" code={`{
   "message":   "What courses are on EdLight Academy?",  // required
   "sessionId": "session-uuid",                           // recommended
@@ -98,7 +98,7 @@ export default function ApiReferencePage() {
 }`} />
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/chat — Response</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/chat — Response</h3>
             <CodeBlock lang="json" code={`{
   "response":   "EdLight Academy offers...",
   "sessionId":  "session-uuid",
@@ -107,7 +107,7 @@ export default function ApiReferencePage() {
 }`} />
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/chat/stream — SSE events</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/chat/stream — SSE events</h3>
             <CodeBlock lang="text" code={`data: {"type":"start","sessionId":"session-uuid"}
 
 data: {"type":"token","token":"EdLight "}
@@ -144,19 +144,19 @@ data: {"type":"done","response":"EdLight Academy offers...","sessionId":"session
 
         <div className="mt-4 space-y-4">
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/voice/realtime-session — Request</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/voice/realtime-session — Request</h3>
             <CodeBlock lang="json" code={`{ "userId": "user-uuid", "language": "en" }`} />
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/voice/realtime-session — Response</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/voice/realtime-session — Response</h3>
             <CodeBlock lang="json" code={`{
   "client_secret": { "value": "eph_key_abc..." },
   "expires_at": 1712345678
 }`} />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-on-surface-variant">
               Use the ephemeral key to connect a WebRTC client to{' '}
-              <code className="text-slate-400">wss://api.openai.com/v1/realtime</code>.
-              Sandra's identity, tools, and memory context are already injected.
+              <code className="text-on-surface-variant">wss://api.openai.com/v1/realtime</code>.
+              Sandra&apos;s identity, tools, and memory context are already injected.
             </p>
           </div>
         </div>
@@ -173,7 +173,7 @@ data: {"type":"done","response":"EdLight Academy offers...","sessionId":"session
 
         <div className="mt-4 space-y-4">
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">GET /api/health — Response</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">GET /api/health — Response</h3>
             <CodeBlock lang="json" code={`{
   "status": "ok",
   "db": "ok",
@@ -184,7 +184,7 @@ data: {"type":"done","response":"EdLight Academy offers...","sessionId":"session
 }`} />
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/index — Request</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/index — Request</h3>
             <CodeBlock lang="json" code={`// Index a specific repo:
 { "repoId": "your-org/your-repo" }
 
@@ -192,7 +192,7 @@ data: {"type":"done","response":"EdLight Academy offers...","sessionId":"session
 {}`} />
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-300">POST /api/index — Response</h3>
+            <h3 className="mb-2 text-sm font-semibold text-on-surface">POST /api/index — Response</h3>
             <CodeBlock lang="json" code={`{ "success": true, "indexed": 42, "failed": 0 }`} />
           </div>
         </div>
@@ -201,8 +201,8 @@ data: {"type":"done","response":"EdLight Academy offers...","sessionId":"session
       {/* Crons */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Cron Endpoints</h2>
-        <p className="mb-3 text-sm text-slate-400">
-          These are triggered by Vercel's scheduler. You can also call them manually for testing.
+        <p className="mb-3 text-sm text-on-surface-variant">
+          These are triggered by Vercel&apos;s scheduler. You can also call them manually for testing.
         </p>
         <EndpointTable rows={[
           { method: 'GET', path: '/api/cron/daily-birthdays', description: 'Birthday alert: Google Sheets lookup → WhatsApp messages', auth: 'Vercel' },

@@ -137,7 +137,7 @@ export function ChatInput({
           placeholder={isRecording ? '🔴 Recording…' : (placeholder ?? 'Message Sandra…')}
           rows={1}
           disabled={isLoading || isRecording || isVoiceLoading}
-          className="flex-1 resize-none bg-transparent px-2 py-2 text-base text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-40"
+          className="flex-1 resize-none bg-transparent px-2 py-2 text-base text-on-surface placeholder:text-on-surface-variant focus:outline-none disabled:opacity-40"
           style={{ maxHeight: '120px' }}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
@@ -157,8 +157,8 @@ export function ChatInput({
               isRecording
                 ? 'animate-pulse bg-red-500 text-white'
                 : isVoiceLoading
-                  ? 'cursor-wait text-slate-600'
-                  : 'text-slate-500 hover:text-slate-200'
+                  ? 'cursor-wait text-outline'
+                  : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
             {isVoiceLoading ? (
@@ -182,7 +182,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={!input.trim() || isLoading || isRecording || isVoiceLoading}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-slate-700 disabled:text-slate-500"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-outline disabled:text-on-surface-variant"
         >
           {isLoading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

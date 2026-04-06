@@ -38,7 +38,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       nodes.push(
         <pre
           key={i}
-          className="my-2 overflow-x-auto rounded-lg border border-white/[0.07] bg-black/60 px-4 py-3 text-xs text-green-400"
+          className="my-2 overflow-x-auto rounded-lg border border-outline-variant/15 bg-black/60 px-4 py-3 text-xs text-green-400"
         >
           <code>{codeLines.join('\n')}</code>
         </pre>,
@@ -103,7 +103,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     // Horizontal rule
     if (line.match(/^---+$/)) {
-      nodes.push(<hr key={i} className="my-2 border-white/10" />);
+      nodes.push(<hr key={i} className="my-2 border-outline-variant/20" />);
       i++;
       continue;
     }
@@ -141,14 +141,14 @@ function inlineMarkdown(text: string): React.ReactNode {
       parts.push(<em key={match.index}>{match[3]}</em>);
     } else if (match[4]) {
       parts.push(
-        <code key={match.index} className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-sandra-300 border border-white/[0.08]">
+        <code key={match.index} className="rounded bg-surface-container-highest px-1.5 py-0.5 font-mono text-xs text-primary border border-outline-variant/15">
           {match[4]}
         </code>,
       );
     } else if (match[5] && match[6]) {
       parts.push(
         <a key={match.index} href={match[6]} target="_blank" rel="noopener noreferrer"
-          className="text-sandra-400 underline decoration-dotted hover:decoration-solid">
+          className="text-primary underline decoration-dotted hover:decoration-solid">
           {match[5]}
         </a>,
       );
@@ -184,7 +184,7 @@ export function ChatMessage({
       {isUser ? (
         /* ── User message — right-aligned pill ── */
         <div className="flex justify-end">
-          <div className="max-w-[85%] rounded-3xl bg-white/[0.07] px-4 py-2.5 text-[15px] leading-relaxed text-slate-100 sm:max-w-[70%]">
+          <div className="max-w-[85%] rounded-3xl bg-surface-container-high px-4 py-2.5 text-[15px] leading-relaxed text-on-surface sm:max-w-[70%]">
             <div className="whitespace-pre-wrap">{content}</div>
           </div>
         </div>
@@ -192,21 +192,21 @@ export function ChatMessage({
         /* ── Sandra message — icon + label + content ── */
         <div>
           <div className="mb-1.5 flex items-center gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container">
               <svg className="h-3 w-3" viewBox="0 0 32 32" fill="none" aria-hidden="true">
                 <circle cx="16" cy="16" r="6" fill="white" fillOpacity="0.9" />
                 <circle cx="16" cy="16" r="11" stroke="white" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
               </svg>
             </div>
-            <span className="text-xs font-semibold text-slate-500">Sandra</span>
+            <span className="text-xs font-semibold text-on-surface-variant">Sandra</span>
           </div>
 
-          <div className="pl-6 text-[15px] leading-[1.75] text-slate-200 sm:pl-8">
+          <div className="pl-6 text-[15px] leading-[1.75] text-on-surface sm:pl-8">
             {isLoading ? (
               <div className="flex items-center gap-1.5 py-2">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '0ms' }} />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '150ms' }} />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-600" style={{ animationDelay: '300ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '300ms' }} />
               </div>
             ) : (
               <div className="space-y-1">{renderMarkdown(content)}</div>
@@ -222,10 +222,10 @@ export function ChatMessage({
                 title="Helpful"
                 className={`rounded-md px-1.5 py-1 text-xs transition-colors ${
                   feedback === 'up'
-                    ? 'text-sandra-400'
+                    ? 'text-primary'
                     : feedback
-                      ? 'cursor-default text-slate-800'
-                      : 'text-slate-600 hover:bg-white/[0.04] hover:text-slate-300'
+                      ? 'cursor-default text-outline'
+                      : 'text-outline hover:bg-surface-container-low hover:text-on-surface'
                 }`}
               >
                 👍
@@ -238,8 +238,8 @@ export function ChatMessage({
                   feedback === 'down'
                     ? 'text-red-400'
                     : feedback
-                      ? 'cursor-default text-slate-800'
-                      : 'text-slate-600 hover:bg-white/[0.04] hover:text-slate-300'
+                      ? 'cursor-default text-outline'
+                      : 'text-outline hover:bg-surface-container-low hover:text-on-surface'
                 }`}
               >
                 👎
@@ -254,7 +254,7 @@ export function ChatMessage({
                 <button
                   key={q}
                   onClick={() => onFollowUp?.(q)}
-                  className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-400 transition-all hover:border-white/[0.15] hover:bg-white/[0.06] hover:text-slate-200 active:scale-95"
+                  className="rounded-full border border-outline-variant/15 bg-surface-container-low px-3 py-1.5 text-xs text-on-surface-variant transition-all hover:border-outline-variant/30 hover:bg-surface-container hover:text-on-surface active:scale-95"
                 >
                   {q}
                 </button>
@@ -265,7 +265,7 @@ export function ChatMessage({
       )}
 
       {timestamp && (
-        <p className={`mt-1 text-[10px] text-slate-700 ${isUser ? 'text-right' : 'pl-6 sm:pl-8'}`}>
+        <p className={`mt-1 text-[10px] text-outline ${isUser ? 'text-right' : 'pl-6 sm:pl-8'}`}>
           {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       )}

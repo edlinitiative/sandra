@@ -6,147 +6,112 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16 text-gray-800">
-      <h1 className="mb-8 text-3xl font-bold">Privacy Policy</h1>
-      <p className="mb-4 text-sm text-gray-500">Last updated: March 31, 2026</p>
+    <div className="flex-1 overflow-y-auto">
+      <main className="mx-auto max-w-3xl px-6 py-16 text-on-surface">
+        <h1 className="mb-8 text-3xl font-black tracking-tighter">Privacy Policy</h1>
+        <p className="mb-8 text-sm text-outline">Last updated: March 31, 2026</p>
 
-      <section className="space-y-6 text-base leading-relaxed">
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">1. Introduction</h2>
-          <p>
-            Sandra is an AI-powered assistant built by <strong>EdLight Initiative</strong> to help
-            users access information about EdLight programs, courses, scholarships, and services.
-            This Privacy Policy explains how we collect, use, and protect your information when you
-            interact with Sandra through our website, WhatsApp, Instagram, or email.
-          </p>
-        </div>
+        <div className="space-y-10 text-sm leading-relaxed text-on-surface-variant">
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              1. Introduction
+            </h2>
+            <p>
+              Sandra (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is an AI
+              assistant built by the EdLight Initiative. This Privacy Policy explains how we
+              collect, use, and protect information when you interact with Sandra through our
+              website, APIs, or integrated messaging channels.
+            </p>
+          </section>
 
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">2. Information We Collect</h2>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>
-              <strong>Messages you send:</strong> The text of messages you send to Sandra so we can
-              provide relevant responses.
-            </li>
-            <li>
-              <strong>Channel identifiers:</strong> Your phone number (WhatsApp), Instagram user ID,
-              or email address, used to maintain your conversation and deliver replies.
-            </li>
-            <li>
-              <strong>Session data:</strong> Conversation history within a session to provide
-              context-aware responses.
-            </li>
-            <li>
-              <strong>Usage analytics:</strong> Aggregated, anonymized data about how Sandra is used
-              to improve the service.
-            </li>
-          </ul>
-        </div>
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              2. Information We Collect
+            </h2>
+            <ul className="ml-4 list-disc space-y-2">
+              <li>
+                <strong className="text-on-surface">Google Account Info:</strong> When you sign in
+                with Google, we receive your name, email address, and profile picture.
+              </li>
+              <li>
+                <strong className="text-on-surface">Chat Messages:</strong> Messages you send to
+                Sandra are processed to generate responses and may be stored for conversation
+                continuity.
+              </li>
+              <li>
+                <strong className="text-on-surface">Usage Data:</strong> We collect basic analytics
+                such as message counts, response times, and feature usage to improve the service.
+              </li>
+              <li>
+                <strong className="text-on-surface">Channel Data:</strong> If you interact via
+                WhatsApp, Instagram, or voice, we process the data necessary to deliver those
+                services.
+              </li>
+            </ul>
+          </section>
 
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">3. How We Use Your Information</h2>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>To respond to your questions and provide information about EdLight services.</li>
-            <li>To maintain conversation context across messages within a session.</li>
-            <li>To improve Sandra&apos;s accuracy and helpfulness.</li>
-            <li>To detect and prevent misuse of the service.</li>
-          </ul>
-        </div>
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              3. How We Use Information
+            </h2>
+            <ul className="ml-4 list-disc space-y-2">
+              <li>To provide, maintain, and improve Sandra&apos;s AI assistant capabilities</li>
+              <li>To personalize your experience based on conversation history and preferences</li>
+              <li>To connect with third-party services (Google Calendar, Drive, Zoom) when you authorize them</li>
+              <li>To monitor system health and prevent abuse</li>
+            </ul>
+          </section>
 
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">4. Third-Party Services</h2>
-          <p>Sandra uses the following third-party services to operate:</p>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>
-              <strong>OpenAI:</strong> To process and generate responses. Messages are sent to
-              OpenAI&apos;s API. See{' '}
-              <a
-                href="https://openai.com/policies/privacy-policy"
-                className="text-blue-600 underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                OpenAI&apos;s Privacy Policy
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              4. Data Sharing
+            </h2>
+            <p>
+              We do not sell your personal information. We may share data with third-party AI
+              providers (such as Google Gemini) to process your requests. These providers are bound
+              by their own privacy policies and data processing agreements.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              5. Data Retention
+            </h2>
+            <p>
+              Conversation data is retained for the duration of your account. You may request
+              deletion of your data by contacting us at{' '}
+              <a href="mailto:privacy@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                privacy@edlight.org
               </a>
               .
-            </li>
-            <li>
-              <strong>Meta (WhatsApp &amp; Instagram):</strong> To send and receive messages via
-              WhatsApp and Instagram. See{' '}
-              <a
-                href="https://www.facebook.com/privacy/policy"
-                className="text-blue-600 underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Meta&apos;s Privacy Policy
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              6. Security
+            </h2>
+            <p>
+              We implement industry-standard security measures including encryption in transit
+              (TLS), secure authentication (OAuth 2.0), and access controls. However, no system is
+              100% secure, and we cannot guarantee absolute security.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-outline">
+              7. Contact
+            </h2>
+            <p>
+              For questions about this Privacy Policy, please contact us at{' '}
+              <a href="mailto:privacy@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                privacy@edlight.org
               </a>
               .
-            </li>
-            <li>
-              <strong>Vercel:</strong> To host the application. See{' '}
-              <a
-                href="https://vercel.com/legal/privacy-policy"
-                className="text-blue-600 underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Vercel&apos;s Privacy Policy
-              </a>
-              .
-            </li>
-          </ul>
+            </p>
+          </section>
         </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">5. Data Retention</h2>
-          <p>
-            Conversation data is retained for the duration of your session and may be stored for up
-            to 90 days to improve service quality. You may request deletion of your data at any time
-            by contacting us.
-          </p>
-        </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">6. Data Security</h2>
-          <p>
-            We implement industry-standard security measures including encryption in transit (TLS),
-            secure database storage, and access controls to protect your information.
-          </p>
-        </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">7. Your Rights</h2>
-          <p>You have the right to:</p>
-          <ul className="ml-6 list-disc space-y-1">
-            <li>Request access to your personal data.</li>
-            <li>Request deletion of your data.</li>
-            <li>Opt out of data collection by discontinuing use of the service.</li>
-          </ul>
-        </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">8. Contact Us</h2>
-          <p>
-            If you have questions about this Privacy Policy or your data, contact us at:{' '}
-            <a href="mailto:info@edlight.org" className="text-blue-600 underline">
-              info@edlight.org
-            </a>
-          </p>
-        </div>
-
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">9. Changes to This Policy</h2>
-          <p>
-            We may update this Privacy Policy from time to time. Changes will be posted on this page
-            with an updated revision date.
-          </p>
-        </div>
-      </section>
-
-      <footer className="mt-12 border-t pt-6 text-sm text-gray-500">
-        © {new Date().getFullYear()} EdLight Initiative. All rights reserved.
-      </footer>
-    </main>
+      </main>
+    </div>
   );
 }

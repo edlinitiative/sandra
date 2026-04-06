@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-dvh">
-      <body className="flex h-full flex-col overflow-hidden font-sans antialiased">
+    <html lang="en" className="dark h-dvh">
+      <body className="flex h-full flex-col overflow-hidden bg-surface font-sans text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
         <SessionProvider>
           <Header />
           <main className="flex flex-1 flex-col overflow-hidden">{children}</main>

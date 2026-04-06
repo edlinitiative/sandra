@@ -217,7 +217,7 @@ export function ChatContainer() {
   }, []);
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-[#0d0d0d]">
+    <div className="flex flex-1 min-h-0 flex-col bg-surface">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !isLoading ? (
@@ -266,14 +266,14 @@ export function ChatContainer() {
         />
 
         {/* Unified input card */}
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-lg shadow-black/20">
+        <div className="overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low shadow-lg shadow-black/20">
           <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
         </div>
 
         {/* Footer row: language selector + disclaimer */}
         <div className="mt-2 flex items-center justify-between px-1">
           <LanguageSelector language={language} onChange={setLanguageState} />
-          <span className="text-[10px] text-slate-600">Sandra can make mistakes</span>
+          <span className="text-[10px] text-outline">Sandra can make mistakes</span>
         </div>
       </div>
     </div>

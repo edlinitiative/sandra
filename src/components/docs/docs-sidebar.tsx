@@ -30,7 +30,7 @@ export function DocsSidebar() {
       <nav className="sticky top-6 space-y-6">
         {sections.map((section) => (
           <div key={section.label}>
-            <p className="mb-2 px-3 text-[0.625rem] font-semibold uppercase tracking-widest text-slate-600">
+            <p className="mb-2 px-3 text-[0.625rem] font-bold uppercase tracking-widest text-outline">
               {section.label}
             </p>
             <ul className="space-y-0.5">
@@ -40,10 +40,10 @@ export function DocsSidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
+                      className={`flex items-center rounded-xl px-3 py-2 text-sm transition-colors ${
                         active
-                          ? 'bg-sandra-500/10 font-medium text-sandra-400'
-                          : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'
+                          ? 'bg-primary/10 font-medium text-primary'
+                          : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
                       }`}
                     >
                       {item.label}
@@ -55,19 +55,17 @@ export function DocsSidebar() {
           </div>
         ))}
 
-        <div className="rounded-2xl border border-sandra-500/20 bg-sandra-500/[0.06] p-4">
-          <p className="mb-1 text-xs font-semibold text-sandra-300">Need a tenant?</p>
-          <p className="mb-3 text-xs leading-relaxed text-slate-400">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="mb-1 text-xs font-bold text-primary">Need a tenant?</p>
+          <p className="mb-3 text-xs leading-relaxed text-on-surface-variant">
             Contact EdLight to provision a dedicated tenant for your platform.
           </p>
           <a
             href="mailto:hello@edlight.org"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-sandra-400 hover:text-sandra-300"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-fixed"
           >
             Get in touch
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-            </svg>
+            <span className="material-symbols-outlined text-xs">arrow_forward</span>
           </a>
         </div>
       </nav>

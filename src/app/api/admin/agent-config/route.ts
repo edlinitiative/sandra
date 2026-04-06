@@ -107,7 +107,6 @@ export async function PATCH(request: Request) {
     const merged: TenantAgentConfig = { ...currentConfig };
     for (const [key, value] of Object.entries(parsed.data)) {
       if (value === null) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete (merged as Record<string, unknown>)[key];
       } else if (value !== undefined) {
         (merged as Record<string, unknown>)[key] = value;

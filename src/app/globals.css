@@ -1,11 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: #0d0d0d;
-    --foreground: #e2e8f0;
+    --background: #131313;
+    --foreground: #e5e2e1;
   }
 
   html {
@@ -16,7 +19,14 @@
   body {
     color: var(--foreground);
     background: var(--background);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+}
+
+/* ── Material Symbols ──────────────────────────────────────── */
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* ── Keyframes ─────────────────────────────────────────────── */
@@ -33,18 +43,35 @@
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 12px rgba(56, 157, 246, 0.3),
-                0 0 24px rgba(56, 157, 246, 0.1);
+    box-shadow: 0 0 12px rgba(174, 198, 255, 0.3),
+                0 0 24px rgba(174, 198, 255, 0.1);
   }
   50% {
-    box-shadow: 0 0 28px rgba(56, 157, 246, 0.7),
-                0 0 56px rgba(56, 157, 246, 0.3);
+    box-shadow: 0 0 28px rgba(174, 198, 255, 0.7),
+                0 0 56px rgba(174, 198, 255, 0.3);
   }
 }
 
 @keyframes orb-float {
   0%, 100% { transform: translateY(0px);  }
   50%       { transform: translateY(-8px); }
+}
+
+@keyframes materialize {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes morph {
+  0%,100% { border-radius: 58% 42% 36% 64% / 58% 36% 64% 42%; }
+  25%     { border-radius: 36% 64% 58% 42% / 42% 64% 36% 58%; }
+  50%     { border-radius: 42% 58% 42% 58% / 36% 42% 58% 64%; }
+  75%     { border-radius: 64% 36% 64% 36% / 64% 42% 58% 36%; }
+}
+
+@keyframes scan-sweep {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.15; }
 }
 
 /* ── Utilities ─────────────────────────────────────────────── */
@@ -65,17 +92,39 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  /* Neon glow */
+  /* M3 glass panel */
+  .glass-panel {
+    background: rgba(25, 25, 25, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(72, 72, 72, 0.15);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .rim-light {
+    box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.05), inset -1px -1px 0px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Ghost border for cards */
+  .ghost-border {
+    outline: 1px solid rgba(65, 71, 84, 0.15);
+  }
+
+  /* Tonal gradient transition */
+  .tonal-transition-no-border {
+    background-image: linear-gradient(to bottom, rgba(19,19,19,0.9), rgba(19,19,19,0));
+  }
+
+  /* Neon glow variants */
   .glow-blue-sm {
-    box-shadow: 0 0 12px rgba(56, 157, 246, 0.45);
+    box-shadow: 0 0 12px rgba(174, 198, 255, 0.45);
   }
   .glow-blue {
-    box-shadow: 0 0 20px rgba(56, 157, 246, 0.55),
-                0 0 40px rgba(56, 157, 246, 0.2);
+    box-shadow: 0 0 20px rgba(174, 198, 255, 0.55),
+                0 0 40px rgba(174, 198, 255, 0.2);
   }
   .glow-blue-lg {
-    box-shadow: 0 0 40px rgba(56, 157, 246, 0.65),
-                0 0 80px rgba(56, 157, 246, 0.3);
+    box-shadow: 0 0 40px rgba(174, 198, 255, 0.65),
+                0 0 80px rgba(174, 198, 255, 0.3);
   }
   .glow-green {
     box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
@@ -94,11 +143,43 @@
     animation: ring-out 2.2s ease-out 0.85s infinite;
   }
 
-  /* Soundwave bar — use with inline animationDelay style */
   .soundwave-bar {
     transform-origin: center;
     animation: soundwave 1.2s ease-in-out infinite;
   }
+}
+
+/* ── New utilities ─────────────────────────────────────────── */
+
+.animate-materialize {
+  animation: materialize 0.3s ease-out both;
+}
+
+.animate-morph {
+  animation: morph 5s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: materialize 0.25s ease-out both;
+}
+
+/** Ambient glow for the hero AI orb */
+.ai-orb-glow {
+  box-shadow:
+    0 0 80px 20px rgba(174, 198, 255, 0.2);
+}
+
+/** Neon terminal-style streaming cursor */
+.scan-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  vertical-align: middle;
+  margin-left: 3px;
+  border-radius: 1px;
+  background: linear-gradient(to bottom, rgba(174,198,255,0.95), rgba(0,112,240,0.95));
+  box-shadow: 0 0 5px rgba(174,198,255,0.9), 0 0 10px rgba(174,198,255,0.4);
+  animation: scan-sweep 0.85s ease-in-out infinite;
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
@@ -116,61 +197,3 @@
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
-
-/* ── New keyframes ─────────────────────────────────────────────────────────── */
-
-/** Message appears by resolving out of a blur cloud */
-@keyframes materialize {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
-}
-
-/** Organic plasma-blob morph for the orb when Sandra is speaking */
-@keyframes morph {
-  0%,100% { border-radius: 58% 42% 36% 64% / 58% 36% 64% 42%; }
-  25%     { border-radius: 36% 64% 58% 42% / 42% 64% 36% 58%; }
-  50%     { border-radius: 42% 58% 42% 58% / 36% 42% 58% 64%; }
-  75%     { border-radius: 64% 36% 64% 36% / 64% 42% 58% 36%; }
-}
-
-/** Neon scan cursor sweep */
-@keyframes scan-sweep {
-  0%,100% { opacity: 1; }
-  50%     { opacity: 0.15; }
-}
-
-/* ── New utilities ─────────────────────────────────────────────────────────── */
-
-.animate-materialize {
-  animation: materialize 0.3s ease-out both;
-}
-
-.animate-morph {
-  animation: morph 5s ease-in-out infinite;
-}
-
-.animate-fade-up {
-  animation: materialize 0.25s ease-out both;
-}
-
-/** Ambient glow for the hero AI orb */
-.ai-orb-glow {
-  box-shadow:
-    0 0 40px 8px rgba(56, 157, 246, 0.25),
-    0 0 80px 20px rgba(56, 157, 246, 0.10);
-}
-
-/** Neon terminal-style streaming cursor */
-.scan-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 0.9em;
-  vertical-align: middle;
-  margin-left: 3px;
-  border-radius: 1px;
-  background: linear-gradient(to bottom, rgba(93,185,250,0.95), rgba(56,157,246,0.95));
-  box-shadow: 0 0 5px rgba(56,157,246,0.9), 0 0 10px rgba(56,157,246,0.4);
-  animation: scan-sweep 0.85s ease-in-out infinite;
-}
-
-

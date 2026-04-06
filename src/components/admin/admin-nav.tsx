@@ -4,28 +4,34 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const links = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/integrations', label: 'Integrations' },
-  { href: '/admin/settings', label: 'Settings' },
+  { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/admin/integrations', label: 'Integrations', icon: 'hub' },
+  { href: '/admin/settings', label: 'Settings', icon: 'tune' },
 ] as const;
 
 export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mx-auto flex max-w-5xl gap-1 px-6 pt-6">
-      {links.map(({ href, label }) => {
+    <nav className="flex gap-2 border-b border-outline-variant/15 px-6 pt-4 pb-3">
+      {links.map(({ href, label, icon }) => {
         const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
               active
-                ? 'bg-white/[0.1] text-white'
-                : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
+                ? 'bg-surface-container-high text-primary'
+                : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
             }`}
           >
+            <span
+              className="material-symbols-outlined text-lg"
+              style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              {icon}
+            </span>
             {label}
           </Link>
         );

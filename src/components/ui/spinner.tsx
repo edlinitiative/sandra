@@ -1,13 +1,25 @@
-export function Spinner({ className = '', size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
+export function Spinner({
+  className = '',
+  size = 'md',
+}: {
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+}) {
   const sizeClasses = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-8 w-8' };
-
   return (
     <svg
-      className={`animate-spin text-sandra-400 ${sizeClasses[size]} ${className}`}
+      className={`animate-spin text-primary ${sizeClasses[size]} ${className}`}
       viewBox="0 0 24 24"
       fill="none"
     >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
       <path
         className="opacity-75"
         fill="currentColor"

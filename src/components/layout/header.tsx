@@ -1,41 +1,48 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const navLinks = [
+  { href: '/chat', label: 'Chat' },
+  { href: '/docs', label: 'Developers' },
+  { href: '/admin', label: 'Admin' },
+];
 
 export function Header() {
+  const pathname = usePathname();
+
   return (
-    <header className="shrink-0 border-b border-white/[0.05] bg-[#0d0d0d]/80 px-6 py-3.5 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sandra-500 to-sandra-700">
-            <svg className="h-4 w-4" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
-              <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
-              <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.15" strokeWidth="1" fill="none" strokeDasharray="4 6" />
-            </svg>
-          </div>
-          <span className="text-base font-black tracking-tighter text-sandra-400">Sandra</span>
+    <header className="shrink-0 border-b border-outline-variant/15 bg-surface/70 px-8 py-4 backdrop-blur-xl">
+      <div className="flex items-center justify-between">
+        <Link href="/" className="text-xl font-black tracking-tighter text-primary">
+          Sandra
         </Link>
-        <nav className="flex items-center gap-1">
-          <Link
-            href="/chat"
-            className="flex min-h-[2.5rem] items-center rounded-lg px-4 text-[0.6875rem] font-medium uppercase tracking-widest text-slate-500 transition-colors hover:text-white"
-          >
-            Chat
-          </Link>
-          <Link
-            href="/docs"
-            className="flex min-h-[2.5rem] items-center rounded-lg px-4 text-[0.6875rem] font-medium uppercase tracking-widest text-slate-500 transition-colors hover:text-white"
-          >
-            Developers
-          </Link>
-          <Link
-            href="/admin"
-            className="flex min-h-[2.5rem] items-center rounded-lg px-4 text-[0.6875rem] font-medium uppercase tracking-widest text-slate-500 transition-colors hover:text-white"
-          >
-            Admin
-          </Link>
-        </nav>
+        <div className="flex items-center gap-8">
+          {navLinks.map(({ href, label }) => {
+            const active =
+              href === '/chat' ? pathname.startsWith('/chat')
+              : href === '/docs' ? pathname.startsWith('/docs')
+              : href === '/admin' ? pathname.startsWith('/admin')
+              : pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`text-[0.6875rem] font-medium uppercase tracking-[0.05em] transition-colors duration-300 ${
+                  active
+                    ? 'text-primary after:mx-auto after:block after:h-1 after:w-1 after:rounded-full after:bg-primary after:content-[""]'
+                    : 'text-on-surface-variant hover:text-white'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+          <span className="material-symbols-outlined cursor-pointer text-2xl text-primary transition-colors hover:text-white">
+            account_circle
+          </span>
+        </div>
       </div>
     </header>
   );

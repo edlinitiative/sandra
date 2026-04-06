@@ -7,11 +7,11 @@ export const metadata: Metadata = {
 
 function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/50">
-      <div className="border-b border-white/[0.06] px-4 py-2">
-        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-slate-500">{lang}</span>
+    <div className="my-3 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
+      <div className="border-b border-outline-variant/15 px-4 py-2">
+        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-on-surface-variant">{lang}</span>
       </div>
-      <pre className="p-4 text-sm leading-relaxed text-slate-200">
+      <pre className="p-4 text-sm leading-relaxed text-on-surface">
         <code>{code}</code>
       </pre>
     </div>
@@ -22,7 +22,7 @@ function IsolationRow({ feature, description }: { feature: string; description: 
   return (
     <tr>
       <td className="px-4 py-2.5 text-sm font-medium text-white">{feature}</td>
-      <td className="px-4 py-2.5 text-sm text-slate-400">{description}</td>
+      <td className="px-4 py-2.5 text-sm text-on-surface-variant">{description}</td>
     </tr>
   );
 }
@@ -31,9 +31,9 @@ export default function MultiTenantPage() {
   return (
     <div>
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-sandra-400">Reference</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Reference</p>
         <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">Multi-Tenant</h1>
-        <p className="text-base leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-on-surface-variant">
           Deploy Sandra for multiple customers on the same infrastructure — fully isolated.
           Each tenant has independent data, tools, credentials, and API keys.
         </p>
@@ -42,17 +42,17 @@ export default function MultiTenantPage() {
       {/* What is a tenant */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">What is a tenant?</h2>
-        <p className="mb-4 text-sm leading-relaxed text-slate-400">
+        <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
           A <strong className="text-white">tenant</strong> is a fully isolated partition of Sandra.
           If you are building a SaaS product that embeds Sandra, each of your customers is a separate tenant.
-          Tenants never see each other's conversations, memory, or configurations.
+          Tenants never see each other&apos;s conversations, memory, or configurations.
         </p>
-        <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">What is isolated</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Details</th>
+              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">What is isolated</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -71,12 +71,12 @@ export default function MultiTenantPage() {
       {/* Requesting a tenant */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Requesting a tenant</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
           Tenants are provisioned by EdLight. Contact{' '}
-          <a href="mailto:hello@edlight.org" className="text-sandra-400 hover:underline">hello@edlight.org</a>{' '}
+          <a href="mailto:hello@edlight.org" className="text-primary hover:underline">hello@edlight.org</a>{' '}
           with the following information:
         </p>
-        <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-white/[0.04]">
               {[
@@ -88,13 +88,13 @@ export default function MultiTenantPage() {
               ].map(([field, desc]) => (
                 <tr key={field}>
                   <td className="px-4 py-2.5 text-xs font-medium text-white">{field}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-400">{desc}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{desc}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-sm text-slate-400">
+        <p className="mt-3 text-sm text-on-surface-variant">
           You will receive a <strong className="text-white">tenantId</strong> and an{' '}
           <strong className="text-white">admin API key</strong>.
         </p>
@@ -103,7 +103,7 @@ export default function MultiTenantPage() {
       {/* Per-tenant tool configuration */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Per-tenant tool configuration</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
           Sandra has 66 tools. Not every tenant needs all of them. Tools are enabled or disabled
           per tenant at runtime — no redeployment required.
         </p>
@@ -125,20 +125,20 @@ export default function MultiTenantPage() {
               disabled: ['getCourses', 'searchScholarships'],
             },
           ].map((row) => (
-            <div key={row.example} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{row.example}</p>
+            <div key={row.example} className="rounded-xl border border-outline-variant/15 bg-surface-container-low/30 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">{row.example}</p>
               <div className="flex flex-wrap gap-1.5">
                 {row.enabled.map((t) => (
                   <span key={t} className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[0.6rem] text-emerald-400">{t}</span>
                 ))}
                 {row.disabled.map((t) => (
-                  <span key={t} className="rounded-full bg-white/[0.04] px-2 py-0.5 font-mono text-[0.6rem] text-slate-600 line-through">{t}</span>
+                  <span key={t} className="rounded-full bg-surface-container-low px-2 py-0.5 font-mono text-[0.6rem] text-outline line-through">{t}</span>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-on-surface-variant">
           Tool configuration is managed via the admin dashboard or by contacting EdLight.
         </p>
       </section>
@@ -146,8 +146,8 @@ export default function MultiTenantPage() {
       {/* Per-tenant Google Workspace */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Per-tenant Google Workspace</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
-          Each tenant can connect its own Google Workspace domain. Sandra will use that tenant's
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          Each tenant can connect its own Google Workspace domain. Sandra will use that tenant&apos;s
           service account for all Gmail, Drive, Calendar, Tasks, and Directory operations —
           completely isolated from other tenants.
         </p>
@@ -155,7 +155,7 @@ export default function MultiTenantPage() {
 GOOGLE_SERVICE_ACCOUNT_EMAIL=tenant-sa@your-project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 GOOGLE_WORKSPACE_DOMAIN=yourcustomer.com`} />
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-on-surface-variant">
           These are stored as tenant provider config — not shared environment variables.
           Provide them to EdLight and they will be scoped to your tenant only.
         </p>
@@ -164,15 +164,15 @@ GOOGLE_WORKSPACE_DOMAIN=yourcustomer.com`} />
       {/* Per-tenant Zoom */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Per-tenant Zoom</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
           Connect your own Zoom account so Sandra creates meetings under your organization.
         </p>
         <CodeBlock lang="env" code={`ZOOM_ACCOUNT_ID=...
 ZOOM_CLIENT_ID=...
 ZOOM_CLIENT_SECRET=...`} />
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-on-surface-variant">
           Create a Server-to-Server OAuth app in the{' '}
-          <a href="https://marketplace.zoom.us" className="text-sandra-400 hover:underline" target="_blank" rel="noopener noreferrer">Zoom App Marketplace</a>{' '}
+          <a href="https://marketplace.zoom.us" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Zoom App Marketplace</a>{' '}
           and share the credentials with EdLight for your tenant.
         </p>
       </section>
@@ -180,8 +180,8 @@ ZOOM_CLIENT_SECRET=...`} />
       {/* Passing tenantId */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">Passing your tenant context</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
-          When calling Sandra from a multi-tenant deployment, include your <code className="rounded bg-white/[0.07] px-1.5 text-xs text-slate-200">tenantId</code> in
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          When calling Sandra from a multi-tenant deployment, include your <code className="rounded bg-white/[0.07] px-1.5 text-xs text-on-surface">tenantId</code> in
           the request body so Sandra resolves the correct tool set, credentials, and knowledge base.
         </p>
         <CodeBlock lang="json" code={`{
@@ -196,15 +196,15 @@ ZOOM_CLIENT_SECRET=...`} />
       {/* Roles */}
       <section className="mb-10">
         <h2 className="mb-4 text-lg font-bold text-white">User roles</h2>
-        <p className="mb-3 text-sm leading-relaxed text-slate-400">
-          Sandra's RBAC system supports four roles. Roles are assigned per user per tenant.
+        <p className="mb-3 text-sm leading-relaxed text-on-surface-variant">
+          Sandra&apos;s RBAC system supports four roles. Roles are assigned per user per tenant.
         </p>
-        <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="overflow-hidden rounded-xl border border-outline-variant/15">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Role</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Access</th>
+              <tr className="border-b border-outline-variant/15 bg-surface-container-low/30">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Role</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Access</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -215,8 +215,8 @@ ZOOM_CLIENT_SECRET=...`} />
                 ['superAdmin', 'Full platform access across all tenants'],
               ].map(([role, access]) => (
                 <tr key={role}>
-                  <td className="px-4 py-2.5 font-mono text-xs text-sandra-300">{role}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-400">{access}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-primary">{role}</td>
+                  <td className="px-4 py-2.5 text-xs text-on-surface-variant">{access}</td>
                 </tr>
               ))}
             </tbody>

@@ -10,27 +10,27 @@ function LoginForm() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-5 py-16">
-      {/* Sandra mark */}
-      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
-        <svg className="h-7 w-7" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
-          <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
-          <circle cx="16" cy="16" r="12" stroke="white" strokeOpacity="0.15" strokeWidth="1" fill="none" strokeDasharray="4 6" />
-        </svg>
+      {/* Sandra orb */}
+      <div className="ai-orb-glow mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-primary-container">
+        <span
+          className="material-symbols-outlined text-2xl text-on-primary-container"
+          style={{ fontVariationSettings: "'FILL' 1" }}
+        >
+          blur_on
+        </span>
       </div>
 
-      <h1 className="mb-2 text-2xl font-bold tracking-tight text-white">
+      <h1 className="mb-2 text-2xl font-black tracking-tighter text-on-surface">
         Sign in to Sandra
       </h1>
-      <p className="mb-8 text-sm text-slate-500">
+      <p className="mb-8 text-sm text-on-surface-variant">
         Use your EdLight Google account to continue
       </p>
 
       <button
         onClick={() => signIn('google', { callbackUrl })}
-        className="flex items-center gap-3 rounded-full border border-white/[0.1] bg-white/[0.04] px-6 py-3 text-sm font-medium text-white transition-all hover:border-white/[0.2] hover:bg-white/[0.08] active:scale-[0.97]"
+        className="flex items-center gap-3 rounded-full border border-outline-variant/30 bg-surface-container-low px-6 py-3 text-sm font-medium text-on-surface transition-all hover:bg-surface-container active:scale-95"
       >
-        {/* Google "G" logo */}
         <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -52,9 +52,9 @@ function LoginForm() {
         Continue with Google
       </button>
 
-      <p className="mt-8 max-w-xs text-center text-xs leading-relaxed text-slate-600">
+      <p className="mt-8 max-w-xs text-center text-xs leading-relaxed text-outline">
         By signing in you agree to EdLight&apos;s{' '}
-        <a href="/privacy" className="underline underline-offset-2 hover:text-slate-400">
+        <a href="/privacy" className="underline underline-offset-2 hover:text-primary">
           Privacy Policy
         </a>
         .

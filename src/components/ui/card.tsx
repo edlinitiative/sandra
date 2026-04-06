@@ -9,7 +9,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`rounded-xl border border-white/[0.08] bg-[#1a1a1a] ${padded ? 'p-6' : ''} ${className}`}
+        className={`rounded-xl border border-outline-variant/15 bg-surface-container-low ${padded ? 'p-6' : ''} ${className}`}
         {...props}
       >
         {children}
@@ -30,7 +30,7 @@ export function CardHeader({ className = '', children, ...props }: HTMLAttribute
 
 export function CardTitle({ className = '', children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-lg font-semibold text-white ${className}`} {...props}>
+    <h3 className={`text-lg font-semibold text-on-surface ${className}`} {...props}>
       {children}
     </h3>
   );
@@ -38,7 +38,7 @@ export function CardTitle({ className = '', children, ...props }: HTMLAttributes
 
 export function CardDescription({ className = '', children, ...props }: HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={`text-sm text-slate-400 ${className}`} {...props}>
+    <p className={`text-sm text-on-surface-variant ${className}`} {...props}>
       {children}
     </p>
   );

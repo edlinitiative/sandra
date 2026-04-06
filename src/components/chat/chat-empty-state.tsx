@@ -48,7 +48,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-16">
       {/* Sandra mark */}
-      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+      <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container">
         <svg className="h-6 w-6" viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.9" />
           <circle cx="16" cy="16" r="8" stroke="white" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
@@ -59,7 +59,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
       <h2 className="mb-1 text-xl font-semibold text-white">
         Hi, I&apos;m Sandra
       </h2>
-      <p className="mb-5 text-sm text-slate-500 sm:mb-8">
+      <p className="mb-5 text-sm text-on-surface-variant sm:mb-8">
         Ask about EdLight programs, courses, or opportunities
       </p>
 
@@ -69,7 +69,7 @@ export function ChatEmptyState({ onSend, language = 'en' }: ChatEmptyStateProps)
           <button
             key={text}
             onClick={() => onSend?.(text)}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left text-sm text-slate-400 transition-all hover:border-white/[0.12] hover:bg-white/[0.05] hover:text-slate-200 active:scale-[0.98]"
+            className="rounded-xl border border-outline-variant/15 bg-surface-container-low/30 px-4 py-3 text-left text-sm text-on-surface-variant transition-all hover:border-outline-variant/25 hover:bg-surface-container hover:text-on-surface active:scale-[0.98]"
           >
             {text}
           </button>

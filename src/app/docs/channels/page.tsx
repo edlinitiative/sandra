@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-4">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sandra-500/10 text-xs font-bold text-sandra-400">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
         {number}
       </div>
       <div className="flex-1 pb-8">
         <h3 className="mb-2 font-semibold text-white">{title}</h3>
-        <div className="text-sm leading-relaxed text-slate-400">{children}</div>
+        <div className="text-sm leading-relaxed text-on-surface-variant">{children}</div>
       </div>
     </div>
   );
@@ -21,11 +21,11 @@ function Step({ number, title, children }: { number: number; title: string; chil
 
 function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/50">
-      <div className="border-b border-white/[0.06] px-4 py-2">
-        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-slate-500">{lang}</span>
+    <div className="my-3 overflow-x-auto rounded-xl border border-outline-variant/15 bg-black/50">
+      <div className="border-b border-outline-variant/15 px-4 py-2">
+        <span className="text-[0.625rem] font-medium uppercase tracking-widest text-on-surface-variant">{lang}</span>
       </div>
-      <pre className="p-4 text-sm leading-relaxed text-slate-200">
+      <pre className="p-4 text-sm leading-relaxed text-on-surface">
         <code>{code}</code>
       </pre>
     </div>
@@ -34,7 +34,7 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 
 function ChannelBadge({ live }: { live: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.625rem] font-medium ${live ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-400'}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.625rem] font-medium ${live ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-on-surface-variant'}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-emerald-400' : 'bg-slate-500'}`} />
       {live ? 'Live' : 'Pending operator step'}
     </span>
@@ -45,9 +45,9 @@ export default function ChannelsPage() {
   return (
     <div>
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-sandra-400">Reference</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Reference</p>
         <h1 className="mb-3 text-3xl font-black tracking-tighter text-white">Channels</h1>
-        <p className="text-base leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-on-surface-variant">
           Sandra normalizes every channel into a unified message format. Your users get the same
           AI experience whether they reach Sandra via WhatsApp, Instagram, the web, email, or voice.
         </p>
@@ -67,25 +67,25 @@ export default function ChannelsPage() {
           </div>
         </div>
 
-        <p className="mb-5 text-sm leading-relaxed text-slate-400">
+        <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
           Sandra handles inbound WhatsApp messages via the Meta Cloud API and replies automatically.
           Users interact in their natural language. Sandra maintains conversation continuity per phone number.
         </p>
 
-        <div className="space-y-0 border-l border-white/[0.06] pl-4">
+        <div className="space-y-0 border-l border-outline-variant/15 pl-4">
           <Step number={1} title="Create a Meta App">
-            Go to <a href="https://developers.facebook.com" className="text-sandra-400 hover:underline" target="_blank" rel="noopener noreferrer">developers.facebook.com</a> → Create App → Business → add the <strong className="text-white">WhatsApp</strong> product → register your business phone number.
+            Go to <a href="https://developers.facebook.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">developers.facebook.com</a> → Create App → Business → add the <strong className="text-white">WhatsApp</strong> product → register your business phone number.
           </Step>
           <Step number={2} title="Configure the webhook">
             In Meta Developer Console → WhatsApp → Configuration:
             <ul className="mt-2 ml-4 list-disc space-y-1">
-              <li><strong className="text-white">Webhook URL:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">https://sandra.edlight.org/api/webhooks/whatsapp</code></li>
-              <li><strong className="text-white">Verify token:</strong> the value of <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">META_VERIFY_TOKEN</code> (provided by EdLight for your tenant)</li>
-              <li><strong className="text-white">Subscribe to:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">messages</code></li>
+              <li><strong className="text-white">Webhook URL:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">https://sandra.edlight.org/api/webhooks/whatsapp</code></li>
+              <li><strong className="text-white">Verify token:</strong> the value of <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">META_VERIFY_TOKEN</code> (provided by EdLight for your tenant)</li>
+              <li><strong className="text-white">Subscribe to:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">messages</code></li>
             </ul>
           </Step>
           <Step number={3} title="Provide credentials to EdLight">
-            Share these values for your tenant's provider config:
+            Share these values for your tenant&apos;s provider config:
             <CodeBlock lang="env" code={`WHATSAPP_PHONE_NUMBER_ID=...
 WHATSAPP_ACCESS_TOKEN=...
 META_APP_SECRET=...
@@ -111,19 +111,19 @@ META_VERIFY_TOKEN=...`} />
           </div>
         </div>
 
-        <p className="mb-5 text-sm leading-relaxed text-slate-400">
+        <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
           Sandra handles Instagram DMs through the Meta Messaging API using the same approach as WhatsApp.
         </p>
 
-        <div className="space-y-0 border-l border-white/[0.06] pl-4">
+        <div className="space-y-0 border-l border-outline-variant/15 pl-4">
           <Step number={1} title="Add the Instagram product to your Meta App">
             In your existing Meta App (or a new one), add the <strong className="text-white">Instagram</strong> product. Connect your Instagram Business account.
           </Step>
           <Step number={2} title="Configure the webhook">
             <ul className="ml-4 list-disc space-y-1">
-              <li><strong className="text-white">Webhook URL:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">https://sandra.edlight.org/api/webhooks/instagram</code></li>
-              <li><strong className="text-white">Verify token:</strong> same <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">META_VERIFY_TOKEN</code></li>
-              <li><strong className="text-white">Subscribe to:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">messages</code></li>
+              <li><strong className="text-white">Webhook URL:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">https://sandra.edlight.org/api/webhooks/instagram</code></li>
+              <li><strong className="text-white">Verify token:</strong> same <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">META_VERIFY_TOKEN</code></li>
+              <li><strong className="text-white">Subscribe to:</strong> <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">messages</code></li>
             </ul>
           </Step>
           <Step number={3} title="Provide credentials to EdLight">
@@ -148,15 +148,15 @@ META_VERIFY_TOKEN=...`} />
           </div>
         </div>
 
-        <p className="mb-5 text-sm leading-relaxed text-slate-400">
+        <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
           Sandra polls a Gmail inbox every 5 minutes, processes inbound emails as agent conversations,
           and replies via the Gmail API. Ideal for support inboxes, enrollment inquiries, or automated workflows.
         </p>
 
-        <div className="space-y-0 border-l border-white/[0.06] pl-4">
+        <div className="space-y-0 border-l border-outline-variant/15 pl-4">
           <Step number={1} title="Set up a Google Workspace service account">
             In Google Cloud Console, create a service account with Gmail API access.
-            Enable domain-wide delegation and grant it the <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">https://mail.google.com/</code> scope for the target inbox address.
+            Enable domain-wide delegation and grant it the <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">https://mail.google.com/</code> scope for the target inbox address.
           </Step>
           <Step number={2} title="Provide credentials to EdLight">
             <CodeBlock lang="env" code={`GOOGLE_SERVICE_ACCOUNT_EMAIL=sandra@your-project.iam.gserviceaccount.com
@@ -164,7 +164,7 @@ GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 GOOGLE_WORKSPACE_DOMAIN=yourdomain.com`} />
           </Step>
           <Step number={3} title="Sandra starts polling automatically">
-            The <code className="rounded bg-white/[0.07] px-1 text-xs text-slate-200">email-poll</code> cron runs every 5 minutes.
+            The <code className="rounded bg-white/[0.07] px-1 text-xs text-on-surface">email-poll</code> cron runs every 5 minutes.
             Unread messages in the inbox are processed and replied to automatically.
           </Step>
         </div>
@@ -184,16 +184,16 @@ GOOGLE_WORKSPACE_DOMAIN=yourdomain.com`} />
           </div>
         </div>
 
-        <p className="mb-5 text-sm leading-relaxed text-slate-400">
+        <p className="mb-5 text-sm leading-relaxed text-on-surface-variant">
           Sandra supports two voice modes: real-time bidirectional voice via WebRTC (OpenAI Realtime API),
-          and a REST round-trip for non-WebRTC environments. Both inject Sandra's full system prompt and memory.
+          and a REST round-trip for non-WebRTC environments. Both inject Sandra&apos;s full system prompt and memory.
         </p>
 
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-semibold text-white">Option A — WebRTC (real-time, low-latency)</h3>
-          <p className="mb-3 text-sm text-slate-400">
+          <p className="mb-3 text-sm text-on-surface-variant">
             Mint an ephemeral key from your server, then connect a WebRTC client directly to OpenAI Realtime.
-            Sandra's identity, tools, and user memory are pre-injected in every session.
+            Sandra&apos;s identity, tools, and user memory are pre-injected in every session.
           </p>
           <CodeBlock lang="javascript" code={`// 1. Server-side: mint the session key
 const { client_secret } = await fetch('https://sandra.edlight.org/api/voice/realtime-session', {
@@ -224,7 +224,7 @@ await pc.setRemoteDescription({ type: 'answer', sdp: await response.text() });`}
 
         <div>
           <h3 className="mb-3 text-sm font-semibold text-white">Option B — REST round-trip</h3>
-          <p className="mb-3 text-sm text-slate-400">
+          <p className="mb-3 text-sm text-on-surface-variant">
             For mobile apps, IVR systems, or any platform without WebRTC. Send audio, get audio back.
           </p>
           <CodeBlock lang="bash" code={`curl -X POST https://sandra.edlight.org/api/voice/process \\
@@ -232,15 +232,15 @@ await pc.setRemoteDescription({ type: 'answer', sdp: await response.text() });`}
   -F "sessionId=session-001" \\
   -F "userId=user-abc" \\
   -F "language=fr"`} />
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-on-surface-variant">
             Returns an audio blob (MP3) plus the text transcript and agent response.
           </p>
         </div>
 
         <div className="mt-6 rounded-xl border border-violet-500/20 bg-violet-500/[0.05] p-4">
           <p className="mb-1 text-xs font-semibold text-violet-300">Voice Bridge</p>
-          <p className="text-xs leading-relaxed text-slate-400">
-            The Voice Bridge at <code className="text-slate-300">https://voice.edlight.org</code> is a standalone WebSocket relay
+          <p className="text-xs leading-relaxed text-on-surface-variant">
+            The Voice Bridge at <code className="text-on-surface">https://voice.edlight.org</code> is a standalone WebSocket relay
             service for full-duplex voice from web browsers. Web clients connect to it directly —
             no need to handle OpenAI Realtime credentials on the client side.
           </p>

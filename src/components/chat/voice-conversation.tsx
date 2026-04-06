@@ -436,12 +436,12 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
     ringColor: string;
   };
   const STATE: Record<SessionState, StateConfig> = {
-    idle:               { label: 'Press Start to begin',     orbClass: 'bg-slate-700 border border-white/10',               showRings: false, ringColor: '' },
+    idle:               { label: 'Press Start to begin',     orbClass: 'bg-outline border border-outline-variant/20',               showRings: false, ringColor: '' },
     connecting:         { label: 'Connecting…',               orbClass: 'bg-amber-500',                                      showRings: false, ringColor: '' },
-    listening:          { label: 'Listening — speak freely',  orbClass: 'bg-sandra-600 glow-blue-sm',                        showRings: true,  ringColor: 'border-sandra-400/35' },
+    listening:          { label: 'Listening — speak freely',  orbClass: 'bg-primary-container glow-blue-sm',                        showRings: true,  ringColor: 'border-primary/35' },
     user_speaking:      { label: 'Hearing you…',              orbClass: 'bg-green-500 glow-green',                           showRings: true,  ringColor: 'border-green-400/40' },
     processing:         { label: 'Sandra is thinking…',       orbClass: 'bg-amber-400',                                      showRings: false, ringColor: '' },
-    assistant_speaking: { label: 'Sandra is speaking…',       orbClass: 'bg-gradient-to-br from-sandra-400 to-sandra-700 glow-blue', showRings: true, ringColor: 'border-sandra-400/30' },
+    assistant_speaking: { label: 'Sandra is speaking…',       orbClass: 'bg-gradient-to-br from-primary to-inverse-primary glow-blue', showRings: true, ringColor: 'border-primary/30' },
     error:              { label: 'Error',                      orbClass: 'bg-red-500 glow-red',                              showRings: false, ringColor: '' },
   };
 
@@ -459,19 +459,19 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
           <button
             onClick={() => void startConversation()}
             disabled={sessionState === 'connecting'}
-            className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left transition-all hover:border-white/[0.12] hover:bg-white/[0.04] active:scale-[0.99] disabled:opacity-50"
+            className="flex w-full items-center gap-3 rounded-2xl border border-outline-variant/15 bg-surface-container-low/30 px-4 py-3 text-left transition-all hover:border-outline-variant/25 hover:bg-surface-container-low active:scale-[0.99] disabled:opacity-50"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sandra-500 to-sandra-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container">
               <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
               </svg>
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-sm font-medium text-slate-200">Talk to Sandra</span>
-              <span className="ml-2 text-xs text-slate-600">Live voice</span>
+              <span className="text-sm font-medium text-on-surface">Talk to Sandra</span>
+              <span className="ml-2 text-xs text-outline">Live voice</span>
             </div>
-            <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold tracking-wider text-sandra-500">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sandra-500" />
+            <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold tracking-wider text-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
               LIVE
             </span>
           </button>
@@ -481,7 +481,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
 
       {/* ── Active voice panel ──────────────────────────────────────────────── */}
       {isActive && (
-        <div className="relative mb-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a1a]">
+        <div className="relative mb-2 overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low">
           {/* Particle cloud behind orb */}
           <ParticleCanvas
             active={sessionState === 'assistant_speaking' || sessionState === 'user_speaking'}
@@ -489,7 +489,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
           />
           <div className="relative z-10 flex flex-col items-center px-4 pb-5 pt-6">
             {/* Status label */}
-            <p className="mb-4 text-[10px] font-semibold tracking-[0.2em] uppercase text-slate-500">
+            <p className="mb-4 text-[10px] font-semibold tracking-[0.2em] uppercase text-on-surface-variant">
               {label}
             </p>
 
@@ -546,7 +546,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
               {sessionState === 'assistant_speaking' && (
                 <button
                   onClick={interrupt}
-                  className="rounded-full border border-white/[0.08] px-4 py-2 text-xs text-slate-500 transition-all hover:bg-white/[0.04] hover:text-slate-300 active:scale-95"
+                  className="rounded-full border border-outline-variant/15 px-4 py-2 text-xs text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface active:scale-95"
                 >
                   Skip
                 </button>

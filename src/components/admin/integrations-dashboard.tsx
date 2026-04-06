@@ -425,7 +425,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">API Integrations</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-on-surface-variant">
             Connect external APIs so Sandra can call them on behalf of your team.
             Just paste an OpenAPI spec and Sandra auto-generates the tools.
           </p>
@@ -452,7 +452,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
       {/* ── Add Integration Form ─────────────────────────────────── */}
       {showForm && tenantId && (
-        <Card className="border-sandra-500/20">
+        <Card className="border-primary/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -468,10 +468,10 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Step 1: Basic info */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">① API Details</h4>
+              <h4 className="text-sm font-semibold text-on-surface uppercase tracking-wider">① API Details</h4>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm text-slate-400">Connection Name</label>
+                  <label className="mb-1 block text-sm text-on-surface-variant">Connection Name</label>
                   <Input
                     placeholder="e.g. Acme CRM"
                     value={formName}
@@ -480,7 +480,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-slate-400">Base URL</label>
+                  <label className="mb-1 block text-sm text-on-surface-variant">Base URL</label>
                   <Input
                     placeholder="https://api.acme.com/v1"
                     value={formBaseUrl}
@@ -494,7 +494,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
             {/* Step 2: Authentication */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">② Authentication</h4>
+              <h4 className="text-sm font-semibold text-on-surface uppercase tracking-wider">② Authentication</h4>
 
               {/* Auth type selector */}
               <div className="flex flex-wrap gap-2">
@@ -505,8 +505,8 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                     onClick={() => setFormAuthType(type)}
                     className={`rounded-lg px-3 py-1.5 text-sm transition-all ${
                       formAuthType === type
-                        ? 'bg-sandra-600 text-white'
-                        : 'bg-white/[0.06] text-slate-400 hover:bg-white/[0.1] hover:text-slate-200'
+                        ? 'bg-primary-container text-white'
+                        : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
                     }`}
                   >
                     {label}
@@ -515,11 +515,11 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
               </div>
 
               {/* Auth fields */}
-              <div className="rounded-lg bg-white/[0.03] p-4 space-y-3">
+              <div className="rounded-lg bg-surface-container-low p-4 space-y-3">
                 {formAuthType === 'api_key' && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">API Key</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">API Key</label>
                       <Input
                         type="password"
                         placeholder="sk-..."
@@ -528,19 +528,19 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">Header Name</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Header Name</label>
                       <Input
                         placeholder="X-API-Key"
                         value={formHeaderName}
                         onChange={(e) => setFormHeaderName(e.target.value)}
                       />
-                      <p className="mt-1 text-xs text-slate-600">Where to send the key (default: X-API-Key)</p>
+                      <p className="mt-1 text-xs text-outline">Where to send the key (default: X-API-Key)</p>
                     </div>
                   </div>
                 )}
                 {formAuthType === 'bearer' && (
                   <div>
-                    <label className="mb-1 block text-sm text-slate-400">Bearer Token</label>
+                    <label className="mb-1 block text-sm text-on-surface-variant">Bearer Token</label>
                     <Input
                       type="password"
                       placeholder="eyJhbGci..."
@@ -552,7 +552,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                 {formAuthType === 'basic' && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">Username</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Username</label>
                       <Input
                         placeholder="admin"
                         value={formUsername}
@@ -560,7 +560,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">Password</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Password</label>
                       <Input
                         type="password"
                         placeholder="••••••••"
@@ -573,7 +573,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                 {formAuthType === 'oauth2' && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">Client ID</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Client ID</label>
                       <Input
                         placeholder="client_abc..."
                         value={formClientId}
@@ -581,7 +581,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm text-slate-400">Client Secret</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Client Secret</label>
                       <Input
                         type="password"
                         placeholder="secret_xyz..."
@@ -590,7 +590,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="mb-1 block text-sm text-slate-400">Token URL</label>
+                      <label className="mb-1 block text-sm text-on-surface-variant">Token URL</label>
                       <Input
                         placeholder="https://auth.acme.com/oauth/token"
                         value={formTokenUrl}
@@ -601,22 +601,22 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   </div>
                 )}
                 {formAuthType === 'none' && (
-                  <p className="text-sm text-slate-500">No authentication required — the API is public.</p>
+                  <p className="text-sm text-on-surface-variant">No authentication required — the API is public.</p>
                 )}
               </div>
             </div>
 
             {/* Step 3: OpenAPI Spec */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">③ OpenAPI Specification</h4>
-              <p className="text-sm text-slate-400">
-                Paste your OpenAPI 3.x spec (JSON <span className="text-slate-500">or YAML</span>), or upload a file.
+              <h4 className="text-sm font-semibold text-on-surface uppercase tracking-wider">③ OpenAPI Specification</h4>
+              <p className="text-sm text-on-surface-variant">
+                Paste your OpenAPI 3.x spec (JSON <span className="text-on-surface-variant">or YAML</span>), or upload a file.
                 Sandra will parse every endpoint and auto-create a tool for each one.
               </p>
 
               {/* File upload */}
               <div className="flex items-center gap-3">
-                <label className="cursor-pointer rounded-lg bg-white/[0.06] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.1]">
+                <label className="cursor-pointer rounded-lg bg-surface-container px-4 py-2 text-sm text-on-surface transition hover:bg-surface-container-highest">
                   📁 Upload spec file
                   <input
                     type="file"
@@ -629,7 +629,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   />
                 </label>
                 {formSpecFile && (
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-on-surface-variant">
                     {formSpecFile.name} ({(formSpecFile.size / 1024).toFixed(1)} KB)
                   </span>
                 )}
@@ -637,7 +637,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
               {/* Spec textarea */}
               <textarea
-                className="h-64 w-full rounded-lg border border-white/[0.1] bg-white/[0.04] p-3 font-mono text-base text-slate-300 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sandra-500 focus:ring-offset-1 focus:ring-offset-[#0d0d0d]"
+                className="h-64 w-full rounded-lg border border-outline-variant/20 bg-surface-container-low p-3 font-mono text-base text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface"
                 placeholder={`# YAML\nopenapi: 3.0.0\ninfo:\n  title: Your API\n  version: 1.0.0\npaths:\n  /endpoint:\n    get:\n      operationId: getEndpoint\n      summary: Description here\n      responses:\n        '200':\n          description: OK\n\n# Or paste JSON:\n# { "openapi": "3.0.0", ... }`}
                 value={formSpec}
                 onChange={(e) => setFormSpec(e.target.value)}
@@ -657,7 +657,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
             )}
 
             {/* Submit */}
-            <div className="flex items-center justify-end gap-3 border-t border-white/[0.06] pt-4">
+            <div className="flex items-center justify-end gap-3 border-t border-outline-variant/15 pt-4">
               <Button
                 type="button"
                 variant="ghost"
@@ -686,7 +686,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
         <Card className="text-center py-16">
           <div className="text-4xl mb-4">🔌</div>
           <p className="text-lg font-medium text-white">No integrations yet</p>
-          <p className="mt-2 text-sm text-slate-400 max-w-md mx-auto">
+          <p className="mt-2 text-sm text-on-surface-variant max-w-md mx-auto">
             Connect your first API to give Sandra the ability to call external services,
             query databases, or interact with any system that has an OpenAPI spec.
           </p>
@@ -706,13 +706,13 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
             <Card
               key={conn.id}
               className={`cursor-pointer transition-all hover:border-white/[0.15] ${
-                selectedId === conn.id ? 'border-sandra-500/30 ring-1 ring-sandra-500/20' : ''
+                selectedId === conn.id ? 'border-primary/30 ring-1 ring-primary/20' : ''
               }`}
               onClick={() => setSelectedId(selectedId === conn.id ? null : conn.id)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sandra-600/20 text-sandra-400 text-lg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container/20 text-primary text-lg">
                     🔗
                   </div>
                   <div className="min-w-0">
@@ -727,7 +727,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                         </Badge>
                       )}
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-sm text-slate-500">
+                    <div className="mt-0.5 flex items-center gap-3 text-sm text-on-surface-variant">
                       <span className="truncate">{conn.baseUrl}</span>
                       <span>·</span>
                       <span>{conn.toolCount} tool{conn.toolCount !== 1 ? 's' : ''}</span>
@@ -741,7 +741,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                         <span>{r.ok ? '✓' : '✗'}</span>
                         <span>{r.message}</span>
                         {r.ok && (
-                          <span className="text-slate-600">· {r.latencyMs}ms</span>
+                          <span className="text-outline">· {r.latencyMs}ms</span>
                         )}
                       </div>
                     ) : null; })()}
@@ -788,12 +788,12 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
 
               {/* Expanded detail panel */}
               {selectedId === conn.id && (
-                <div className="mt-4 border-t border-white/[0.06] pt-4" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-4 border-t border-outline-variant/15 pt-4" onClick={(e) => e.stopPropagation()}>
                   {/* ── Credential edit panel ── */}
                   {editingCredId === conn.id && (
                     <form onSubmit={handleSaveCreds} className="mb-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-slate-300">Update Credentials</h4>
+                        <h4 className="text-sm font-semibold text-on-surface">Update Credentials</h4>
                         <Button variant="ghost" size="sm" type="button" onClick={() => setEditingCredId(null)}>✕</Button>
                       </div>
 
@@ -802,40 +802,40 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                         {(Object.entries(AUTH_LABELS) as [AuthType, string][]).map(([type, label]) => (
                           <button key={type} type="button" onClick={() => setEditAuthType(type)}
                             className={`rounded-lg px-3 py-1.5 text-sm transition-all ${
-                              editAuthType === type ? 'bg-sandra-600 text-white' : 'bg-white/[0.06] text-slate-400 hover:bg-white/[0.1]'
+                              editAuthType === type ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-highest'
                             }`}>
                             {label}
                           </button>
                         ))}
                       </div>
 
-                      <div className="rounded-lg bg-white/[0.03] p-4 space-y-3">
+                      <div className="rounded-lg bg-surface-container-low p-4 space-y-3">
                         {editAuthType === 'api_key' && (
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">New API Key</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">New API Key</label>
                               <Input type="password" placeholder="Leave blank to keep current" value={editApiKey} onChange={(e) => setEditApiKey(e.target.value)} />
                             </div>
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">Header Name</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Header Name</label>
                               <Input placeholder="X-API-Key" value={editHeaderName} onChange={(e) => setEditHeaderName(e.target.value)} />
                             </div>
                           </div>
                         )}
                         {editAuthType === 'bearer' && (
                           <div>
-                            <label className="mb-1 block text-sm text-slate-400">New Bearer Token</label>
+                            <label className="mb-1 block text-sm text-on-surface-variant">New Bearer Token</label>
                             <Input type="password" placeholder="Leave blank to keep current" value={editBearerToken} onChange={(e) => setEditBearerToken(e.target.value)} />
                           </div>
                         )}
                         {editAuthType === 'basic' && (
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">Username</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Username</label>
                               <Input placeholder="Leave blank to keep current" value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
                             </div>
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">Password</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Password</label>
                               <Input type="password" placeholder="Leave blank to keep current" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} />
                             </div>
                           </div>
@@ -843,21 +843,21 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                         {editAuthType === 'oauth2' && (
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">Client ID</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Client ID</label>
                               <Input placeholder="Leave blank to keep current" value={editClientId} onChange={(e) => setEditClientId(e.target.value)} />
                             </div>
                             <div>
-                              <label className="mb-1 block text-sm text-slate-400">Client Secret</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Client Secret</label>
                               <Input type="password" placeholder="Leave blank to keep current" value={editClientSecret} onChange={(e) => setEditClientSecret(e.target.value)} />
                             </div>
                             <div className="sm:col-span-2">
-                              <label className="mb-1 block text-sm text-slate-400">Token URL</label>
+                              <label className="mb-1 block text-sm text-on-surface-variant">Token URL</label>
                               <Input type="url" placeholder="Leave blank to keep current" value={editTokenUrl} onChange={(e) => setEditTokenUrl(e.target.value)} />
                             </div>
                           </div>
                         )}
                         {editAuthType === 'none' && (
-                          <p className="text-sm text-slate-500">No credentials needed.</p>
+                          <p className="text-sm text-on-surface-variant">No credentials needed.</p>
                         )}
                       </div>
 
@@ -875,16 +875,16 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                   ) : detail ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-slate-300">
+                        <h4 className="text-sm font-semibold text-on-surface">
                           Tools ({detail.tools.length})
                         </h4>
-                        <span className="text-xs text-slate-600">
+                        <span className="text-xs text-outline">
                           Rate limit: {detail.rateLimitRpm} req/min · Created {new Date(detail.createdAt).toLocaleDateString()}
                         </span>
                       </div>
 
                       {detail.tools.length === 0 ? (
-                        <p className="text-sm text-slate-500 py-4">
+                        <p className="text-sm text-on-surface-variant py-4">
                           No tools were generated. The OpenAPI spec may have been empty or invalid.
                         </p>
                       ) : (
@@ -892,16 +892,16 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                           {detail.tools.map((tool) => (
                             <div
                               key={tool.id}
-                              className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2"
+                              className="flex items-center justify-between rounded-lg bg-surface-container-low px-3 py-2"
                             >
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <code className="text-sm font-medium text-sandra-400">{tool.name}</code>
+                                  <code className="text-sm font-medium text-primary">{tool.name}</code>
                                   <Badge variant={tool.enabled ? 'success' : 'default'} className="text-[10px]">
                                     {tool.enabled ? 'on' : 'off'}
                                   </Badge>
                                 </div>
-                                <p className="mt-0.5 text-xs text-slate-500 truncate">{tool.description}</p>
+                                <p className="mt-0.5 text-xs text-on-surface-variant truncate">{tool.description}</p>
                               </div>
                               <Button
                                 variant="ghost"
@@ -918,7 +918,7 @@ export function IntegrationsDashboard({ tenantId: tenantIdProp }: IntegrationsDa
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-500">Could not load details.</p>
+                    <p className="text-sm text-on-surface-variant">Could not load details.</p>
                   )}
                 </div>
               )}

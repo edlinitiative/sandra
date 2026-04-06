@@ -56,12 +56,12 @@ function TagInput({
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
         {value.map((item, i) => (
-          <Badge key={i} className="group flex items-center gap-1 bg-white/[0.08] text-sm text-slate-300">
+          <Badge key={i} className="group flex items-center gap-1 bg-surface-container-high text-sm text-on-surface">
             {item}
             <button
               type="button"
               onClick={() => onChange(value.filter((_, idx) => idx !== i))}
-              className="ml-0.5 text-slate-500 hover:text-red-400"
+              className="ml-0.5 text-on-surface-variant hover:text-red-400"
             >
               ×
             </button>
@@ -108,7 +108,7 @@ function Textarea({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-sm text-white transition-colors placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sandra-500 focus:ring-offset-1 focus:ring-offset-[#0d0d0d] ${className}`}
+      className={`w-full rounded-lg border border-outline-variant/20 bg-surface-container-low px-3 py-2 text-sm text-white transition-colors placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface ${className}`}
     />
   );
 }
@@ -221,7 +221,7 @@ export function AgentConfigSettings() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Agent Settings</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-on-surface-variant">
           Configure how Sandra behaves for{' '}
           <span className="font-medium text-white">{tenant?.name ?? 'your organization'}</span>.
           Changes apply to all new conversations.
@@ -369,8 +369,8 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-200">{label}</label>
-      {hint && <p className="text-xs text-slate-500">{hint}</p>}
+      <label className="block text-sm font-medium text-on-surface">{label}</label>
+      {hint && <p className="text-xs text-on-surface-variant">{hint}</p>}
       {children}
     </div>
   );

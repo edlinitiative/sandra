@@ -5,11 +5,11 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<string, string> = {
-  default: 'bg-white/[0.08] text-slate-300',
+  default: 'bg-surface-container-high text-on-surface-variant',
   success: 'bg-green-500/15 text-green-400',
   warning: 'bg-yellow-500/15 text-yellow-400',
   error: 'bg-red-500/15 text-red-400',
-  info: 'bg-sandra-500/15 text-sandra-400',
+  info: 'bg-primary/10 text-primary',
 };
 
 export function Badge({ variant = 'default', className = '', children, ...props }: BadgeProps) {

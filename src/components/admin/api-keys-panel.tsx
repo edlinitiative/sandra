@@ -106,9 +106,9 @@ export function ApiKeysPanel() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">API Keys</h2>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-on-surface-variant">
             Use these keys to call Sandra from your own apps.{' '}
-            <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono text-xs text-slate-300">
+            <code className="rounded bg-surface-container px-1 py-0.5 font-mono text-xs text-on-surface">
               Authorization: Bearer sk_live_…
             </code>
           </p>
@@ -127,7 +127,7 @@ export function ApiKeysPanel() {
             🔐 Copy this key now — it won&apos;t be shown again.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 overflow-x-auto rounded bg-black/40 px-3 py-2 font-mono text-sm text-amber-200">
+            <code className="flex-1 overflow-x-auto rounded bg-surface-container-lowest px-3 py-2 font-mono text-sm text-amber-200">
               {newKey}
             </code>
             <Button
@@ -149,7 +149,7 @@ export function ApiKeysPanel() {
         <Card>
           <form onSubmit={handleCreate} className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-sm text-slate-400">Key label</label>
+              <label className="mb-1 block text-sm text-on-surface-variant">Key label</label>
               <Input
                 placeholder='e.g. "Production website", "Staging"'
                 value={newName}
@@ -179,12 +179,12 @@ export function ApiKeysPanel() {
 
       {!loading && keys.length === 0 && !showForm && (
         <Card className="py-8 text-center">
-          <p className="text-slate-400">No API keys yet. Generate one to start using Sandra as an API.</p>
+          <p className="text-on-surface-variant">No API keys yet. Generate one to start using Sandra as an API.</p>
         </Card>
       )}
 
       {keys.length > 0 && (
-        <div className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.08] bg-white/[0.02]">
+        <div className="divide-y divide-outline-variant/15 rounded-xl border border-outline-variant/15 bg-surface-container-low/30">
           {keys.map((key) => (
             <div
               key={key.id}
@@ -197,8 +197,8 @@ export function ApiKeysPanel() {
                     {key.isActive ? 'Active' : 'Revoked'}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <code className="font-mono text-slate-400">{key.keyPrefix}…</code>
+                <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+                  <code className="font-mono text-on-surface-variant">{key.keyPrefix}…</code>
                   <span>Created {formatDate(key.createdAt)}</span>
                   <span>Last used {formatDate(key.lastUsedAt)}</span>
                   {key.expiresAt && <span>Expires {formatDate(key.expiresAt)}</span>}
@@ -223,10 +223,10 @@ export function ApiKeysPanel() {
       {/* Usage snippet */}
       {keys.some((k) => k.isActive) && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-slate-500 hover:text-slate-300 select-none">
+          <summary className="cursor-pointer text-sm text-on-surface-variant hover:text-on-surface select-none">
             📋 How to use
           </summary>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/40 p-4 text-xs text-slate-300">{`# Send a message to Sandra
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-surface-container-lowest p-4 text-xs text-on-surface">{`# Send a message to Sandra
 curl -X POST https://your-app.vercel.app/api/chat/stream \\
   -H "Authorization: Bearer sk_live_..." \\
   -H "Content-Type: application/json" \\
