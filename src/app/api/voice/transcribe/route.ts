@@ -16,6 +16,7 @@
 
 import { NextResponse } from 'next/server';
 import { transcribeAudio } from '@/lib/channels/voice';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { generateRequestId, createLogger } from '@/lib/utils';
 
 const log = createLogger('api:voice:transcribe');
@@ -50,6 +51,10 @@ const EXT_FOR_MIME: Record<string, string> = {
 
 export async function POST(request: Request) {
   const requestId = generateRequestId();
+
+  // Auth is optional for voice routes during migration
+  const auth = await authenticateRequest(request);
+  const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
 
   let formData: FormData;
   try {

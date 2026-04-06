@@ -2,6 +2,8 @@ import type { SupportedLanguage, Language } from '@/lib/i18n/types';
 import { languagePromptInstruction, getLanguageInstruction } from '@/lib/i18n';
 import type { ToolDefinition } from '@/lib/ai/types';
 import { APP_NAME } from '@/lib/config';
+import { CHANNEL_PROMPT_STYLES } from '@/lib/channels/types';
+import type { ChannelType } from '@/lib/channels/types';
 import type { TenantAgentConfig } from './tenant-config';
 
 // ── EdLight fallback constants ────────────────────────────────────────────────
@@ -307,14 +309,14 @@ export function buildSandraSystemPrompt(options: {
   // Language instruction
   parts.push(languagePromptInstruction(options.language));
 
-  // Channel-specific tone for social media
-  if (options.channel === 'whatsapp' || options.channel === 'instagram') {
-    const platform = options.channel === 'whatsapp' ? 'WhatsApp' : 'Instagram DM';
+  // Channel-specific tone (driven by CHANNEL_PROMPT_STYLES — add new channels there)
+  const channelStyle = CHANNEL_PROMPT_STYLES[(options.channel ?? 'web') as ChannelType];
+  if (channelStyle) {
     const nameClause = options.senderName
       ? `The person you are talking to is called ${options.senderName}. Use their name occasionally to make the conversation feel personal, but don't overdo it.`
       : '';
-    parts.push(`IMPORTANT — ${platform} messaging style:
-You are having a real conversation on ${platform}. Be genuinely human and warm.
+    parts.push(`IMPORTANT — Channel style instructions:
+${channelStyle}
 ${nameClause}
 - Keep replies SHORT — 2-4 sentences for most things. If it's complex, give the key point first then ask if they want more.
 - Sound like a knowledgeable friend, not an assistant. Use contractions, casual phrasing, natural flow.

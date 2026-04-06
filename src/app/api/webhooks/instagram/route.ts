@@ -9,6 +9,7 @@ import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger, verifyMetaSignature, isDuplicate } from '@/lib/utils';
 import { getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
+import { env } from '@/lib/config/env';
 import {
   hasPendingVerification,
   verifyCode,
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
   }
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
-  const appSecret = process.env.INSTAGRAM_APP_SECRET ?? '';
+  const appSecret = env.INSTAGRAM_APP_SECRET ?? '';
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {

@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse, generateRequestId, successResponse } from '@/lib/utils';
 import { requireAdminAuth } from '@/lib/utils/auth';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { rejectAction } from '@/lib/actions/queue';
 
 export async function POST(
@@ -17,6 +18,12 @@ export async function POST(
   const requestId = generateRequestId();
 
   try {
+    // Require authentication
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     requireAdminAuth(request);
 
     const { id } = await params;

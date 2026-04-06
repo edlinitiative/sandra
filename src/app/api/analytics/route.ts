@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { apiErrorResponse, generateRequestId, successResponse } from '@/lib/utils';
 import { requireAdminAuth } from '@/lib/utils/auth';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { ValidationError } from '@/lib/utils/errors';
 import { getAnalyticsSummary } from '@/lib/analytics';
 
@@ -18,6 +19,12 @@ export async function GET(request: Request) {
   const requestId = generateRequestId();
 
   try {
+    // Require authentication
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     requireAdminAuth(request);
 
     const url = new URL(request.url);

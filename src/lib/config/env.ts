@@ -54,6 +54,9 @@ const envSchema = z.object({
   WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
   WHATSAPP_API_VERSION: z.string().default('v19.0'),
 
+  // Voice Bridge (separate VM for WhatsApp Calling API)
+  VOICE_BRIDGE_URL: z.string().optional(),
+
   // Instagram (Meta Graph API)
   INSTAGRAM_PAGE_ACCESS_TOKEN: z.string().optional(),
   INSTAGRAM_APP_SECRET: z.string().optional(),

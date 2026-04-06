@@ -13,7 +13,11 @@ export interface AuthenticatedUser {
   name?: string;
   role: UserRole;
   scopes: string[];
-  /** Set when the request was authenticated via a TenantApiKey */
+  /**
+   * Tenant context for this request.
+   * Populated from: middleware header resolution, TenantMember lookup,
+   * API key tenant, or DEFAULT_TENANT_ID fallback.
+   */
   tenantId?: string;
 }
 

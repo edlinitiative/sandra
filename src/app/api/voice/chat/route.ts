@@ -33,6 +33,7 @@ import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/mem
 import { runSandraAgent } from '@/lib/agents';
 import { resolveLanguage } from '@/lib/i18n';
 import { getScopesForRole } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 
@@ -43,6 +44,10 @@ const VALID_VOICES: TtsVoice[] = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shi
 export async function POST(request: Request) {
   const requestId = generateRequestId();
   setCorrelationId(requestId);
+
+  // Auth is optional for voice routes during migration
+  const auth = await authenticateRequest(request);
+  const voiceAuthUserId = auth.authenticated ? auth.user.id : 'anonymous-voice';
 
   try {
     let formData: FormData;

@@ -27,6 +27,16 @@ vi.mock('@/lib/config', () => ({
   env: mockEnv,
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn(async (req: Request) => {
+    const key = req.headers.get('x-api-key');
+    if (key) {
+      return { authenticated: true, user: { id: 'admin', email: 'admin@test.com', role: 'admin', tenantId: 'tenant-1' } };
+    }
+    return { authenticated: false, error: 'Not authenticated' };
+  }),
+}));
+
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const now = new Date('2026-03-27T12:00:00Z');
@@ -92,8 +102,6 @@ describe('GET /api/actions', () => {
     const { GET } = await import('../actions/route');
     const res = await GET(makeRequest('http://localhost/api/actions'));
     expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.success).toBe(false);
   });
 
   it('returns 401 with wrong API key', async () => {

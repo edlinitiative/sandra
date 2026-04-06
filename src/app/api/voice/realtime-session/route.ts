@@ -11,11 +11,16 @@
 
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { getSandraSystemPrompt } from '@/lib/agents/prompts';
 
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
 export async function POST(req: Request) {
+  // Auth is optional for voice routes during migration
+  const auth = await authenticateRequest(req);
+  const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
+
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: 'OPENAI_API_KEY is not configured' },

@@ -14,6 +14,16 @@ vi.mock('@/lib/analytics', () => ({
 
 vi.mock('@/lib/config', () => ({ env: mockEnv }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn(async (req: Request) => {
+    const key = req.headers.get('x-api-key');
+    if (key) {
+      return { authenticated: true, user: { id: 'admin', email: 'admin@test.com', role: 'admin', tenantId: 'tenant-1' } };
+    }
+    return { authenticated: false, error: 'Not authenticated' };
+  }),
+}));
+
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const FROM = new Date('2026-01-01T00:00:00Z');

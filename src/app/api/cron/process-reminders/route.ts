@@ -25,6 +25,7 @@ import { createLogger } from '@/lib/utils';
 import { logAuditEvent } from '@/lib/audit';
 import { resolveGoogleContext } from '@/lib/google/context';
 import { sendEmail } from '@/lib/google/gmail';
+import { getWhatsAppAdapter } from '@/lib/channels/whatsapp';
 
 const log = createLogger('cron:process-reminders');
 
@@ -157,7 +158,7 @@ async function deliverReminder(
   }
 }
 
-/** Send outbound WhatsApp message using the user's registered phone number. */
+/** Send outbound WhatsApp message using the user's registered phone number via the WhatsApp adapter. */
 async function deliverViaWhatsApp(userId: string | null, message: string): Promise<void> {
   if (!userId) throw new Error('No userId — cannot look up WhatsApp identity');
 
@@ -166,33 +167,14 @@ async function deliverViaWhatsApp(userId: string | null, message: string): Promi
   });
   if (!identity) throw new Error(`No WhatsApp identity on record for user ${userId}`);
 
-  const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = env.WHATSAPP_ACCESS_TOKEN;
-  const apiVersion = env.WHATSAPP_API_VERSION;
-  if (!phoneNumberId || !accessToken) throw new Error('WhatsApp Cloud API not configured');
+  const adapter = getWhatsAppAdapter();
+  if (!adapter.isConfigured()) throw new Error('WhatsApp Cloud API not configured');
 
-  const res = await fetch(
-    `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: identity.externalId,
-        type: 'text',
-        text: { preview_url: false, body: `🔔 Reminder: ${message}` },
-      }),
-    },
-  );
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`WhatsApp API ${res.status}: ${body}`);
-  }
+  await adapter.send({
+    channelType: 'whatsapp',
+    recipientId: identity.externalId,
+    content: `🔔 Reminder: ${message}`,
+  });
 }
 
 /** Send email via Gmail API using the user's registered email address. */

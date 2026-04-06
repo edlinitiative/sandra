@@ -62,3 +62,18 @@ export interface ChannelAdapter {
   /** Check if the channel is configured and ready */
   isConfigured(): boolean;
 }
+
+/**
+ * Per-channel prompt style instructions injected into the system prompt.
+ * `null` means no channel-specific style adjustments are needed.
+ *
+ * To add support for a new social channel (e.g., Telegram), simply add an
+ * entry here — the prompt builder picks it up automatically.
+ */
+export const CHANNEL_PROMPT_STYLES: Record<ChannelType, string | null> = {
+  web: null,
+  whatsapp: `You are chatting on WhatsApp. Keep responses concise and mobile-friendly. Use short paragraphs. Avoid markdown headers (use bold **text** sparingly). Limit responses to 1-3 short paragraphs unless the user explicitly asks for detail.`,
+  instagram: `You are chatting on Instagram DM. Keep responses concise and mobile-friendly. Use short paragraphs. Avoid markdown headers (use bold **text** sparingly). Limit responses to 1-3 short paragraphs unless the user explicitly asks for detail.`,
+  email: `You are composing an email response. Use proper email formatting with clear paragraphs. Be thorough but organized.`,
+  voice: `You are in a voice conversation. Keep responses conversational and natural. Avoid lists, links, or formatting that doesn't translate well to speech. Be concise — aim for 2-3 sentences per turn.`,
+};

@@ -16,6 +16,8 @@ import { db } from '@/lib/db';
 import { getUserByExternalId, resolveUserByExternalId } from '@/lib/db/users';
 import { createLogger } from '@/lib/utils';
 import { createHash } from 'crypto';
+import { getTenantFromHeaders } from './tenant-context';
+import { env } from '@/lib/config/env';
 
 const log = createLogger('auth:middleware');
 
@@ -55,10 +57,14 @@ export async function authenticateRequest(
       const role = (user.role as UserRole) ?? payload.role ?? 'student';
       const scopes = getScopesForRole(role);
 
+      // Resolve tenant context
+      const tenantId = await resolveTenantId(request, user.id);
+
       log.info('Authenticated via Bearer token', {
         userId: user.id,
         externalId: payload.sub,
         role,
+        tenantId: tenantId ?? 'none',
       });
 
       return {
@@ -70,6 +76,7 @@ export async function authenticateRequest(
           name: user.name ?? undefined,
           role,
           scopes,
+          tenantId: tenantId ?? undefined,
         },
       };
     } catch (error) {
@@ -89,6 +96,9 @@ export async function authenticateRequest(
         const user = await getUserByExternalId(db, devUserId);
         if (user) {
           const role = (user.role as UserRole) ?? 'student';
+          // Resolve tenant: header → x-tenant-id → DEFAULT_TENANT_ID
+          const tenantId = await resolveTenantId(request, user.id);
+
           return {
             authenticated: true,
             user: {
@@ -98,6 +108,7 @@ export async function authenticateRequest(
               name: user.name ?? undefined,
               role,
               scopes: getScopesForRole(role),
+              tenantId: tenantId ?? undefined,
             },
           };
         }
@@ -168,6 +179,61 @@ async function authenticateApiKey(plaintext: string): Promise<AuthResult> {
     log.warn('API key lookup failed', { error: err instanceof Error ? err.message : 'unknown' });
     return { authenticated: false, error: 'Authentication error' };
   }
+}
+
+// ─── Tenant resolution helper ────────────────────────────────────────────────
+
+/**
+ * Resolve the tenant ID for an authenticated request.
+ *
+ * Resolution order:
+ * 1. `x-resolved-tenant-id` header (set by edge middleware from
+ *    explicit header or subdomain).
+ * 2. Prisma lookup — first active TenantMember for the given user.
+ * 3. `DEFAULT_TENANT_ID` env var (single-tenant / dev fallback).
+ *
+ * Returns `null` when no tenant context can be determined.
+ */
+async function resolveTenantId(
+  request: Request,
+  userId: string,
+): Promise<string | null> {
+  // 1. Middleware-resolved header
+  const headerTenantId = getTenantFromHeaders(request.headers);
+  if (headerTenantId) {
+    return headerTenantId;
+  }
+
+  // 2. Lookup user's tenant membership
+  try {
+    const membership = await (
+      db as unknown as {
+        tenantMember: {
+          findFirst: (args: unknown) => Promise<{ tenantId: string } | null>;
+        };
+      }
+    ).tenantMember.findFirst({
+      where: { userId, isActive: true },
+      select: { tenantId: true },
+      orderBy: { createdAt: 'asc' as const },
+    });
+
+    if (membership?.tenantId) {
+      return membership.tenantId;
+    }
+  } catch (err) {
+    log.warn('TenantMember lookup failed', {
+      userId,
+      error: err instanceof Error ? err.message : 'unknown',
+    });
+  }
+
+  // 3. Fallback to default tenant
+  if (env.DEFAULT_TENANT_ID) {
+    return env.DEFAULT_TENANT_ID;
+  }
+
+  return null;
 }
 
 /**

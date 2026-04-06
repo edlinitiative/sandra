@@ -12,6 +12,7 @@ import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContex
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
 import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
 import { db } from '@/lib/db';
+import { env } from '@/lib/config/env';
 import {
   hasPendingVerification,
   verifyCode,
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
-  const appSecret = process.env.WHATSAPP_WEBHOOK_SECRET ?? '';
+  const appSecret = env.WHATSAPP_WEBHOOK_SECRET ?? '';
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   // The voice bridge runs on a separate VM and handles WhatsApp Calling API
   // events. We forward the payload and respond 200 immediately regardless.
   if (isCallsWebhookEvent(rawBody)) {
-    const voiceBridgeUrl = process.env.VOICE_BRIDGE_URL ?? 'https://voice.edlight.org';
+    const voiceBridgeUrl = env.VOICE_BRIDGE_URL ?? 'https://voice.edlight.org';
     void fetch(`${voiceBridgeUrl}/webhook/calls`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

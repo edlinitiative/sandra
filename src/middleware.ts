@@ -71,6 +71,97 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; rese
   };
 }
 
+// ── Tenant Resolution ─────────────────────────────────────────────────────────
+
+/** Routes that skip tenant resolution entirely. */
+const TENANT_SKIP_PATTERNS: RegExp[] = [
+  /^\/api\/health$/,
+  /^\/api\/webhooks(\/|$)/,
+  /^\/api\/auth(\/|$)/,
+  /^\/login/,
+  /^\/api\/cron(\/|$)/,
+];
+
+/** Header written by this middleware so downstream code can read the tenant. */
+const RESOLVED_TENANT_HEADER = 'x-resolved-tenant-id';
+
+/**
+ * Extract a tenant slug from the hostname.
+ * E.g. `acme.sandra.edlight.org` → `acme`
+ *      `sandra.edlight.org`      → null (no sub-tenant)
+ *      `localhost:3000`           → null
+ */
+function extractTenantSlug(hostname: string): string | null {
+  // Strip port
+  const host = hostname.split(':')[0] ?? '';
+
+  // localhost / IP — no subdomain extraction
+  if (!host || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    return null;
+  }
+
+  const parts = host.split('.');
+
+  // Need at least 4 parts for a sub-tenant: <slug>.<app>.<domain>.<tld>
+  // e.g. acme.sandra.edlight.org → ["acme", "sandra", "edlight", "org"]
+  if (parts.length >= 4) {
+    return parts[0] ?? null;
+  }
+
+  return null;
+}
+
+/**
+ * Resolve the tenant for this request.
+ * Returns the tenant ID (from explicit header) or a slug (from subdomain)
+ * that downstream code can use to look up the tenant.
+ */
+function resolveTenantIdentifier(request: NextRequest): string | null {
+  // 1. Explicit header takes priority
+  const explicitTenantId = request.headers.get('x-tenant-id');
+  if (explicitTenantId) {
+    return explicitTenantId;
+  }
+
+  // 2. Subdomain extraction
+  const hostname = request.headers.get('host') ?? request.nextUrl.hostname;
+  const slug = extractTenantSlug(hostname);
+  if (slug) {
+    return slug;
+  }
+
+  return null;
+}
+
+/**
+ * Stamp the resolved tenant identifier onto the response so downstream
+ * route handlers / auth middleware can read it from the request headers.
+ */
+function applyTenantHeader(response: NextResponse, request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+
+  // Skip tenant resolution for public / system routes
+  if (TENANT_SKIP_PATTERNS.some((re) => re.test(pathname))) {
+    return response;
+  }
+
+  const tenantIdentifier = resolveTenantIdentifier(request);
+  if (tenantIdentifier) {
+    // Set on the *request* headers that Next.js forwards to the route handler
+    response.headers.set(RESOLVED_TENANT_HEADER, tenantIdentifier);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(RESOLVED_TENANT_HEADER, tenantIdentifier);
+    // Rewrite with the updated request headers so server components / route
+    // handlers see the header via `headers()` or `request.headers`.
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+      headers: response.headers,
+    });
+  }
+
+  return response;
+}
+
 // ── CORS Configuration ────────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = new Set([
@@ -125,7 +216,7 @@ export function middleware(request: NextRequest) {
       for (const [key, value] of Object.entries(getCorsHeaders(request))) {
         if (value) response.headers.set(key, value);
       }
-      return response;
+      return applyTenantHeader(response, request);
     }
 
     const ip = getClientIp(request);
@@ -163,7 +254,7 @@ export function middleware(request: NextRequest) {
       if (value) response.headers.set(key, value);
     }
 
-    return response;
+    return applyTenantHeader(response, request);
   }
 
   // Non-API routes: just add CORS headers
@@ -171,7 +262,7 @@ export function middleware(request: NextRequest) {
   for (const [key, value] of Object.entries(getCorsHeaders(request))) {
     if (value) response.headers.set(key, value);
   }
-  return response;
+  return applyTenantHeader(response, request);
 }
 
 export const config = {

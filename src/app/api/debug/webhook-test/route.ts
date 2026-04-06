@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { createLogger } from '@/lib/utils';
 
 const log = createLogger('debug:webhook-test');
@@ -9,6 +10,15 @@ const log = createLogger('debug:webhook-test');
  * POST /api/debug/webhook-test — simulates background processing.
  */
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
+  const auth = await authenticateRequest(request);
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -31,5 +41,9 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+  }
+
   return NextResponse.json({ status: 'debug endpoint active' });
 }

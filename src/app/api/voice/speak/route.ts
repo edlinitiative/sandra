@@ -13,8 +13,10 @@
  * Response 500: TTS API error
  */
 
+import { NextResponse } from 'next/server';
 import { synthesizeSpeech, type TtsVoice, type TtsFormat } from '@/lib/channels/voice';
 import { formatForVoice } from '@/lib/channels/voice-formatter';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { generateRequestId, createLogger } from '@/lib/utils';
 
 const log = createLogger('api:voice:speak');
@@ -32,6 +34,10 @@ const VALID_FORMATS: TtsFormat[] = ['mp3', 'opus', 'aac', 'flac', 'wav'];
 
 export async function POST(request: Request) {
   const requestId = generateRequestId();
+
+  // Auth is optional for voice routes during migration
+  const auth = await authenticateRequest(request);
+  const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
 
   let body: { text?: unknown; voice?: unknown; format?: unknown };
   try {

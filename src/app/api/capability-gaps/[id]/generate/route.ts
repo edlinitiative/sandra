@@ -16,6 +16,7 @@ import {
   NotFoundError,
 } from '@/lib/utils';
 import { requireAdminAuth } from '@/lib/utils/auth';
+import { authenticateRequest } from '@/lib/auth/middleware';
 import { db } from '@/lib/db';
 import type { ToolContext } from '@/lib/tools/types';
 
@@ -27,6 +28,12 @@ export async function POST(request: Request, { params }: RouteParams) {
   const requestId = generateRequestId();
 
   try {
+    // Require authentication
+    const auth = await authenticateRequest(request);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     requireAdminAuth(request);
 
     const { id } = await params;

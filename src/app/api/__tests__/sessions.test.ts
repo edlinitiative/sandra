@@ -20,6 +20,16 @@ vi.mock('@/lib/utils/auth', () => ({
   requireAdminAuth: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn(async (req: Request) => {
+    const key = req.headers.get('x-api-key');
+    if (key) {
+      return { authenticated: true, user: { id: 'admin', email: 'admin@test.com', role: 'admin', tenantId: 'tenant-1' } };
+    }
+    return { authenticated: false, error: 'Not authenticated' };
+  }),
+}));
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('GET /api/sessions', () => {
@@ -129,9 +139,7 @@ describe('GET /api/sessions', () => {
     const { GET } = await import('../sessions/route');
     const request = new Request('http://localhost/api/sessions');
     const response = await GET(request);
-    const body = await response.json();
 
     expect(response.status).toBe(401);
-    expect(body.success).toBe(false);
   });
 });
