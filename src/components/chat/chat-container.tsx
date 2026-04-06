@@ -10,6 +10,7 @@ import { LanguageSelector } from './language-selector';
 import { VoiceConversation } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
+import { AmbientParticles } from '@/components/ui/ambient-particles';
 import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
 
 
@@ -219,7 +220,9 @@ export function ChatContainer() {
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-surface">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto">
+        {/* Ambient oracle particles */}
+        <AmbientParticles className="pointer-events-none fixed inset-0 z-0 opacity-40" />
         {messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} />
         ) : (
@@ -266,7 +269,7 @@ export function ChatContainer() {
         />
 
         {/* Unified input card */}
-        <div className="overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low shadow-lg shadow-black/20">
+        <div className="overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low/80 shadow-lg shadow-black/20 backdrop-blur-sm">
           <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
         </div>
 
