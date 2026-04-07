@@ -13,7 +13,6 @@ import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { AmbientParticles } from '@/components/ui/ambient-particles';
 import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
 
-
 type Language = 'en' | 'fr' | 'ht';
 
 const LANG_KEY = 'sandra_language';
@@ -40,7 +39,23 @@ export function ChatContainer() {
   const [language, setLanguageState] = useState<Language>('en');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Read language preference from localStorage on mount
+  // Abort controller for in-flight streams
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Track whether we've attempted to restore so we only do it once
+  const restoredRef = useRef(false);
+
+  // Keep latest values in refs so callbacks never go stale
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
+  const languageRef = useRef(language);
+  languageRef.current = language;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+  const storedSessionIdRef = useRef(storedSessionId);
+  storedSessionIdRef.current = storedSessionId;
+
+  // ── Language detection on mount ───────────────────────────────────────────
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LANG_KEY) as Language | null;
@@ -55,14 +70,18 @@ export function ChatContainer() {
     } catch {
       // Ignore storage errors
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Restore conversation history on mount when a persisted session exists
+  // ── Restore conversation on mount ─────────────────────────────────────────
+  // storedSessionId starts null and hydrates asynchronously from localStorage,
+  // so we watch for it to become non-null and restore exactly once.
   useEffect(() => {
-    if (!storedSessionId) return;
+    if (!storedSessionId || restoredRef.current) return;
+    restoredRef.current = true;
+
     getConversation(storedSessionId)
       .then((data) => {
+        // Sync language from server if user hasn't set one locally
         if (data.language && (['en', 'fr', 'ht'] as string[]).includes(data.language)) {
           try {
             const storedLanguage = localStorage.getItem(LANG_KEY);
@@ -81,126 +100,164 @@ export function ChatContainer() {
           content: m.content,
           timestamp: m.createdAt,
         }));
-        setMessages(restored);
+        if (restored.length > 0) {
+          setMessages(restored);
+        }
       })
       .catch(() => {
-        clearSession();
+        // Restore failed (e.g. 401 for unauthenticated users or 404).
+        // Do NOT clear the session — the session ID is still valid for
+        // continuing the conversation even if we can't fetch history.
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storedSessionId]);
 
+  // ── Auto-scroll ───────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
-
-  const handleFeedback = useCallback((messageId: string, rating: 'up' | 'down') => {
-    void submitFeedback({ sessionId, messageRef: messageId, rating });
-  }, [sessionId]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
 
-  const handleVoiceResult = useCallback((result: VoiceResult) => {
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: `🎤 ${result.transcription}`,
-      timestamp: new Date().toISOString(),
-    };
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: result.response,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+  // ── Feedback ──────────────────────────────────────────────────────────────
+  const handleFeedback = useCallback(
+    (messageId: string, rating: 'up' | 'down') => {
+      void submitFeedback({ sessionId: sessionIdRef.current, messageRef: messageId, rating });
+    },
+    [],
+  );
 
-    if (!storedSessionId && result.sessionId) {
-      setSessionId(result.sessionId);
-    }
-
-    // Play back the audio response
-    if (result.audio) {
-      const audio = new Audio(`data:audio/mp3;base64,${result.audio}`);
-      audio.play().catch(() => {
-        // Autoplay may be blocked; user can hear the text in the chat
-      });
-    }
-  }, [storedSessionId, setSessionId]);
-
-  const handleSend = async (content: string) => {
-    setError(null);
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-    streamBufferRef.current = '';
-    setStreamingContent(null);
-    setActiveToolCall(null);
-
-    try {
-      const result = await streamMessage(
-        { message: content, sessionId, userId: userId ?? undefined, language },
-        (token) => {
-          setActiveToolCall(null);
-          streamBufferRef.current += token;
-          setStreamingContent(streamBufferRef.current);
-        },
-        (toolName) => {
-          setActiveToolCall(toolName);
-          // Show the streaming bubble immediately so the tool indicator is visible
-          if (streamingContent === null && streamBufferRef.current === '') {
-            setStreamingContent('');
-          }
-        },
-      );
-
-      const finalContent = streamBufferRef.current;
-      setStreamingContent(null);
-      setActiveToolCall(null);
-      streamBufferRef.current = '';
-
+  // ── Voice result (single-turn record → transcribe → respond) ──────────────
+  const handleVoiceResult = useCallback(
+    (result: VoiceResult) => {
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: `🎤 ${result.transcription}`,
+        timestamp: new Date().toISOString(),
+      };
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: finalContent || result.response || 'No response received.',
+        content: result.response,
         timestamp: new Date().toISOString(),
-        followUps: result.suggestedFollowUps ?? [],
       };
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
 
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      if (!storedSessionId && result.sessionId) {
+      if (!storedSessionIdRef.current && result.sessionId) {
         setSessionId(result.sessionId);
       }
-    } catch (err) {
+
+      // Play back the audio response
+      if (result.audio) {
+        const audio = new Audio(`data:audio/mp3;base64,${result.audio}`);
+        audio.play().catch(() => {
+          // Autoplay may be blocked
+        });
+      }
+    },
+    [setSessionId],
+  );
+
+  // ── Send message (streaming) ──────────────────────────────────────────────
+  const handleSend = useCallback(
+    async (content: string) => {
+      // Guard: prevent double-send while streaming
+      if (isLoading) return;
+
+      setError(null);
+
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      streamBufferRef.current = '';
       setStreamingContent(null);
       setActiveToolCall(null);
-      streamBufferRef.current = '';
-      const message = err instanceof Error ? err.message : 'Something went wrong';
-      setError(message);
 
-      setMessages((prev) => [
-        ...prev,
-        {
+      // Cancel any in-flight stream
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const result = await streamMessage(
+          {
+            message: content,
+            sessionId: sessionIdRef.current,
+            userId: userIdRef.current ?? undefined,
+            language: languageRef.current,
+          },
+          (token) => {
+            if (controller.signal.aborted) return;
+            setActiveToolCall(null);
+            streamBufferRef.current += token;
+            setStreamingContent(streamBufferRef.current);
+          },
+          (toolName) => {
+            if (controller.signal.aborted) return;
+            setActiveToolCall(toolName);
+            // Show the streaming bubble immediately so the tool indicator is visible
+            if (streamBufferRef.current === '') {
+              setStreamingContent('');
+            }
+          },
+        );
+
+        if (controller.signal.aborted) return;
+
+        const finalContent = streamBufferRef.current;
+        setStreamingContent(null);
+        setActiveToolCall(null);
+        streamBufferRef.current = '';
+
+        const assistantMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `I'm sorry, I encountered an error: ${message}. Please check that the API is configured correctly and try again.`,
+          content: finalContent || result.response || 'No response received.',
           timestamp: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+          followUps: result.suggestedFollowUps ?? [],
+        };
 
+        setMessages((prev) => [...prev, assistantMessage]);
+
+        if (!storedSessionIdRef.current && result.sessionId) {
+          setSessionId(result.sessionId);
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+
+        setStreamingContent(null);
+        setActiveToolCall(null);
+        streamBufferRef.current = '';
+        const message = err instanceof Error ? err.message : 'Something went wrong';
+        setError(message);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `I'm sorry, I encountered an error: ${message}. Please try again.`,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [isLoading, setSessionId],
+  );
+
+  // ── Live voice turn ───────────────────────────────────────────────────────
   const handleLiveTurn = useCallback((userText: string, assistantText: string) => {
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -217,8 +274,46 @@ export function ChatContainer() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
   }, []);
 
+  // ── New chat ──────────────────────────────────────────────────────────────
+  const handleNewChat = useCallback(() => {
+    // Abort any in-flight stream
+    abortRef.current?.abort();
+    abortRef.current = null;
+
+    setMessages([]);
+    setStreamingContent(null);
+    setActiveToolCall(null);
+    streamBufferRef.current = '';
+    setIsLoading(false);
+    setError(null);
+    clearSession();
+    restoredRef.current = false;
+  }, [clearSession]);
+
+  // ── Cleanup on unmount ────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-surface">
+      {/* New Chat button — top bar */}
+      {messages.length > 0 && (
+        <div className="flex shrink-0 items-center justify-end border-b border-outline-variant/10 px-4 py-2">
+          <button
+            onClick={handleNewChat}
+            className="flex items-center gap-1.5 rounded-lg border border-outline-variant/15 bg-surface-container-low/40 px-3 py-1.5 text-xs font-medium text-on-surface-variant transition-all hover:border-outline-variant/30 hover:bg-surface-container hover:text-on-surface active:scale-[0.97]"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+            </svg>
+            New chat
+          </button>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="relative flex-1 overflow-y-auto">
         {/* Ambient oracle particles */}
@@ -265,12 +360,20 @@ export function ChatContainer() {
           sessionId={storedSessionId ?? undefined}
           language={language}
           onTurn={handleLiveTurn}
-          onSessionId={(id) => { if (!storedSessionId) setSessionId(id); }}
+          onSessionId={(id) => {
+            if (!storedSessionIdRef.current) setSessionId(id);
+          }}
         />
 
         {/* Unified input card */}
         <div className="overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low/80 shadow-lg shadow-black/20 backdrop-blur-sm">
-          <ChatInput onSend={handleSend} onVoiceResult={handleVoiceResult} voiceSessionId={sessionId} language={language} isLoading={isLoading} />
+          <ChatInput
+            onSend={handleSend}
+            onVoiceResult={handleVoiceResult}
+            voiceSessionId={sessionId}
+            language={language}
+            isLoading={isLoading}
+          />
         </div>
 
         {/* Footer row: language selector + disclaimer */}

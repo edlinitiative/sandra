@@ -22,14 +22,17 @@ Object.defineProperty(global, 'navigator', {
 vi.mock('@/lib/client', () => ({
   streamMessage: vi.fn(),
   getConversation: vi.fn(),
+  submitFeedback: vi.fn(),
 }));
 
 // Mock useSession hook
+const mockSetSessionId = vi.fn();
+const mockClearSession = vi.fn();
 vi.mock('@/hooks/useSession', () => ({
   useSession: () => ({
     sessionId: null,
-    setSessionId: vi.fn(),
-    clearSession: vi.fn(),
+    setSessionId: mockSetSessionId,
+    clearSession: mockClearSession,
   }),
 }));
 
@@ -166,5 +169,19 @@ describe('ChatContainer', () => {
     await waitFor(() => {
       expect(screen.getByText('Here are the courses.')).toBeInTheDocument();
     });
+  });
+
+  it('does not clear session on conversation restore failure', async () => {
+    // Even if getConversation fails, session should not be cleared
+    mockGetConversation.mockRejectedValue(new Error('Unauthorized'));
+
+    const { ChatContainer } = await import('../chat-container');
+    render(<ChatContainer />);
+
+    // Wait a tick for effects to settle
+    await new Promise((r) => setTimeout(r, 50));
+
+    // clearSession should NOT have been called
+    expect(mockClearSession).not.toHaveBeenCalled();
   });
 });
