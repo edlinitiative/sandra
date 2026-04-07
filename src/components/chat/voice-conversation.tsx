@@ -106,12 +106,22 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
   const cleanup = () => {
+    // Immediately disable mic so no more audio is captured
+    streamRef.current?.getTracks().forEach(t => {
+      t.enabled = false;
+      t.stop();
+    });
     try { dcRef.current?.close(); } catch { /* ignore */ }
     try { pcRef.current?.close(); } catch { /* ignore */ }
-    streamRef.current?.getTracks().forEach(t => t.stop());
     dcRef.current = null;
     pcRef.current = null;
     streamRef.current = null;
+    // Stop any playing audio
+    const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.srcObject = null;
+    }
   };
 
   // ── Send a Realtime API event over the data channel ───────────────────────
@@ -232,8 +242,12 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
         currentAssistantIdRef.current = null;
         if (pendingEndRef.current) {
           pendingEndRef.current = false;
-          // Give the TTS audio ~1.5 s to finish before closing
-          setTimeout(() => { cleanup(); setSessionState('idle'); setTranscript([]); }, 1500);
+          // Give the TTS audio ~1.5 s to finish before tearing down WebRTC
+          setTimeout(() => {
+            cleanup();
+            setSessionState('idle');
+            setTranscript([]);
+          }, 1500);
         } else {
           setSessionState('listening');
         }
@@ -328,9 +342,9 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.25,
-              prefix_padding_ms: 500,
-              silence_duration_ms: 800,
+              threshold: 0.55,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1200,
             },
           },
         });
@@ -370,7 +384,16 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
     }
   };
 
-  const endConversation = () => { cleanup(); setSessionState('idle'); setTranscript([]); };
+  const endConversation = () => {
+    // Set state FIRST so UI reacts immediately, then tear down connections
+    setSessionState('idle');
+    setTranscript([]);
+    setError(null);
+    pendingEndRef.current = false;
+    currentAssistantIdRef.current = null;
+    currentUserIdRef.current = null;
+    cleanup();
+  };
   const interrupt = () => { sendEvent({ type: 'response.cancel' }); };
 
   // ── Real-time audio FFT visualizer ──────────────────────────────────────────
