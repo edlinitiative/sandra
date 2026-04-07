@@ -91,6 +91,10 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
   // Signals that the session should close after the current response finishes
   const pendingEndRef = useRef(false);
 
+  // When true, the message handler ignores all further data-channel events.
+  // Prevents buffered events from bouncing the UI back to active after End.
+  const endedRef = useRef(false);
+
   // Audio FFT canvas
   const vizCanvasRef = useRef<HTMLCanvasElement>(null);
   const vizRafRef = useRef<number>(0);
@@ -136,6 +140,9 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
   // (avoids stale captures over state/props).
   const msgHandlerRef = useRef<(data: string) => void>(undefined);
   msgHandlerRef.current = (raw: string) => {
+    // After End is clicked, ignore all buffered/late events
+    if (endedRef.current) return;
+
     let event: Record<string, unknown>;
     try { event = JSON.parse(raw) as Record<string, unknown>; } catch { return; }
     const type = event.type as string;
@@ -244,6 +251,8 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
           pendingEndRef.current = false;
           // Give the TTS audio ~1.5 s to finish before tearing down WebRTC
           setTimeout(() => {
+            if (endedRef.current) return; // user already clicked End
+            endedRef.current = true;
             cleanup();
             setSessionState('idle');
             setTranscript([]);
@@ -268,6 +277,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
     setError(null);
     setTranscript([]);
     pendingEndRef.current = false;
+    endedRef.current = false;
     setSessionState('connecting');
 
     try {
@@ -385,6 +395,8 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
   };
 
   const endConversation = () => {
+    // Mark as ended so the message handler ignores all further events
+    endedRef.current = true;
     // Set state FIRST so UI reacts immediately, then tear down connections
     setSessionState('idle');
     setTranscript([]);
