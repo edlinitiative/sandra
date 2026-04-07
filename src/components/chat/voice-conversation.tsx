@@ -4,17 +4,16 @@
  * VoiceConversation — live voice chat via OpenAI Realtime API (WebRTC).
  *
  * Flow:
- *  1. POST /api/voice/realtime-session  → ephemeral key (server keeps real key safe)
- *  2. Create RTCPeerConnection, add mic track, open data channel
- *  3. SDP offer → POST https://api.openai.com/v1/realtime?model=…  (with ephemeral key)
- *  4. Set remote SDP answer → WebRTC connected
- *  5. Server-side VAD detects speech start/stop automatically
- *  6. Sandra's audio streams back in real-time via the remote track
+ *  1. POST /api/voice/realtime-session  → ephemeral key
+ *  2. RTCPeerConnection + mic track + data channel
+ *  3. SDP offer → POST https://api.openai.com/v1/realtime?model=…
+ *  4. Remote SDP answer → connected
+ *  5. Server-side VAD detects speech start/stop
+ *  6. Sandra's audio streams back via the remote track
  *  7. Transcripts arrive via the data channel as JSON events
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { ParticleCanvas } from '@/components/ui/particle-canvas';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SessionState =
@@ -30,7 +29,7 @@ interface TranscriptEntry {
   id: string;
   role: 'user' | 'assistant';
   text: string;
-  streaming?: boolean;
+  final?: boolean;
 }
 
 export interface VoiceConversationProps {
@@ -43,7 +42,6 @@ export interface VoiceConversationProps {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
-// Compact, voice-optimised Sandra identity (no markdown — it gets read aloud)
 const VOICE_INSTRUCTIONS = `You are Sandra, the friendly voice assistant for EdLight, an organization making education free and accessible in Haiti.
 
 EdLight has five programs: ESLP (funded 2-week summer leadership for high schoolers), Nexus (international exchange residencies for university students), Academy (free bilingual video lessons in Maths, Physics, Chemistry, Economics), Code (free coding tracks: SQL, Python, HTML, CSS, JavaScript), and Labs (digital products for mission-led organizations). EdLight News curates external scholarship listings — EdLight does NOT offer its own scholarships. Website: edlight.org.
@@ -52,245 +50,200 @@ This is a voice conversation. Be warm and conversational. Keep answers to 1-3 se
 
 ENDING THE CONVERSATION: When the user says goodbye, bye, thanks that's all, I'm done, or anything that signals they want to stop — give a warm closing reply and end it with exactly the phrase "Goodbye for now!". If someone asks you about anything violent, sexually explicit, hateful, or otherwise inappropriate, politely decline and end with "Goodbye for now!". The system will close the session automatically when you say that phrase.`;
 
-// ── Audio FFT singletons — survive component re-renders ──────────────────────
-// createMediaElementSource can only be called once per element per AudioContext.
-let _audioCtx: AudioContext | null = null;
-let _analyser: AnalyserNode | null = null;
-let _src: MediaElementAudioSourceNode | null = null;
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
-/**
- * Remap BCP-47 codes to the closest language the transcription model supports.
- * Haitian Creole ('ht') → French ('fr'): same script, shared vocabulary,
- * prevents the model from hallucinating CJK characters.
- */
-function realtimeLanguageHint(language: string | undefined): string | undefined {
+function langHint(language: string | undefined): string | undefined {
   if (!language) return undefined;
   const base = language.toLowerCase().split('-')[0];
-  const REMAP: Record<string, string> = { ht: 'fr' };
-  return REMAP[base ?? ''] ?? base ?? undefined;
+  const MAP: Record<string, string> = { ht: 'fr' };
+  return MAP[base ?? ''] ?? base ?? undefined;
 }
+
+const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\s+)?(call|conversation|chat|session)|hang\s+up|i[''']m\s+(done|good|all\s+set)|that[''']?s?\s+all|no\s+more\s+questions|stop\s+(talking|the\s+(call|chat)))\b/i;
+const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function VoiceConversation({ onTurn, language }: VoiceConversationProps) {
-  const [sessionState, setSessionState] = useState<SessionState>('idle');
+  const [state, setState] = useState<SessionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Stable refs — no re-renders on change
+  // WebRTC refs
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const micRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Per-turn accumulation
-  const currentAssistantIdRef = useRef<string | null>(null);
-  const currentUserIdRef = useRef<string | null>(null);
-  const userTurnTextRef = useRef('');
+  const assistantIdRef = useRef<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  const userTextRef = useRef('');
 
-  // Signals that the session should close after the current response finishes
+  // Control flags
   const pendingEndRef = useRef(false);
-
-  // When true, the message handler ignores all further data-channel events.
-  // Prevents buffered events from bouncing the UI back to active after End.
   const endedRef = useRef(false);
 
-  // Audio FFT canvas
-  const vizCanvasRef = useRef<HTMLCanvasElement>(null);
-  const vizRafRef = useRef<number>(0);
-
-  // Keep onTurn callback fresh without recreating the data-channel handler
+  // Keep onTurn fresh
   const onTurnRef = useRef(onTurn);
   useEffect(() => { onTurnRef.current = onTurn; }, [onTurn]);
 
-  // Scroll transcript
+  // Scroll transcript to bottom
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcript]);
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
-  const cleanup = () => {
-    // Immediately disable mic so no more audio is captured
-    streamRef.current?.getTracks().forEach(t => {
-      t.enabled = false;
-      t.stop();
-    });
-    try { dcRef.current?.close(); } catch { /* ignore */ }
-    try { pcRef.current?.close(); } catch { /* ignore */ }
+  const cleanup = useCallback(() => {
+    // Kill mic immediately
+    micRef.current?.getTracks().forEach(t => { t.enabled = false; t.stop(); });
+    micRef.current = null;
+    // Close connections
+    try { dcRef.current?.close(); } catch { /* */ }
+    try { pcRef.current?.close(); } catch { /* */ }
     dcRef.current = null;
     pcRef.current = null;
-    streamRef.current = null;
-    // Stop any playing audio
-    const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
-    if (audioEl) {
-      audioEl.pause();
-      audioEl.srcObject = null;
+    // Stop audio playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.srcObject = null;
     }
-  };
+  }, []);
 
-  // ── Send a Realtime API event over the data channel ───────────────────────
-  const sendEvent = (event: Record<string, unknown>) => {
+  // ── Send a Realtime API event ─────────────────────────────────────────────
+  const sendEvent = useCallback((evt: Record<string, unknown>) => {
     if (dcRef.current?.readyState === 'open') {
-      dcRef.current.send(JSON.stringify(event));
+      dcRef.current.send(JSON.stringify(evt));
     }
-  };
+  }, []);
 
-  // ── Data-channel message handler ──────────────────────────────────────────
-  // Use a ref so the dc.onmessage closure always calls the latest version
-  // (avoids stale captures over state/props).
-  const msgHandlerRef = useRef<(data: string) => void>(undefined);
-  msgHandlerRef.current = (raw: string) => {
-    // After End is clicked, ignore all buffered/late events
+  // ── Data channel handler (ref keeps it always-fresh) ──────────────────────
+  const handleDcMessage = useRef<(raw: string) => void>(undefined);
+  handleDcMessage.current = (raw: string) => {
     if (endedRef.current) return;
 
-    let event: Record<string, unknown>;
-    try { event = JSON.parse(raw) as Record<string, unknown>; } catch { return; }
-    const type = event.type as string;
+    let evt: Record<string, unknown>;
+    try { evt = JSON.parse(raw) as Record<string, unknown>; } catch { return; }
+    const type = evt.type as string;
 
     switch (type) {
-      // Session ready → start listening
       case 'session.created':
       case 'session.updated':
-        setSessionState('listening');
+        setState('listening');
         break;
 
-      // Server VAD: user started speaking — create a streaming placeholder
       case 'input_audio_buffer.speech_started': {
-        userTurnTextRef.current = '';
-        setSessionState('user_speaking');
-        const userId = crypto.randomUUID();
-        currentUserIdRef.current = userId;
-        setTranscript(prev => [...prev, { id: userId, role: 'user', text: '', streaming: true }]);
+        userTextRef.current = '';
+        setState('user_speaking');
+        const id = crypto.randomUUID();
+        userIdRef.current = id;
+        setTranscript(prev => [...prev, { id, role: 'user', text: '' }]);
         break;
       }
 
-      // Server VAD: user paused
       case 'input_audio_buffer.speech_stopped':
-        setSessionState('processing');
+        setState('processing');
         break;
 
-      // Streaming user transcript delta
       case 'conversation.item.input_audio_transcription.delta': {
-        const delta = (event.delta as string | undefined) ?? '';
-        const uid = currentUserIdRef.current;
+        const delta = (evt.delta as string | undefined) ?? '';
+        const uid = userIdRef.current;
         if (uid && delta) {
-          setTranscript(prev =>
-            prev.map(e => e.id === uid ? { ...e, text: e.text + delta } : e),
-          );
+          setTranscript(prev => prev.map(e => e.id === uid ? { ...e, text: e.text + delta } : e));
         }
         break;
       }
 
-      // User transcript ready
       case 'conversation.item.input_audio_transcription.completed': {
-        const text = (event.transcript as string | undefined)?.trim() ?? '';
+        const text = (evt.transcript as string | undefined)?.trim() ?? '';
         if (!text) break;
-        userTurnTextRef.current = text;
-        const uid = currentUserIdRef.current;
-        currentUserIdRef.current = null;
+        userTextRef.current = text;
+        const uid = userIdRef.current;
+        userIdRef.current = null;
         setTranscript(prev => {
-          if (uid) {
-            // Finalize the streaming entry we created on speech_started
-            return prev.map(e => e.id === uid ? { ...e, text, streaming: false } : e);
-          }
-          // Fallback: no streaming entry exists, append a new one
-          return [...prev, { id: crypto.randomUUID(), role: 'user', text, streaming: false }];
+          if (uid) return prev.map(e => e.id === uid ? { ...e, text, final: true } : e);
+          return [...prev, { id: crypto.randomUUID(), role: 'user', text, final: true }];
         });
-        // Detect farewell or inappropriate requests — Sandra will respond
-        // with "Goodbye for now!" and then response.done will close the session.
-        const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\s+)?(call|conversation|chat|session)|hang\s+up|i[''']m\s+(done|good|all\s+set)|that[''']?s?\s+all|no\s+more\s+questions|stop\s+(talking|the\s+(call|chat)))\b/i;
-        const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
         if (FAREWELL_RE.test(text) || INAPPROPRIATE_RE.test(text)) {
           pendingEndRef.current = true;
         }
         break;
       }
 
-      // Sandra starts generating
       case 'response.created': {
         const id = crypto.randomUUID();
-        currentAssistantIdRef.current = id;
-        setSessionState('assistant_speaking');
-        setTranscript(prev => [...prev, { id, role: 'assistant', text: '', streaming: true }]);
+        assistantIdRef.current = id;
+        setState('assistant_speaking');
+        setTranscript(prev => [...prev, { id, role: 'assistant', text: '' }]);
         break;
       }
 
-      // Streaming transcript delta
       case 'response.audio_transcript.delta': {
-        const delta = (event.delta as string | undefined) ?? '';
-        const id = currentAssistantIdRef.current;
-        if (id && delta) {
-          setTranscript(prev =>
-            prev.map(e => e.id === id ? { ...e, text: e.text + delta } : e),
-          );
+        const delta = (evt.delta as string | undefined) ?? '';
+        const aid = assistantIdRef.current;
+        if (aid && delta) {
+          setTranscript(prev => prev.map(e => e.id === aid ? { ...e, text: e.text + delta } : e));
         }
         break;
       }
 
-      // Final transcript for this turn
       case 'response.audio_transcript.done': {
-        const finalText = (event.transcript as string | undefined) ?? '';
-        const id = currentAssistantIdRef.current;
-        if (id) {
-          setTranscript(prev =>
-            prev.map(e => e.id === id ? { ...e, text: finalText, streaming: false } : e),
-          );
-          onTurnRef.current?.(userTurnTextRef.current, finalText);
+        const text = (evt.transcript as string | undefined) ?? '';
+        const aid = assistantIdRef.current;
+        if (aid) {
+          setTranscript(prev => prev.map(e => e.id === aid ? { ...e, text, final: true } : e));
+          onTurnRef.current?.(userTextRef.current, text);
         }
-        // If Sandra said the farewell phrase, schedule end after audio finishes
-        if (/goodbye for now/i.test(finalText)) {
-          pendingEndRef.current = true;
-        }
+        if (/goodbye for now/i.test(text)) pendingEndRef.current = true;
         break;
       }
 
-      // Response fully done → back to listening (or end if farewell was detected)
       case 'response.done':
-        currentAssistantIdRef.current = null;
+        assistantIdRef.current = null;
         if (pendingEndRef.current) {
           pendingEndRef.current = false;
-          // Give the TTS audio ~1.5 s to finish before tearing down WebRTC
           setTimeout(() => {
-            if (endedRef.current) return; // user already clicked End
+            if (endedRef.current) return;
             endedRef.current = true;
             cleanup();
-            setSessionState('idle');
+            setState('idle');
             setTranscript([]);
           }, 1500);
         } else {
-          setSessionState('listening');
+          setState('listening');
         }
         break;
 
-      // API error
       case 'error': {
-        const msg = (event.error as { message?: string } | undefined)?.message ?? 'Realtime API error';
+        const msg = (evt.error as { message?: string } | undefined)?.message ?? 'Realtime API error';
         setError(msg);
-        setSessionState('error');
+        setState('error');
         break;
       }
     }
   };
 
-  // ── Start WebRTC session ──────────────────────────────────────────────────
-  const startConversation = async () => {
+  // ── Start ─────────────────────────────────────────────────────────────────
+  const start = useCallback(async () => {
     setError(null);
     setTranscript([]);
     pendingEndRef.current = false;
     endedRef.current = false;
-    setSessionState('connecting');
+    setState('connecting');
 
     try {
-      // 1. Get ephemeral key — our server keeps the real API key safe
-      const tokenRes = await fetch('/api/voice/realtime-session', { method: 'POST' });
+      // 1. Ephemeral key
+      const tokenRes = await fetch('/api/voice/realtime-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language }),
+      });
+      const tokenBody = await tokenRes.json() as { client_secret?: { value: string }; error?: string };
       if (!tokenRes.ok) {
-        const body = await tokenRes.json() as { error?: string };
-        throw new Error(body.error ?? 'Failed to create realtime session');
+        throw new Error(tokenBody.error ?? 'Failed to create realtime session');
       }
-      const tokenData = await tokenRes.json() as { client_secret: { value: string } };
-      const ephemeralKey = tokenData.client_secret.value;
+      const ephemeralKey = tokenBody.client_secret!.value;
 
-      // 2. Peer connection — include STUN so NAT traversal works on all networks
+      // 2. Peer connection
       const pc = new RTCPeerConnection({
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -299,45 +252,35 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
       });
       pcRef.current = pc;
 
-      // Surface hard connection failures to the user
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'failed') {
           setError('Connection failed — please check your network and try again');
-          setSessionState('error');
+          setState('error');
           cleanup();
         }
       };
 
-      // 3. Remote audio track → Sandra's voice plays through the hidden element
-      // Explicitly call play() in addition to autoPlay to satisfy browser autoplay policies.
+      // 3. Remote audio → <audio> element via ref
       pc.ontrack = (e) => {
-        const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
-        if (audioEl) {
-          audioEl.srcObject = e.streams[0] ?? null;
-          void audioEl.play().catch(() => {
-            // Autoplay blocked — the user will need to interact with the page first.
-            // This is rare since we always start from a button click.
-          });
+        if (audioRef.current) {
+          audioRef.current.srcObject = e.streams[0] ?? null;
+          void audioRef.current.play().catch(() => { /* autoplay blocked */ });
         }
       };
 
-      // 4. Microphone input
+      // 4. Microphone
       const ms = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
-      streamRef.current = ms;
+      micRef.current = ms;
       ms.getTracks().forEach(t => pc.addTrack(t, ms));
 
-      // 5. Data channel for events
+      // 5. Data channel
       const dc = pc.createDataChannel('oai-events');
       dcRef.current = dc;
 
       dc.onopen = () => {
-        const langHint = realtimeLanguageHint(language);
+        const hint = langHint(language);
         sendEvent({
           type: 'session.update',
           session: {
@@ -346,9 +289,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
             voice: 'alloy',
             input_audio_transcription: {
               model: 'gpt-4o-transcribe',
-              // Passing 'fr' for Haitian Creole users anchors the model in the
-              // Latin script and avoids CJK hallucinations on ambiguous phonemes.
-              ...(langHint ? { language: langHint } : {}),
+              ...(hint ? { language: hint } : {}),
             },
             turn_detection: {
               type: 'server_vad',
@@ -360,148 +301,75 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
         });
       };
 
-      dc.onmessage = (e) => msgHandlerRef.current?.(e.data as string);
+      dc.onmessage = (e) => handleDcMessage.current?.(e.data as string);
 
-      // 6. SDP offer
+      // 6. SDP exchange
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // 7. Exchange SDP with OpenAI (using ephemeral key, not the real API key)
       const sdpRes = await fetch(
         `https://api.openai.com/v1/realtime?model=${REALTIME_MODEL}`,
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${ephemeralKey}`,
-            'Content-Type': 'application/sdp',
-          },
+          headers: { Authorization: `Bearer ${ephemeralKey}`, 'Content-Type': 'application/sdp' },
           body: offer.sdp,
         },
       );
+      if (!sdpRes.ok) throw new Error(`WebRTC handshake failed: ${sdpRes.status}`);
 
-      if (!sdpRes.ok) {
-        throw new Error(`WebRTC handshake failed: ${sdpRes.status} ${await sdpRes.text()}`);
-      }
-
-      const answerSdp = await sdpRes.text();
-      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-      // sessionState → 'listening' when session.created arrives on data channel
-
+      await pc.setRemoteDescription({ type: 'answer', sdp: await sdpRes.text() });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start');
-      setSessionState('error');
+      setState('error');
       cleanup();
     }
-  };
+  }, [language, cleanup, sendEvent]);
 
-  const endConversation = () => {
-    // Mark as ended so the message handler ignores all further events
+  // ── End ───────────────────────────────────────────────────────────────────
+  const end = useCallback(() => {
     endedRef.current = true;
-    // Set state FIRST so UI reacts immediately, then tear down connections
-    setSessionState('idle');
+    setState('idle');
     setTranscript([]);
     setError(null);
     pendingEndRef.current = false;
-    currentAssistantIdRef.current = null;
-    currentUserIdRef.current = null;
+    assistantIdRef.current = null;
+    userIdRef.current = null;
     cleanup();
+  }, [cleanup]);
+
+  // ── Interrupt ─────────────────────────────────────────────────────────────
+  const interrupt = useCallback(() => { sendEvent({ type: 'response.cancel' }); }, [sendEvent]);
+
+  // ── Cleanup on unmount ────────────────────────────────────────────────────
+  useEffect(() => () => { cleanup(); }, [cleanup]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const isActive = !['idle', 'error'].includes(state);
+
+  const statusText: Record<SessionState, string> = {
+    idle: '',
+    connecting: 'Connecting…',
+    listening: 'Listening — speak freely',
+    user_speaking: 'Hearing you…',
+    processing: 'Thinking…',
+    assistant_speaking: 'Sandra is speaking…',
+    error: 'Error',
   };
-  const interrupt = () => { sendEvent({ type: 'response.cancel' }); };
-
-  // ── Real-time audio FFT visualizer ──────────────────────────────────────────
-  useEffect(() => {
-    if (sessionState !== 'assistant_speaking') {
-      cancelAnimationFrame(vizRafRef.current);
-      return;
-    }
-    const audioEl = document.getElementById('sandra-realtime-audio') as HTMLAudioElement | null;
-    const canvas = vizCanvasRef.current;
-    if (!audioEl || !canvas) return;
-    const ctx2d = canvas.getContext('2d');
-    if (!ctx2d) return;
-
-    try {
-      if (!_audioCtx) _audioCtx = new AudioContext();
-      if (_audioCtx.state === 'suspended') void _audioCtx.resume();
-      if (!_analyser) {
-        _analyser = _audioCtx.createAnalyser();
-        _analyser.fftSize = 256;
-        _analyser.smoothingTimeConstant = 0.85;
-      }
-      if (!_src) {
-        _src = _audioCtx.createMediaElementSource(audioEl);
-        _src.connect(_analyser);
-        _analyser.connect(_audioCtx.destination);
-      }
-    } catch {
-      return; // AudioContext setup failed; degrade gracefully
-    }
-
-    const bufLen = _analyser.frequencyBinCount;
-    const data = new Uint8Array(bufLen);
-    const BARS = 38;
-
-    const render = () => {
-      vizRafRef.current = requestAnimationFrame(render);
-      _analyser!.getByteFrequencyData(data);
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx2d.clearRect(0, 0, w, h);
-      const step = Math.floor(bufLen / BARS);
-      const bw = w / BARS;
-      for (let i = 0; i < BARS; i++) {
-        const val = data[i * step] ?? 0;
-        const bh = Math.max((val / 255) * h, 2);
-        const x = i * bw + bw * 0.1;
-        const bwDraw = bw * 0.8;
-        const g = ctx2d.createLinearGradient(0, h, 0, h - bh);
-        g.addColorStop(0, 'rgba(26,105,216,0.85)');
-        g.addColorStop(1, 'rgba(93,185,250,1)');
-        ctx2d.fillStyle = g;
-        ctx2d.fillRect(x, h - bh, bwDraw, bh);
-      }
-    };
-
-    render();
-    return () => cancelAnimationFrame(vizRafRef.current);
-  }, [sessionState]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => () => { cleanup(); }, []);
-
-  // ── Derived UI ─────────────────────────────────────────────────────────────
-  type StateConfig = {
-    label: string;
-    orbClass: string;
-    showRings: boolean;
-    ringColor: string;
-  };
-  const STATE: Record<SessionState, StateConfig> = {
-    idle:               { label: 'Press Start to begin',     orbClass: 'bg-outline border border-outline-variant/20',               showRings: false, ringColor: '' },
-    connecting:         { label: 'Connecting…',               orbClass: 'bg-amber-500',                                      showRings: false, ringColor: '' },
-    listening:          { label: 'Listening — speak freely',  orbClass: 'bg-primary-container glow-blue-sm',                        showRings: true,  ringColor: 'border-primary/35' },
-    user_speaking:      { label: 'Hearing you…',              orbClass: 'bg-green-500 glow-green',                           showRings: true,  ringColor: 'border-green-400/40' },
-    processing:         { label: 'Sandra is thinking…',       orbClass: 'bg-amber-400',                                      showRings: false, ringColor: '' },
-    assistant_speaking: { label: 'Sandra is speaking…',       orbClass: 'bg-gradient-to-br from-primary to-inverse-primary glow-blue', showRings: true, ringColor: 'border-primary/30' },
-    error:              { label: 'Error',                      orbClass: 'bg-red-500 glow-red',                              showRings: false, ringColor: '' },
-  };
-
-  const { label, orbClass, showRings, ringColor } = STATE[sessionState];
-  const isActive = !['idle', 'error'].includes(sessionState);
 
   return (
     <>
-      {/* Hidden audio — Sandra's realtime voice output */}
-      <audio id="sandra-realtime-audio" autoPlay className="hidden" />
+      {/* Hidden audio element — Sandra's voice output */}
+      <audio ref={audioRef} autoPlay className="hidden" />
 
-      {/* ── Compact idle trigger ──────────────────────────────────────────── */}
+      {/* ── Idle: compact start button ── */}
       {!isActive && (
         <div className="mb-2">
           <button
-            onClick={() => void startConversation()}
-            disabled={sessionState === 'connecting'}
+            onClick={() => void start()}
+            disabled={state === 'connecting'}
             className="flex w-full items-center gap-3 rounded-2xl border border-outline-variant/15 bg-surface-container-low/30 px-4 py-3 text-left transition-all hover:border-outline-variant/25 hover:bg-surface-container-low active:scale-[0.99] disabled:opacity-50"
           >
+            {/* Mic icon */}
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container">
               <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
@@ -520,71 +388,50 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
         </div>
       )}
 
-      {/* ── Active voice panel ──────────────────────────────────────────────── */}
+      {/* ── Active voice panel ── */}
       {isActive && (
-        <div className="relative mb-2 overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low">
-          {/* Particle cloud behind orb */}
-          <ParticleCanvas
-            active={sessionState === 'assistant_speaking' || sessionState === 'user_speaking'}
-            className="pointer-events-none absolute inset-0 opacity-60"
-          />
-          <div className="relative z-10 flex flex-col items-center px-4 pb-5 pt-6">
-            {/* Status label */}
-            <p className="mb-4 text-[10px] font-semibold tracking-[0.2em] uppercase text-on-surface-variant">
-              {label}
+        <div className="mb-2 overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low">
+          <div className="flex flex-col items-center px-4 pb-4 pt-5">
+
+            {/* Status */}
+            <p className="mb-3 text-[10px] font-semibold tracking-[0.2em] uppercase text-on-surface-variant">
+              {statusText[state]}
             </p>
 
-            {/* Orb + rings */}
-            <div className="relative flex h-24 w-24 items-center justify-center">
-              {showRings && (
-                <>
-                  <div className={`absolute h-20 w-20 rounded-full border ${ringColor} animate-ring-out`} />
-                  <div className={`absolute h-20 w-20 rounded-full border ${ringColor} animate-ring-out-delayed`} />
-                </>
-              )}
-              <div
-                className={`relative z-10 flex h-16 w-16 items-center justify-center shadow-xl transition-[box-shadow,filter,border-radius] duration-500 ${orbClass} ${
-                  sessionState === 'assistant_speaking' ? 'animate-morph' : 'rounded-full'
-                } ${showRings ? 'animate-glow-pulse' : ''}`}
-              >
-                {['listening', 'user_speaking'].includes(sessionState) && (
-                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
-                  </svg>
-                )}
-                {['connecting', 'processing'].includes(sessionState) && (
-                  <svg className="h-7 w-7 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                )}
-                {sessionState === 'assistant_speaking' && (
-                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                  </svg>
-                )}
-                {sessionState === 'error' && (
-                  <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374l7.698-13.314c.866-1.5 3.032-1.5 3.898 0l7.698 13.314ZM12 15.75h.007v.008H12v-.008Z" />
-                  </svg>
-                )}
-              </div>
-            </div>
+            {/* Simple state indicator — pure CSS, no canvas */}
+            <VoiceIndicator state={state} />
 
-            {/* Real-time audio FFT canvas */}
-            {sessionState === 'assistant_speaking' && (
-              <canvas ref={vizCanvasRef} width={200} height={40} className="mt-3 rounded opacity-80" />
+            {/* Live transcript */}
+            {transcript.length > 0 && (
+              <div className="mt-3 max-h-28 w-full overflow-y-auto rounded-lg bg-black/20 px-3 py-2">
+                {transcript.map((t) => (
+                  <p
+                    key={t.id}
+                    className={`text-xs leading-relaxed ${
+                      t.role === 'user'
+                        ? 'text-on-surface-variant'
+                        : 'text-primary'
+                    } ${!t.final ? 'opacity-60' : ''}`}
+                  >
+                    <span className="font-semibold">
+                      {t.role === 'user' ? 'You: ' : 'Sandra: '}
+                    </span>
+                    {t.text || '…'}
+                  </p>
+                ))}
+                <div ref={transcriptEndRef} />
+              </div>
             )}
 
             {/* Controls */}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 flex gap-2">
               <button
-                onClick={endConversation}
+                onClick={end}
                 className="rounded-full border border-red-500/30 bg-red-500/10 px-5 py-2 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 active:scale-95"
               >
                 End
               </button>
-              {sessionState === 'assistant_speaking' && (
+              {state === 'assistant_speaking' && (
                 <button
                   onClick={interrupt}
                   className="rounded-full border border-outline-variant/15 px-4 py-2 text-xs text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface active:scale-95"
@@ -598,4 +445,58 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
       )}
     </>
   );
+}
+
+// ── VoiceIndicator ───────────────────────────────────────────────────────────
+// Pure CSS, zero canvas overhead. Soundwave bars for speaking states,
+// a pulse dot for listening, a spinner for connecting/processing.
+function VoiceIndicator({ state }: { state: SessionState }) {
+  if (state === 'connecting' || state === 'processing') {
+    return (
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-container">
+        <svg className="h-6 w-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (state === 'listening') {
+    return (
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary/40 bg-surface-container">
+        <div className="h-3 w-3 animate-pulse rounded-full bg-primary" />
+      </div>
+    );
+  }
+
+  if (state === 'user_speaking') {
+    return (
+      <div className="flex h-14 items-end justify-center gap-[3px]">
+        {[0, 1, 2, 3, 4].map(i => (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-green-400 soundwave-bar"
+            style={{ height: '24px', animationDelay: `${i * 0.12}s` }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (state === 'assistant_speaking') {
+    return (
+      <div className="flex h-14 items-end justify-center gap-[3px]">
+        {[0, 1, 2, 3, 4, 5, 6].map(i => (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-primary soundwave-bar"
+            style={{ height: '24px', animationDelay: `${i * 0.1}s` }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return null;
 }
