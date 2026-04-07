@@ -185,7 +185,7 @@ export function ChatMessage({
       {isUser ? (
         /* ── User message — right-aligned pill ── */
         <div className="flex justify-end">
-          <div className="max-w-[85%] rounded-3xl bg-surface-container-high px-4 py-2.5 text-[15px] leading-relaxed text-on-surface sm:max-w-[70%]">
+          <div className="max-w-[90%] rounded-3xl bg-surface-container-high px-3.5 py-2.5 text-[15px] leading-relaxed text-on-surface sm:max-w-[70%] sm:px-4">
             <div className="whitespace-pre-wrap">{content}</div>
           </div>
         </div>

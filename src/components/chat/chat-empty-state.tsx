@@ -46,21 +46,22 @@ export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: C
   ].slice(0, 4);
 
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-16">
+    <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-6 sm:py-16">
       {/* Ambient nebula background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="animate-nebula-drift absolute left-1/2 top-1/3 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.04] blur-[100px]"
+          className="animate-nebula-drift absolute left-1/2 top-1/3 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.04] blur-[80px] sm:h-[300px] sm:w-[300px] sm:blur-[100px]"
         />
       </div>
 
-      {/* Oracle orb */}
-      <div className="relative mb-8 animate-orb-float">
-        <OracleOrb size={120} active={isLoading} />
+      {/* Oracle orb — smaller on mobile */}
+      <div className="relative mb-6 animate-orb-float sm:mb-8">
+        <div className="sm:hidden"><OracleOrb size={80} active={isLoading} /></div>
+        <div className="hidden sm:block"><OracleOrb size={120} active={isLoading} /></div>
       </div>
 
       {/* Greeting */}
-      <h2 className="relative mb-1 text-xl font-semibold tracking-tight text-white">
+      <h2 className="relative mb-1 text-lg font-semibold tracking-tight text-white sm:text-xl">
         Hi, I&apos;m{' '}
         <span className="bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
           {AGENT_NAME}
@@ -71,7 +72,7 @@ export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: C
       </p>
 
       {/* Suggestion cards */}
-      <div className="relative grid w-full max-w-lg gap-2 sm:grid-cols-2">
+      <div className="relative grid w-full max-w-lg gap-2 grid-cols-1 min-[400px]:grid-cols-2">
         {questions.map((text) => (
           <button
             key={text}

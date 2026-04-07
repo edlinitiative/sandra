@@ -37,6 +37,7 @@ export interface VoiceConversationProps {
   language?: string;
   onTurn?: (userText: string, assistantText: string) => void;
   onSessionId?: (id: string) => void;
+  onActiveChange?: (active: boolean) => void;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\
 const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export function VoiceConversation({ onTurn, language }: VoiceConversationProps) {
+export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceConversationProps) {
   const [state, setState] = useState<SessionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +92,32 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcript]);
+
+  // ── Throttled transcript deltas (batch via rAF to reduce re-renders) ──────
+  const deltaBufferRef = useRef<Map<string, string>>(new Map());
+  const flushRafRef = useRef<number>(0);
+
+  const flushDeltas = useCallback(() => {
+    flushRafRef.current = 0;
+    const buf = deltaBufferRef.current;
+    if (buf.size === 0) return;
+    setTranscript(prev => {
+      let next = prev;
+      buf.forEach((delta, id) => {
+        next = next.map(e => e.id === id ? { ...e, text: e.text + delta } : e);
+      });
+      return next;
+    });
+    buf.clear();
+  }, []);
+
+  const bufferDelta = useCallback((id: string, delta: string) => {
+    const existing = deltaBufferRef.current.get(id) ?? '';
+    deltaBufferRef.current.set(id, existing + delta);
+    if (!flushRafRef.current) {
+      flushRafRef.current = requestAnimationFrame(flushDeltas);
+    }
+  }, [flushDeltas]);
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
   const cleanup = useCallback(() => {
@@ -147,9 +174,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
       case 'conversation.item.input_audio_transcription.delta': {
         const delta = (evt.delta as string | undefined) ?? '';
         const uid = userIdRef.current;
-        if (uid && delta) {
-          setTranscript(prev => prev.map(e => e.id === uid ? { ...e, text: e.text + delta } : e));
-        }
+        if (uid && delta) bufferDelta(uid, delta);
         break;
       }
 
@@ -180,9 +205,7 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
       case 'response.audio_transcript.delta': {
         const delta = (evt.delta as string | undefined) ?? '';
         const aid = assistantIdRef.current;
-        if (aid && delta) {
-          setTranscript(prev => prev.map(e => e.id === aid ? { ...e, text: e.text + delta } : e));
-        }
+        if (aid && delta) bufferDelta(aid, delta);
         break;
       }
 
@@ -341,10 +364,20 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
   const interrupt = useCallback(() => { sendEvent({ type: 'response.cancel' }); }, [sendEvent]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
-  useEffect(() => () => { cleanup(); }, [cleanup]);
+  useEffect(() => () => {
+    if (flushRafRef.current) cancelAnimationFrame(flushRafRef.current);
+    cleanup();
+  }, [cleanup]);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const isActive = !['idle', 'error'].includes(state);
+
+  // Notify parent when voice becomes active/inactive
+  const onActiveChangeRef = useRef(onActiveChange);
+  onActiveChangeRef.current = onActiveChange;
+  useEffect(() => {
+    onActiveChangeRef.current?.(isActive);
+  }, [isActive]);
 
   const statusText: Record<SessionState, string> = {
     idle: '',
@@ -388,26 +421,33 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
         </div>
       )}
 
-      {/* ── Active voice panel ── */}
+      {/* ── Active voice panel — fullscreen on mobile, inline on sm+ ── */}
       {isActive && (
-        <div className="mb-2 overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-low">
-          <div className="flex flex-col items-center px-4 pb-4 pt-5">
-
+        <div className="fixed inset-0 z-50 flex flex-col bg-surface sm:relative sm:inset-auto sm:z-auto sm:mb-2 sm:flex-none sm:overflow-hidden sm:rounded-2xl sm:border sm:border-outline-variant/15 sm:bg-surface-container-low">
+          <div
+            className="flex flex-1 flex-col items-center justify-center px-6 sm:flex-none sm:px-4"
+            style={{
+              paddingTop: 'max(1.5rem, env(safe-area-inset-top, 0px))',
+              paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 0px))',
+            }}
+          >
             {/* Status */}
-            <p className="mb-3 text-[10px] font-semibold tracking-[0.2em] uppercase text-on-surface-variant">
+            <p className="mb-4 text-xs font-semibold tracking-[0.2em] uppercase text-on-surface-variant sm:mb-3 sm:text-[10px]">
               {statusText[state]}
             </p>
 
-            {/* Simple state indicator — pure CSS, no canvas */}
-            <VoiceIndicator state={state} />
+            {/* Voice indicator — scaled up on mobile for prominence */}
+            <div className="scale-[1.4] sm:scale-100">
+              <VoiceIndicator state={state} />
+            </div>
 
             {/* Live transcript */}
             {transcript.length > 0 && (
-              <div className="mt-3 max-h-28 w-full overflow-y-auto rounded-lg bg-black/20 px-3 py-2">
+              <div className="mt-6 max-h-[35vh] w-full max-w-md overflow-y-auto rounded-xl bg-black/20 px-4 py-3 sm:mt-3 sm:max-h-28 sm:rounded-lg sm:px-3 sm:py-2">
                 {transcript.map((t) => (
                   <p
                     key={t.id}
-                    className={`text-xs leading-relaxed ${
+                    className={`text-sm leading-relaxed sm:text-xs ${
                       t.role === 'user'
                         ? 'text-on-surface-variant'
                         : 'text-primary'
@@ -423,18 +463,18 @@ export function VoiceConversation({ onTurn, language }: VoiceConversationProps) 
               </div>
             )}
 
-            {/* Controls */}
-            <div className="mt-3 flex gap-2">
+            {/* Controls — larger touch targets on mobile */}
+            <div className="mt-6 flex gap-3 sm:mt-3 sm:gap-2">
               <button
                 onClick={end}
-                className="rounded-full border border-red-500/30 bg-red-500/10 px-5 py-2 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20 active:scale-95"
+                className="rounded-full border border-red-500/30 bg-red-500/10 px-6 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20 active:scale-95 sm:px-5 sm:py-2 sm:text-xs"
               >
                 End
               </button>
               {state === 'assistant_speaking' && (
                 <button
                   onClick={interrupt}
-                  className="rounded-full border border-outline-variant/15 px-4 py-2 text-xs text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface active:scale-95"
+                  className="rounded-full border border-outline-variant/15 px-5 py-2.5 text-sm text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface active:scale-95 sm:px-4 sm:py-2 sm:text-xs"
                 >
                   Skip
                 </button>

@@ -45,6 +45,9 @@ export function ChatContainer() {
   // Ref-based guard against double-send (survives between React renders)
   const sendingRef = useRef(false);
 
+  // Track whether voice is active so we can pause background work
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+
   // Track whether we've attempted to restore so we only do it once
   const restoredRef = useRef(false);
 
@@ -325,12 +328,14 @@ export function ChatContainer() {
 
       {/* Messages area */}
       <div className="relative flex-1 overflow-y-auto">
-        {/* Ambient oracle particles */}
-        <AmbientParticles className="pointer-events-none fixed inset-0 z-0 opacity-40" />
+        {/* Ambient oracle particles — paused during voice to free CPU */}
+        {!isVoiceActive && (
+          <AmbientParticles className="pointer-events-none fixed inset-0 z-0 opacity-40" />
+        )}
         {messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} isLoading={isLoading} />
         ) : (
-          <div className="mx-auto max-w-2xl space-y-1 px-4 py-4">
+          <div className="mx-auto max-w-2xl space-y-1 px-3 py-3 sm:px-4 sm:py-4">
             {messages.map((msg) => (
               <ChatMessage
                 key={msg.id}
@@ -361,14 +366,15 @@ export function ChatContainer() {
 
       {/* ── Bottom section ── */}
       <div
-        className="mx-auto w-full max-w-2xl shrink-0 px-3 sm:px-4"
-        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        className="mx-auto w-full max-w-2xl shrink-0 px-2.5 sm:px-4"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
         {/* Voice panel — renders content only when active */}
         <VoiceConversation
           sessionId={storedSessionId ?? undefined}
           language={language}
           onTurn={handleLiveTurn}
+          onActiveChange={setIsVoiceActive}
           onSessionId={(id) => {
             if (!storedSessionIdRef.current) setSessionId(id);
           }}

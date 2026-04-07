@@ -165,7 +165,7 @@ export function ChatInput({
             onClick={handleMicClick}
             disabled={isLoading || isVoiceLoading}
             title={isRecording ? 'Stop recording' : 'Record voice message'}
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all ${
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
               isRecording
                 ? 'animate-pulse bg-red-500 text-white'
                 : isVoiceLoading
@@ -194,7 +194,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={!input.trim() || isLoading || isRecording || isVoiceLoading}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-outline disabled:text-on-surface-variant"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-outline disabled:text-on-surface-variant"
         >
           {isLoading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
