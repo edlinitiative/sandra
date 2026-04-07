@@ -34,6 +34,7 @@ export function ChatInput({
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -41,6 +42,10 @@ export function ChatInput({
     if (!trimmed || isLoading) return;
     onSend(trimmed);
     setInput('');
+    // Reset the inline height that onInput sets so the textarea shrinks back
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -137,6 +142,7 @@ export function ChatInput({
       )}
       <form onSubmit={handleSubmit} className="flex items-end gap-1.5">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

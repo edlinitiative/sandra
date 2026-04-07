@@ -34,13 +34,16 @@ export function ChatContainer() {
   const streamBufferRef = useRef('');
   const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
   const { userId } = useUserIdentity();
-  const [newSessionId] = useState(() => crypto.randomUUID());
-  const sessionId = storedSessionId ?? newSessionId;
+  const fallbackIdRef = useRef(crypto.randomUUID());
+  const sessionId = storedSessionId ?? fallbackIdRef.current;
   const [language, setLanguageState] = useState<Language>('en');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Abort controller for in-flight streams
   const abortRef = useRef<AbortController | null>(null);
+
+  // Ref-based guard against double-send (survives between React renders)
+  const sendingRef = useRef(false);
 
   // Track whether we've attempted to restore so we only do it once
   const restoredRef = useRef(false);
@@ -163,8 +166,9 @@ export function ChatContainer() {
   // ── Send message (streaming) ──────────────────────────────────────────────
   const handleSend = useCallback(
     async (content: string) => {
-      // Guard: prevent double-send while streaming
-      if (isLoading) return;
+      // Ref-based guard: survives between React renders, prevents rapid double-send
+      if (sendingRef.current) return;
+      sendingRef.current = true;
 
       setError(null);
 
@@ -208,6 +212,7 @@ export function ChatContainer() {
               setStreamingContent('');
             }
           },
+          controller.signal,
         );
 
         if (controller.signal.aborted) return;
@@ -249,12 +254,13 @@ export function ChatContainer() {
           },
         ]);
       } finally {
+        sendingRef.current = false;
         if (!controller.signal.aborted) {
           setIsLoading(false);
         }
       }
     },
-    [isLoading, setSessionId],
+    [setSessionId],
   );
 
   // ── Live voice turn ───────────────────────────────────────────────────────
@@ -285,8 +291,11 @@ export function ChatContainer() {
     setActiveToolCall(null);
     streamBufferRef.current = '';
     setIsLoading(false);
+    sendingRef.current = false;
     setError(null);
     clearSession();
+    // Generate a fresh fallback session ID so the new chat doesn't reuse the old one
+    fallbackIdRef.current = crypto.randomUUID();
     restoredRef.current = false;
   }, [clearSession]);
 

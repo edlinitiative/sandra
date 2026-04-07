@@ -129,6 +129,7 @@ describe('ChatContainer', () => {
         expect.objectContaining({ userId: 'web:test-user-123' }),
         expect.any(Function),
         expect.any(Function),
+        expect.any(AbortSignal),
       );
     });
   });
@@ -162,6 +163,7 @@ describe('ChatContainer', () => {
         expect.any(Object),
         expect.any(Function),
         expect.any(Function),
+        expect.any(AbortSignal),
       );
     });
 

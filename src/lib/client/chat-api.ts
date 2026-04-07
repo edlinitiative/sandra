@@ -74,16 +74,24 @@ export async function streamMessage(
   params: StreamMessageParams,
   onToken: (token: string) => void,
   onToolCall?: (toolName: string) => void,
+  signal?: AbortSignal,
 ): Promise<StreamMessageResult> {
   const httpResponse = await fetch('/api/chat/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
+    signal,
   });
 
   if (!httpResponse.ok) {
-    const json = await httpResponse.json().catch(() => ({}));
-    const message = (json as Record<string, unknown>)?.error?.toString() ?? 'Failed to start stream';
+    const json = await httpResponse.json().catch(() => ({})) as Record<string, unknown>;
+    const errObj = json?.error;
+    const message =
+      (typeof errObj === 'object' && errObj !== null && 'message' in errObj
+        ? (errObj as { message?: string }).message
+        : typeof errObj === 'string'
+          ? errObj
+          : undefined) ?? 'Failed to start stream';
     throw new Error(message);
   }
 
