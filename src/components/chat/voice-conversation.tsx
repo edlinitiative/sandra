@@ -82,12 +82,10 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
   // Control flags
   const pendingEndRef = useRef(false);
   const endedRef = useRef(false);
-  const stateRef = useRef<SessionState>('idle');
 
-  // Keep refs fresh
+  // Keep onTurn fresh
   const onTurnRef = useRef(onTurn);
   useEffect(() => { onTurnRef.current = onTurn; }, [onTurn]);
-  useEffect(() => { stateRef.current = state; }, [state]);
 
   // Scroll transcript to bottom
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -145,11 +143,6 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
     }
   }, []);
 
-  // ── Mic muting — prevents Sandra's speaker output from being picked up ────
-  const setMicMuted = useCallback((muted: boolean) => {
-    micRef.current?.getAudioTracks().forEach(t => { t.enabled = !muted; });
-  }, []);
-
   // ── Data channel handler (ref keeps it always-fresh) ──────────────────────
   const handleDcMessage = useRef<(raw: string) => void>(undefined);
   handleDcMessage.current = (raw: string) => {
@@ -166,8 +159,6 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
         break;
 
       case 'input_audio_buffer.speech_started': {
-        // Ignore VAD triggers during assistant speech — this is echo/feedback
-        if (stateRef.current === 'assistant_speaking') break;
         userTextRef.current = '';
         setState('user_speaking');
         const id = crypto.randomUUID();
@@ -207,7 +198,6 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
         const id = crypto.randomUUID();
         assistantIdRef.current = id;
         setState('assistant_speaking');
-        setMicMuted(true);
         setTranscript(prev => [...prev, { id, role: 'assistant', text: '' }]);
         break;
       }
@@ -232,7 +222,6 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
 
       case 'response.done':
         assistantIdRef.current = null;
-        setMicMuted(false);
         if (pendingEndRef.current) {
           pendingEndRef.current = false;
           setTimeout(() => {
@@ -327,9 +316,9 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.55,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 1200,
+              threshold: 0.75,
+              prefix_padding_ms: 500,
+              silence_duration_ms: 1600,
             },
           },
         });
@@ -374,8 +363,7 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
   // ── Interrupt ─────────────────────────────────────────────────────────────
   const interrupt = useCallback(() => {
     sendEvent({ type: 'response.cancel' });
-    setMicMuted(false);
-  }, [sendEvent, setMicMuted]);
+  }, [sendEvent]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => () => {
