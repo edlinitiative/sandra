@@ -72,10 +72,8 @@ function LoginForm() {
   const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input');
   const [phone, setPhone] = useState('');
   const [phoneCode, setPhoneCode] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const confirmationRef = useRef<any>(null);
   const recaptchaRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recaptchaVerifierRef = useRef<any>(null);
 
   // Start cooldown timer
