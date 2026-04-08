@@ -253,6 +253,14 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
     endedRef.current = false;
     setState('connecting');
 
+    // ── Mobile audio unlock ──────────────────────────────────────────────
+    // iOS Safari requires play() in the same call stack as the user gesture.
+    // Call play() synchronously here to "unlock" the audio element — the
+    // actual audio stream will be attached later via pc.ontrack.
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => { /* expected — no src yet */ });
+    }
+
     try {
       // 1. Ephemeral key
       const tokenRes = await fetch('/api/voice/realtime-session', {
@@ -316,9 +324,9 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.6,
-              prefix_padding_ms: 400,
-              silence_duration_ms: 1400,
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500,
             },
           },
         });
@@ -393,8 +401,9 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
 
   return (
     <>
-      {/* Hidden audio element — Sandra's voice output */}
-      <audio ref={audioRef} autoPlay className="hidden" />
+      {/* Audio element — visually hidden but NOT display:none (mobile Safari
+          won't maintain audio pipeline for display:none elements) */}
+      <audio ref={audioRef} autoPlay playsInline className="sr-only absolute" />
 
       {/* ── Idle: compact start button ── */}
       {!isActive && (
