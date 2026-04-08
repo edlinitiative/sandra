@@ -108,6 +108,24 @@
   66%      { transform: translate(-20px, 15px) scale(0.95); opacity: 0.35; }
 }
 
+@keyframes voice-nebula-a {
+  0%, 100% { transform: translate(0, 0) scale(1);     opacity: 0.35; }
+  33%      { transform: translate(40px, -30px) scale(1.15); opacity: 0.55; }
+  66%      { transform: translate(-25px, 20px) scale(0.9);  opacity: 0.3;  }
+}
+
+@keyframes voice-nebula-b {
+  0%, 100% { transform: translate(0, 0) scale(1);     opacity: 0.25; }
+  40%      { transform: translate(-35px, -15px) scale(1.2); opacity: 0.45; }
+  80%      { transform: translate(20px, 25px) scale(0.85);  opacity: 0.2;  }
+}
+
+@keyframes voice-nebula-c {
+  0%, 100% { transform: translate(0, 0) scale(1);     opacity: 0.2;  }
+  25%      { transform: translate(15px, 30px) scale(1.1);  opacity: 0.4;  }
+  75%      { transform: translate(-30px, -20px) scale(0.95); opacity: 0.25; }
+}
+
 /* ── Utilities ─────────────────────────────────────────────── */
 
 @layer utilities {
@@ -191,6 +209,9 @@
     animation: shimmer 3s linear infinite;
   }
   .animate-nebula-drift    { animation: nebula-drift 12s ease-in-out infinite; }
+  .animate-voice-nebula-a  { animation: voice-nebula-a 8s ease-in-out infinite; }
+  .animate-voice-nebula-b  { animation: voice-nebula-b 10s ease-in-out infinite; }
+  .animate-voice-nebula-c  { animation: voice-nebula-c 12s ease-in-out infinite; }
 }
 
 /* ── New utilities ─────────────────────────────────────────── */

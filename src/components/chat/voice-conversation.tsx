@@ -447,8 +447,9 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
               {statusText[state]}
             </p>
 
-            {/* Voice indicator — scaled up on mobile for prominence */}
-            <div className="scale-[1.4] sm:scale-100">
+            {/* Voice indicator + nebula — scaled up on mobile for prominence */}
+            <div className="relative scale-[1.4] sm:scale-100">
+              <VoiceNebula active={state === 'assistant_speaking'} />
               <VoiceIndicator state={state} />
             </div>
 
@@ -495,6 +496,34 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
         </div>
       )}
     </>
+  );
+}
+
+// ── VoiceNebula ──────────────────────────────────────────────────────────────
+// Pure CSS nebula glow behind the voice indicator when Sandra speaks.
+// Uses only transform + opacity + filter → runs on the GPU compositor thread,
+// zero main-thread cost, cannot affect the WebRTC audio pipeline.
+function VoiceNebula({ active }: { active: boolean }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 -inset-x-16 -inset-y-12 transition-opacity duration-700 ${
+        active ? 'opacity-100' : 'opacity-0'
+      }`}
+      aria-hidden
+    >
+      {/* Blob A — primary blue */}
+      <div
+        className="animate-voice-nebula-a absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-[60px] will-change-transform"
+      />
+      {/* Blob B — cyan accent */}
+      <div
+        className="animate-voice-nebula-b absolute left-1/3 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-[50px] will-change-transform"
+      />
+      {/* Blob C — violet accent */}
+      <div
+        className="animate-voice-nebula-c absolute left-2/3 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/15 blur-[55px] will-change-transform"
+      />
+    </div>
   );
 }
 
