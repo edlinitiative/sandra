@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppAdapter } from '@/lib/channels/whatsapp';
+import { getWhatsAppAdapter, createWhatsAppAdapter } from '@/lib/channels/whatsapp';
+import type { WhatsAppChannelAdapter } from '@/lib/channels/whatsapp';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
 import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/memory/session-continuity';
@@ -11,6 +12,7 @@ import { splitForWhatsApp } from '@/lib/channels/whatsapp-formatter';
 import { isSandraMentioned, stripMention, buildGroupSessionId, formatGroupContext, isReplyToSandra } from '@/lib/channels/whatsapp-group';
 import { storeGroupMessage, getGroupSharingNote } from '@/lib/channels/group-privacy';
 import { tryAutoLink, getWorkspaceIdentity, detectEmailClaim } from '@/lib/channels/identity-linker';
+import { resolveWhatsAppTenant, extractPhoneNumberId, type ResolvedWhatsAppTenant } from '@/lib/channels/tenant-resolver';
 import { db } from '@/lib/db';
 import { env } from '@/lib/config/env';
 import { getPlatformConfig } from '@/lib/config/platform';
@@ -59,8 +61,16 @@ export async function POST(request: Request) {
   }
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
-  const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
-  const appSecret = platformConfig.whatsapp.appSecret;
+  // Try to resolve tenant from phone_number_id for tenant-specific app secret,
+  // falling back to env / default tenant config.
+  const phoneNumberId = extractPhoneNumberId(rawBody);
+  const resolvedTenant = phoneNumberId
+    ? await resolveWhatsAppTenant(phoneNumberId)
+    : null;
+  const appSecret =
+    resolvedTenant?.credentials.appSecret ||
+    (await getPlatformConfig(env.DEFAULT_TENANT_ID)).whatsapp.appSecret;
+
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {
@@ -95,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   // Await processing — errors are caught inside so we always reach the 200
-  await processWebhookAsync(rawBody, requestId);
+  await processWebhookAsync(rawBody, requestId, resolvedTenant);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
@@ -135,9 +145,16 @@ function extractWhatsAppMessageId(payload: unknown): string | undefined {
 
 // ─── Background processing ────────────────────────────────────────────────────
 
-async function processWebhookAsync(rawPayload: unknown, requestId: string): Promise<void> {
+async function processWebhookAsync(
+  rawPayload: unknown,
+  requestId: string,
+  resolvedTenant: ResolvedWhatsAppTenant | null,
+): Promise<void> {
   try {
-    const adapter = getWhatsAppAdapter();
+    // Use tenant-specific adapter if we resolved credentials, else fallback to env-based singleton
+    const adapter: WhatsAppChannelAdapter = resolvedTenant?.credentials.accessToken
+      ? createWhatsAppAdapter(resolvedTenant.credentials)
+      : getWhatsAppAdapter();
 
     if (!adapter.isConfigured()) {
       log.warn('WhatsApp adapter not configured — skipping inbound message');
@@ -342,8 +359,8 @@ async function processWebhookAsync(rawPayload: unknown, requestId: string): Prom
 // ─── Group message handler ────────────────────────────────────────────────────
 
 interface GroupMessageParams {
-  adapter: ReturnType<typeof getWhatsAppAdapter>;
-  inbound: Awaited<ReturnType<ReturnType<typeof getWhatsAppAdapter>['parseInbound']>>;
+  adapter: WhatsAppChannelAdapter;
+  inbound: Awaited<ReturnType<WhatsAppChannelAdapter['parseInbound']>>;
   phoneNumber: string;
   content: string;
   displayName: string | undefined;

@@ -86,6 +86,8 @@ export interface WhatsAppCredentials {
   phoneNumberId: string;
   accessToken: string;
   webhookSecret: string;
+  /** Meta App Secret — used for HMAC-SHA256 signature verification on inbound webhooks. */
+  appSecret?: string;
   apiVersion?: string;
 }
 
