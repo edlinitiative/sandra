@@ -16,6 +16,7 @@ interface AgentConfig {
   whatsappPhoneNumberId?: string | null;
   whatsappAccessToken?: string | null;
   whatsappWebhookSecret?: string | null;
+  whatsappAppSecret?: string | null;
   instagramPageAccessToken?: string | null;
   instagramAppSecret?: string | null;
   instagramVerifyToken?: string | null;
@@ -87,6 +88,7 @@ export function PlatformSettings() {
   const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState('');
   const [whatsappAccessToken, setWhatsappAccessToken] = useState('');
   const [whatsappWebhookSecret, setWhatsappWebhookSecret] = useState('');
+  const [whatsappAppSecret, setWhatsappAppSecret] = useState('');
   const [instagramPageAccessToken, setInstagramPageAccessToken] = useState('');
   const [instagramAppSecret, setInstagramAppSecret] = useState('');
   const [instagramVerifyToken, setInstagramVerifyToken] = useState('');
@@ -94,6 +96,7 @@ export function PlatformSettings() {
   // Password visibility toggles
   const [showWhatsappToken, setShowWhatsappToken] = useState(false);
   const [showWhatsappSecret, setShowWhatsappSecret] = useState(false);
+  const [showWhatsappAppSecret, setShowWhatsappAppSecret] = useState(false);
   const [showInstaToken, setShowInstaToken] = useState(false);
   const [showInstaSecret, setShowInstaSecret] = useState(false);
 
@@ -116,6 +119,7 @@ export function PlatformSettings() {
       setWhatsappPhoneNumberId(c.whatsappPhoneNumberId ?? '');
       setWhatsappAccessToken(c.whatsappAccessToken ?? '');
       setWhatsappWebhookSecret(c.whatsappWebhookSecret ?? '');
+      setWhatsappAppSecret(c.whatsappAppSecret ?? '');
       setInstagramPageAccessToken(c.instagramPageAccessToken ?? '');
       setInstagramAppSecret(c.instagramAppSecret ?? '');
       setInstagramVerifyToken(c.instagramVerifyToken ?? '');
@@ -142,6 +146,7 @@ export function PlatformSettings() {
         whatsappPhoneNumberId: whatsappPhoneNumberId || null,
         whatsappAccessToken: whatsappAccessToken || null,
         whatsappWebhookSecret: whatsappWebhookSecret || null,
+        whatsappAppSecret: whatsappAppSecret || null,
         instagramPageAccessToken: instagramPageAccessToken || null,
         instagramAppSecret: instagramAppSecret || null,
         instagramVerifyToken: instagramVerifyToken || null,
@@ -295,7 +300,7 @@ export function PlatformSettings() {
               </Button>
             </div>
           </Field>
-          <Field label="Webhook Secret" hint="Webhook verification token for incoming messages.">
+          <Field label="Webhook Verify Token" hint="The token you entered in Meta's webhook configuration (used for the GET challenge).">
             <div className="flex gap-2">
               <Input
                 type={showWhatsappSecret ? 'text' : 'password'}
@@ -310,6 +315,24 @@ export function PlatformSettings() {
                 onClick={() => setShowWhatsappSecret(!showWhatsappSecret)}
               >
                 {showWhatsappSecret ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </Field>
+          <Field label="App Secret" hint="Meta App Secret (App Settings → Basic) — used to verify webhook payload signatures (HMAC-SHA256). Same value as Instagram if they share a Meta App.">
+            <div className="flex gap-2">
+              <Input
+                type={showWhatsappAppSecret ? 'text' : 'password'}
+                value={whatsappAppSecret}
+                onChange={(e) => setWhatsappAppSecret(e.target.value)}
+                placeholder="abc123..."
+                className="flex-1"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowWhatsappAppSecret(!showWhatsappAppSecret)}
+              >
+                {showWhatsappAppSecret ? 'Hide' : 'Show'}
               </Button>
             </div>
           </Field>
