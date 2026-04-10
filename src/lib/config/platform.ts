@@ -41,6 +41,8 @@ export interface PlatformConfig {
     phoneNumberId: string;
     accessToken: string;
     webhookSecret: string;
+    /** Meta App Secret for HMAC-SHA256 signature verification on inbound webhooks. */
+    appSecret: string;
   };
 
   /** Instagram credentials (DB overrides env). */
@@ -100,6 +102,8 @@ export async function getPlatformConfig(
         tenantConfig?.whatsappAccessToken ?? env.WHATSAPP_ACCESS_TOKEN ?? '',
       webhookSecret:
         tenantConfig?.whatsappWebhookSecret ?? env.WHATSAPP_WEBHOOK_SECRET ?? '',
+      appSecret:
+        tenantConfig?.whatsappAppSecret ?? env.WHATSAPP_APP_SECRET ?? env.INSTAGRAM_APP_SECRET ?? '',
     },
     instagram: {
       pageAccessToken:

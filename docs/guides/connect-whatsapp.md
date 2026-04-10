@@ -111,7 +111,7 @@ Sandra needs to receive incoming WhatsApp messages via a webhook.
 
    | Field | Value |
    |-------|-------|
-   | **Callback URL** | `https://your-sandra-domain.com/api/channels/whatsapp` |
+   | **Callback URL** | `https://your-sandra-domain.com/api/webhooks/whatsapp` |
    | **Verify Token** | A secret string you choose (e.g., `sandra-whatsapp-verify-2026`) |
 
 4. Click **Verify and Save**
@@ -134,7 +134,7 @@ WHATSAPP_PHONE_NUMBER_ID=123456789012345
 WHATSAPP_ACCESS_TOKEN=EAAxxxxxxx...
 
 # The verify token you chose for the webhook
-WHATSAPP_VERIFY_TOKEN=sandra-whatsapp-verify-2026
+WHATSAPP_WEBHOOK_SECRET=sandra-whatsapp-verify-2026
 
 # API version (optional, defaults to v19.0)
 WHATSAPP_API_VERSION=v19.0

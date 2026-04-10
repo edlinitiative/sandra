@@ -61,6 +61,7 @@ const envSchema = z.object({
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
+  WHATSAPP_APP_SECRET: z.string().optional(),
   WHATSAPP_API_VERSION: z.string().default('v19.0'),
 
   // Voice Bridge (separate VM for WhatsApp Calling API)

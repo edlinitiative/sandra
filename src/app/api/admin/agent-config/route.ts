@@ -40,6 +40,7 @@ const patchSchema = z.object({
   whatsappPhoneNumberId: z.string().max(200).optional().nullable(),
   whatsappAccessToken: z.string().max(500).optional().nullable(),
   whatsappWebhookSecret: z.string().max(500).optional().nullable(),
+  whatsappAppSecret: z.string().max(500).optional().nullable(),
   instagramPageAccessToken: z.string().max(500).optional().nullable(),
   instagramAppSecret: z.string().max(500).optional().nullable(),
   instagramVerifyToken: z.string().max(500).optional().nullable(),

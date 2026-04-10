@@ -139,6 +139,8 @@ export interface TenantAgentConfig {
   whatsappPhoneNumberId?: string;
   whatsappAccessToken?: string;
   whatsappWebhookSecret?: string;
+  /** Meta App Secret for HMAC-SHA256 webhook signature verification. */
+  whatsappAppSecret?: string;
 
   /**
    * Instagram Graph API credentials.

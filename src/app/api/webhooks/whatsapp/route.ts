@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
   const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
-  const appSecret = platformConfig.whatsapp.webhookSecret;
+  const appSecret = platformConfig.whatsapp.appSecret;
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {
