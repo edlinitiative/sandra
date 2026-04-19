@@ -86,11 +86,13 @@ export class InstagramChannelAdapter implements ChannelAdapter {
 
   private get apiBase(): string {
     const version = this.credentials?.apiVersion ?? env.INSTAGRAM_API_VERSION;
-    return `https://graph.instagram.com/${version}`;
+    // System-user and page access tokens require the Facebook Graph API endpoint.
+    // graph.instagram.com only accepts Instagram Basic Display (IGAA…) tokens.
+    return `https://graph.facebook.com/${version}`;
   }
 
   private get pageAccessToken(): string {
-    return this.credentials?.pageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? '';
+    return this.credentials?.pageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? env.BUSINESS_META_TOKEN ?? '';
   }
 
   isConfigured(): boolean {
@@ -98,7 +100,7 @@ export class InstagramChannelAdapter implements ChannelAdapter {
       return Boolean(this.credentials.pageAccessToken && this.credentials.verifyToken);
     }
     return Boolean(
-      env.INSTAGRAM_PAGE_ACCESS_TOKEN &&
+      (env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? env.BUSINESS_META_TOKEN) &&
       env.INSTAGRAM_VERIFY_TOKEN,
     );
   }

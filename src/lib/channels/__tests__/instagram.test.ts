@@ -173,7 +173,7 @@ describe('InstagramChannelAdapter', () => {
 
       expect(mockFetch).toHaveBeenCalledOnce();
       const [url, options] = mockFetch.mock.calls[0]! as [string, RequestInit];
-      expect(url).toContain('graph.instagram.com');
+      expect(url).toContain('graph.facebook.com');
       expect(url).toContain('v19.0');
       expect(url).toContain('ig-page-123/messages');
       expect(options.headers).toHaveProperty('Authorization', 'Bearer test-ig-token');

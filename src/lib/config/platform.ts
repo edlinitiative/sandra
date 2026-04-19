@@ -99,7 +99,7 @@ export async function getPlatformConfig(
       phoneNumberId:
         tenantConfig?.whatsappPhoneNumberId ?? env.WHATSAPP_PHONE_NUMBER_ID ?? '',
       accessToken:
-        tenantConfig?.whatsappAccessToken ?? env.WHATSAPP_ACCESS_TOKEN ?? '',
+        tenantConfig?.whatsappAccessToken ?? env.WHATSAPP_ACCESS_TOKEN ?? env.BUSINESS_META_TOKEN ?? '',
       webhookSecret:
         tenantConfig?.whatsappWebhookSecret ?? env.WHATSAPP_WEBHOOK_SECRET ?? '',
       appSecret:
@@ -107,7 +107,7 @@ export async function getPlatformConfig(
     },
     instagram: {
       pageAccessToken:
-        tenantConfig?.instagramPageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? '',
+        tenantConfig?.instagramPageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? env.BUSINESS_META_TOKEN ?? '',
       appSecret:
         tenantConfig?.instagramAppSecret ?? env.INSTAGRAM_APP_SECRET ?? '',
       verifyToken:

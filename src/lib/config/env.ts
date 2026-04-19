@@ -57,6 +57,10 @@ const envSchema = z.object({
   // Admin
   ADMIN_API_KEY: z.string().optional(),
 
+  // Shared Meta System-User token (covers WhatsApp + Instagram + Pages in one token).
+  // Per-channel tokens below override this when present.
+  BUSINESS_META_TOKEN: z.string().optional(),
+
   // WhatsApp (Meta Cloud API)
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
