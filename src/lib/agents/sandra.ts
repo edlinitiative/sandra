@@ -22,6 +22,10 @@ import { detectAndRecordCorrection, detectAndRecordCapabilityGap } from '@/lib/l
 
 const log = createLogger('agents:sandra');
 
+function hasAllScopes(userScopes: string[], requiredScopes: string[]): boolean {
+  return requiredScopes.every((scope) => userScopes.includes(scope));
+}
+
 /**
  * Run the Sandra agent loop.
  *
@@ -115,8 +119,17 @@ export async function runSandraAgent(
     }
 
     // 4. Build system prompt — load tenant config + tenant-scoped tools
-    let globalToolDefs = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
-    let globalToolNames = cfg.enableTools ? toolRegistry.getToolNames() : [];
+    // IMPORTANT: only expose tools the current user is allowed to execute.
+    const currentScopes = input.scopes ?? [];
+    const allowedGlobalTools = cfg.enableTools
+      ? toolRegistry.getAll().filter((tool) => hasAllScopes(currentScopes, tool.requiredScopes))
+      : [];
+    let globalToolDefs = allowedGlobalTools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }));
+    let globalToolNames = allowedGlobalTools.map((tool) => tool.name);
 
     let tenantConfig = undefined;
     let tenantTools: TenantTool[] = [];
@@ -142,6 +155,9 @@ export async function runSandraAgent(
     const toolDefinitions = [...globalToolDefs];
     const toolNames = [...globalToolNames];
     for (const tt of tenantTools) {
+      if (!hasAllScopes(currentScopes, tt.requiredScopes)) {
+        continue;
+      }
       if (!toolNames.includes(tt.definition.name)) {
         toolDefinitions.push(tt.definition);
         toolNames.push(tt.definition.name);
@@ -487,8 +503,17 @@ export async function* runSandraAgentStream(
     }
 
     // Build system prompt — load tenant config + tenant-scoped tools
-    let globalToolDefsStream = cfg.enableTools ? toolRegistry.getToolDefinitions() : [];
-    let globalToolNamesStream = cfg.enableTools ? toolRegistry.getToolNames() : [];
+    // IMPORTANT: only expose tools the current user is allowed to execute.
+    const currentScopesStream = input.scopes ?? [];
+    const allowedGlobalToolsStream = cfg.enableTools
+      ? toolRegistry.getAll().filter((tool) => hasAllScopes(currentScopesStream, tool.requiredScopes))
+      : [];
+    let globalToolDefsStream = allowedGlobalToolsStream.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }));
+    let globalToolNamesStream = allowedGlobalToolsStream.map((tool) => tool.name);
 
     let tenantConfigStream = undefined;
     let tenantToolsStream: TenantTool[] = [];
@@ -514,6 +539,9 @@ export async function* runSandraAgentStream(
     const toolDefinitions = [...globalToolDefsStream];
     const toolNames = [...globalToolNamesStream];
     for (const tt of tenantToolsStream) {
+      if (!hasAllScopes(currentScopesStream, tt.requiredScopes)) {
+        continue;
+      }
       if (!toolNames.includes(tt.definition.name)) {
         toolDefinitions.push(tt.definition);
         toolNames.push(tt.definition.name);

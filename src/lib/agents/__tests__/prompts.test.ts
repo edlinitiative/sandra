@@ -32,6 +32,18 @@ describe('buildSandraSystemPrompt', () => {
     expect(prompt).toContain('lookupRepo');
   });
 
+  it('includes capability map and capability response behavior when tools are provided', () => {
+    const prompt = buildSandraSystemPrompt({
+      language: 'en',
+      availableTools: ['searchKnowledgeBase', 'createCalendarEvent'],
+    });
+
+    expect(prompt).toContain('Capability map (high-level):');
+    expect(prompt).toContain('Knowledge & answers');
+    expect(prompt).toContain('Calendar operations');
+    expect(prompt).toContain('When a user asks what you can do');
+  });
+
   it('includes user memory when provided', () => {
     const prompt = buildSandraSystemPrompt({
       language: 'en',
@@ -60,6 +72,19 @@ describe('buildSandraSystemPrompt', () => {
   it('includes behavioral guidelines', () => {
     const prompt = buildSandraSystemPrompt({ language: 'en' });
     expect(prompt).toContain('Guidelines');
+  });
+
+  it('includes capability boundary guidance', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('Capability boundaries and restrictions');
+    expect(prompt).toContain('limited to the tools explicitly listed');
+  });
+
+  it('includes live chat availability guidance for web behavior', () => {
+    const prompt = buildSandraSystemPrompt({ language: 'en' });
+    expect(prompt).toContain('Web chat IS a live, real-time text conversation');
+    expect(prompt).toContain('Never say "I don\'t support live chat"');
+    expect(prompt).toContain('support live voice conversations');
   });
 
   it('does not include tool section when no tools provided', () => {

@@ -40,6 +40,51 @@ const DEFAULT_TOOL_ROUTING = `  - Use tool results to ground your answers. Do no
   - For course/program/scholarship questions, use the appropriate domain-specific tool if available.
   - For general knowledge questions, use 'searchKnowledgeBase' first.`;
 
+function buildCapabilitySummary(availableTools: string[]): string {
+  const has = (name: string) => availableTools.includes(name);
+  const lines: string[] = [];
+
+  if (has('searchKnowledgeBase') || has('lookupRepoInfo')) {
+    lines.push('- Knowledge & answers (knowledge base + repository/status lookups).');
+  }
+  if (
+    has('sendGmail') || has('draftGmail') || has('readGmail') || has('replyGmail') || has('draftEmail')
+  ) {
+    lines.push('- Email workflows (draft, send, read, and reply).');
+  }
+  if (has('createCalendarEvent') || has('listCalendarEvents') || has('updateCalendarEvent') || has('deleteCalendarEvent')) {
+    lines.push('- Calendar operations (create/list/update/cancel events).');
+  }
+  if (has('searchDrive') || has('readDriveFile') || has('shareDriveFile') || has('createGoogleDoc') || has('createSpreadsheet') || has('createGoogleForm') || has('getFormResponses')) {
+    lines.push('- Drive/docs/forms workflows (find, read, create, share, and responses).');
+  }
+  if (has('sendWhatsAppMessage') || has('createWhatsAppGroup') || has('getWhatsAppGroups') || has('sendWhatsAppGroupInvite')) {
+    lines.push('- WhatsApp actions (messages, groups, invites).');
+  }
+  if (has('createZoomMeeting')) {
+    lines.push('- Meeting scheduling (Zoom).');
+  }
+  if (has('createTask') || has('listTasks') || has('queueReminder') || has('listReminders') || has('cancelReminder')) {
+    lines.push('- Task and reminder management.');
+  }
+  if (has('listContacts')) {
+    lines.push('- Contact lookup.');
+  }
+  if (has('translateText') || has('summarizeDocument') || has('webSearch')) {
+    lines.push('- AI utilities (translation, summarization, and web search).');
+  }
+  if (has('getUserProfileSummary') || has('getUserEnrollments') || has('getUserCertificates') || has('getApplicationStatus') || has('updateUserPreferences')) {
+    lines.push('- User account/profile support (enrollments, certificates, application status, preferences).');
+  }
+  if (has('createGithubIssue') || has('getGithubPrStatus')) {
+    lines.push('- GitHub operations (issues and PR status).');
+  }
+
+  return lines.length > 0
+    ? `Capability map (high-level):\n${lines.join('\n')}`
+    : 'Capability map (high-level):\n- General assistant support using available tools.';
+}
+
 // ── Identity block builder ────────────────────────────────────────────────────
 
 function buildIdentityBlock(tenantConfig?: TenantAgentConfig): string {
@@ -82,6 +127,15 @@ function buildIdentityBlock(tenantConfig?: TenantAgentConfig): string {
 
 const GENERIC_GUIDELINES = `Guidelines:
 - If you don't have specific information, say so honestly rather than making things up.
+- Channel availability behavior:
+  - Web chat IS a live, real-time text conversation with you. Never say "I don't support live chat" in the web channel.
+  - Sandra can also support live voice conversations when the voice channel is enabled for the tenant/environment.
+  - If a user asks to "talk live", clarify whether they mean live text chat (available now) or a live voice conversation, then guide them to the voice option when available.
+- Capability boundaries and restrictions:
+  - Your actual capabilities for this conversation are limited to the tools explicitly listed in the "available tools" section for this turn.
+  - Never claim you can perform an action if there is no matching available tool.
+  - If asked to do something outside current capabilities, say it's not available in the current session and offer the closest available alternative.
+  - If an action usually requires account linkage, permissions, or admin setup, say that clearly and explain the next step briefly.
 - Use tools deliberately based on the user's intent:
   - Use 'searchKnowledgeBase' for detailed documentation, implementation details, or evidence from indexed files.
   - Use 'lookupRepoInfo' for repository metadata, sync status, indexing status, and listing repositories.
@@ -296,7 +350,7 @@ You are in a group chat. Multiple people can see your messages.
   // Tool awareness
   if (options.availableTools && options.availableTools.length > 0) {
     parts.push(
-      `\nYou have access to the following tools: ${options.availableTools.join(', ')}. Use them when they would help answer the user's question accurately.`,
+      `\nYou have access to the following tools: ${options.availableTools.join(', ')}. Use them when they would help answer the user's question accurately.\n\n${buildCapabilitySummary(options.availableTools)}\n\nWhen a user asks what you can do, answer with concrete capabilities based on this tool list, then offer 2-4 practical examples they can ask next. Do not claim capabilities outside the listed tools.`,
     );
   }
 

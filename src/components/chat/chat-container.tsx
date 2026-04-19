@@ -7,7 +7,7 @@ import { ChatEmptyState } from './chat-empty-state';
 import { TypingIndicator } from './typing-indicator';
 import { StreamingMessage } from './streaming-message';
 import { LanguageSelector } from './language-selector';
-import { VoiceConversation } from './voice-conversation';
+import { VoiceConversation, type VoiceConversationHandle } from './voice-conversation';
 import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { AmbientParticles } from '@/components/ui/ambient-particles';
@@ -16,6 +16,8 @@ import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
 type Language = 'en' | 'fr' | 'ht';
 
 const LANG_KEY = 'sandra_language';
+const VOICE_QUICK_ACTION = '🎙️ Start voice call now';
+const VOICE_QUICK_ACTION_RE = /\b(live\s+voice|voice\s+call|audio\s+call|talk\s+(live|by\s+voice)|speak\s+with\s+you|call\s+you|open\s+voice|start\s+voice)\b/i;
 
 interface Message {
   id: string;
@@ -47,6 +49,7 @@ export function ChatContainer() {
 
   // Track whether voice is active so we can pause background work
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const voiceConversationRef = useRef<VoiceConversationHandle | null>(null);
 
   // Track whether we've attempted to restore so we only do it once
   const restoredRef = useRef(false);
@@ -283,6 +286,36 @@ export function ChatContainer() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
   }, []);
 
+  const getFollowUps = useCallback(
+    (msg: Message): string[] | undefined => {
+      const existing = msg.followUps ?? [];
+      if (msg.role !== 'assistant' || isVoiceActive) {
+        return existing.length > 0 ? existing : undefined;
+      }
+
+      const hasVoiceAction = existing.some((item) => item.toLowerCase().includes('voice call'));
+      const shouldOfferVoiceAction = VOICE_QUICK_ACTION_RE.test(msg.content);
+
+      if (!hasVoiceAction && shouldOfferVoiceAction) {
+        return [...existing, VOICE_QUICK_ACTION];
+      }
+
+      return existing.length > 0 ? existing : undefined;
+    },
+    [isVoiceActive],
+  );
+
+  const handleFollowUp = useCallback(
+    (value: string) => {
+      if (value === VOICE_QUICK_ACTION) {
+        voiceConversationRef.current?.startConversation();
+        return;
+      }
+      void handleSend(value);
+    },
+    [handleSend],
+  );
+
   // ── New chat ──────────────────────────────────────────────────────────────
   const handleNewChat = useCallback(() => {
     // Abort any in-flight stream
@@ -342,8 +375,8 @@ export function ChatContainer() {
                 role={msg.role}
                 content={msg.content}
                 timestamp={msg.timestamp}
-                followUps={msg.followUps}
-                onFollowUp={handleSend}
+                followUps={getFollowUps(msg)}
+                onFollowUp={handleFollowUp}
                 messageId={msg.role === 'assistant' ? msg.id : undefined}
                 onFeedback={msg.role === 'assistant' ? handleFeedback : undefined}
               />
@@ -371,6 +404,7 @@ export function ChatContainer() {
       >
         {/* Voice panel — renders content only when active */}
         <VoiceConversation
+          ref={voiceConversationRef}
           sessionId={storedSessionId ?? undefined}
           language={language}
           onTurn={handleLiveTurn}

@@ -13,7 +13,7 @@
  *  7. Transcripts arrive via the data channel as JSON events
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SessionState =
@@ -40,6 +40,11 @@ export interface VoiceConversationProps {
   onActiveChange?: (active: boolean) => void;
 }
 
+export interface VoiceConversationHandle {
+  startConversation: () => void;
+  endConversation: () => void;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
@@ -63,7 +68,10 @@ const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\
 const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceConversationProps) {
+export const VoiceConversation = forwardRef<VoiceConversationHandle, VoiceConversationProps>(function VoiceConversation(
+  { onTurn, language, onActiveChange }: VoiceConversationProps,
+  ref,
+) {
   const [state, setState] = useState<SessionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -368,6 +376,25 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
     cleanup();
   }, [cleanup]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      startConversation: () => {
+        if (!['idle', 'error'].includes(state)) {
+          return;
+        }
+        void start();
+      },
+      endConversation: () => {
+        if (['idle', 'error'].includes(state)) {
+          return;
+        }
+        end();
+      },
+    }),
+    [end, start, state],
+  );
+
   // ── Interrupt ─────────────────────────────────────────────────────────────
   const interrupt = useCallback(() => {
     sendEvent({ type: 'response.cancel' });
@@ -497,7 +524,7 @@ export function VoiceConversation({ onTurn, language, onActiveChange }: VoiceCon
       )}
     </>
   );
-}
+});
 
 // ── VoiceNebula ──────────────────────────────────────────────────────────────
 // Pure CSS nebula glow behind the voice indicator when Sandra speaks.
