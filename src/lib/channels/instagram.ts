@@ -1,4 +1,9 @@
 import type { ChannelAdapter, InboundMessage, OutboundMessage, MessageAttachment } from './types';
+import {
+  AGENT_LOOP_SENTINEL,
+  hasAgentLoopSentinel,
+  tagAgentLoopSentinel,
+} from './agent-loop-guard';
 import { formatForInstagram, stripInstagramMarkdown, splitForInstagram } from './instagram-formatter';
 import { transcribeAudio } from './voice';
 import { env } from '@/lib/config';
@@ -79,6 +84,8 @@ export interface InstagramCredentials {
 export class InstagramChannelAdapter implements ChannelAdapter {
   readonly channelType = 'instagram' as const;
   private credentials?: InstagramCredentials;
+  private pageTokenCache = new Map<string, string>();
+  private igToPageTokenCache = new Map<string, string>();
 
   constructor(credentials?: InstagramCredentials) {
     this.credentials = credentials;
@@ -95,6 +102,68 @@ export class InstagramChannelAdapter implements ChannelAdapter {
     return this.credentials?.pageAccessToken ?? env.INSTAGRAM_PAGE_ACCESS_TOKEN ?? env.BUSINESS_META_TOKEN ?? '';
   }
 
+  /**
+   * Resolve a page-level token for Messenger API calls when possible.
+   * If base token already is a page token (or resolution fails), falls back.
+   */
+  private async resolveAccessToken(pageIdOrIgId?: string): Promise<string> {
+    const baseToken = this.pageAccessToken;
+    if (!pageIdOrIgId || !baseToken) return baseToken;
+
+    const cachedPage = this.pageTokenCache.get(pageIdOrIgId);
+    if (cachedPage) return cachedPage;
+
+    const cachedIg = this.igToPageTokenCache.get(pageIdOrIgId);
+    if (cachedIg) return cachedIg;
+
+    // First try direct page-id resolution.
+    try {
+      const url = `${this.apiBase}/${pageIdOrIgId}?fields=access_token&access_token=${baseToken}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json() as { access_token?: string };
+        const token = (data.access_token ?? '').trim();
+        if (token) {
+          this.pageTokenCache.set(pageIdOrIgId, token);
+          return token;
+        }
+      }
+    } catch {
+      // ignore and try IG-account mapping below
+    }
+
+    // If the identifier is actually an Instagram business account ID,
+    // map it to its owning Facebook Page through /me/accounts.
+    try {
+      const pagesUrl = `${this.apiBase}/me/accounts?fields=id,access_token,connected_instagram_account,instagram_business_account&access_token=${baseToken}`;
+      const pagesRes = await fetch(pagesUrl);
+      if (!pagesRes.ok) return baseToken;
+
+      const payload = await pagesRes.json() as {
+        data?: Array<{
+          id: string;
+          access_token?: string;
+          connected_instagram_account?: { id?: string };
+          instagram_business_account?: { id?: string };
+        }>;
+      };
+
+      for (const page of payload.data ?? []) {
+        const igId = page.connected_instagram_account?.id ?? page.instagram_business_account?.id;
+        const pageToken = (page.access_token ?? '').trim();
+        if (igId && pageToken) {
+          this.igToPageTokenCache.set(igId, pageToken);
+          this.pageTokenCache.set(page.id, pageToken);
+          if (igId === pageIdOrIgId) return pageToken;
+        }
+      }
+    } catch {
+      // ignore and fall back
+    }
+
+    return baseToken;
+  }
+
   isConfigured(): boolean {
     if (this.credentials) {
       return Boolean(this.credentials.pageAccessToken && this.credentials.verifyToken);
@@ -109,7 +178,10 @@ export class InstagramChannelAdapter implements ChannelAdapter {
    * Verify a Meta webhook subscription challenge.
    */
   verifyWebhook(params: { mode: string; token: string; challenge: string }): string | null {
-    const secret = this.credentials?.verifyToken ?? env.INSTAGRAM_VERIFY_TOKEN;
+    const secret = this.credentials?.verifyToken
+      ?? env.INSTAGRAM_VERIFY_TOKEN
+      ?? env.FACEBOOK_VERIFY_TOKEN
+      ?? env.META_VERIFY_TOKEN;
     if (!secret) return null;
 
     if (params.mode === 'subscribe' && params.token === secret) {
@@ -187,6 +259,10 @@ export class InstagramChannelAdapter implements ChannelAdapter {
       throw new Error('SKIP: No processable content in messaging event');
     }
 
+    if (hasAgentLoopSentinel(content)) {
+      throw new Error('SKIP: Agent-originated message');
+    }
+
     return {
       channelType: 'instagram',
       channelUserId: senderId,
@@ -225,10 +301,14 @@ export class InstagramChannelAdapter implements ChannelAdapter {
    * Fetch the display name AND username of an Instagram user by their IGSID.
    * Returns { name: null, username: null } on any error.
    */
-  async fetchSenderProfile(senderId: string): Promise<{ name: string | null; username: string | null }> {
+  async fetchSenderProfile(
+    senderId: string,
+    pageId?: string,
+  ): Promise<{ name: string | null; username: string | null }> {
     if (!this.isConfigured()) return { name: null, username: null };
     try {
-      const url = `${this.apiBase}/${senderId}?fields=name,username&access_token=${this.pageAccessToken}`;
+      const token = await this.resolveAccessToken(pageId);
+      const url = `${this.apiBase}/${senderId}?fields=name,username&access_token=${token}`;
       const res = await fetch(url);
       if (!res.ok) return { name: null, username: null };
       const data = await res.json() as { name?: string; username?: string };
@@ -245,15 +325,14 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   async sendTypingIndicator(recipientId: string, pageId?: string): Promise<void> {
     if (!this.isConfigured()) return;
 
-    const endpoint = pageId
-      ? `${this.apiBase}/${pageId}/messages`
-      : `${this.apiBase}/me/messages`;
+    const endpoint = `${this.apiBase}/me/messages`;
+    const accessToken = await this.resolveAccessToken(pageId);
 
     await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.pageAccessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         recipient: { id: recipientId },
@@ -270,7 +349,7 @@ export class InstagramChannelAdapter implements ChannelAdapter {
   async formatOutbound(message: OutboundMessage): Promise<InstagramOutboundBody> {
     return {
       recipient: { id: message.recipientId },
-      message: { text: formatForInstagram(message.content) },
+      message: { text: formatForInstagram(tagAgentLoopSentinel(message.content)) },
       messaging_type: 'RESPONSE',
     };
   }
@@ -296,27 +375,31 @@ export class InstagramChannelAdapter implements ChannelAdapter {
     //     before splitting — stripInstagramMarkdown skips that guard.)
     // 2. Split the plain-text result into ≤ 1000-char chunks.
     const stripped = stripInstagramMarkdown(message.content);
-    const chunks = splitForInstagram(stripped);
+    const chunks = splitForInstagram(stripped, 1000 - AGENT_LOOP_SENTINEL.length);
 
-    const igScopedId = message.metadata?.pageId as string | undefined;
-    const endpoint = igScopedId
-      ? `${this.apiBase}/${igScopedId}/messages`
-      : `${this.apiBase}/me/messages`;
+    const pageId = message.metadata?.pageId as string | undefined;
+    const endpoint = `${this.apiBase}/me/messages`;
+    const accessToken = await this.resolveAccessToken(pageId);
 
     for (const chunk of chunks) {
-      await this._sendChunk(endpoint, message.recipientId, chunk);
+      await this._sendChunk(endpoint, accessToken, message.recipientId, tagAgentLoopSentinel(chunk));
     }
   }
 
   /** Low-level: POST a single pre-formatted text chunk to the Graph API. */
-  private async _sendChunk(endpoint: string, recipientId: string, text: string): Promise<void> {
+  private async _sendChunk(
+    endpoint: string,
+    accessToken: string,
+    recipientId: string,
+    text: string,
+  ): Promise<void> {
     log.info('Sending Instagram message', { to: `${recipientId.slice(0, 4)}****`, endpoint });
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.pageAccessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         recipient: { id: recipientId },

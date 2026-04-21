@@ -28,6 +28,31 @@ interface ConfigResponse {
   agentConfig: AgentConfig;
 }
 
+interface MetaOnboardingResponse {
+  ok: boolean;
+  action: 'validate' | 'subscribe';
+  callbackUrl: string;
+  checks: {
+    accessToken: boolean;
+    verifyToken: boolean;
+    appSecret: boolean;
+    pagesFound: boolean;
+    instagramLinkedPage: boolean;
+  };
+  actor: { id: string; name: string } | null;
+  pages: Array<{
+    id: string;
+    name: string;
+    hasPageToken: boolean;
+    subscribed: boolean;
+    instagramAccountId: string | null;
+    instagramUsername: string | null;
+  }>;
+  recommendedPageId: string | null;
+  notes: string[];
+  subscribedPageId?: string;
+}
+
 // ── Textarea helper ──────────────────────────────────────────────────────────
 
 function Textarea({
@@ -100,6 +125,12 @@ export function PlatformSettings() {
   const [showInstaToken, setShowInstaToken] = useState(false);
   const [showInstaSecret, setShowInstaSecret] = useState(false);
 
+  // Meta onboarding assistant
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [metaResult, setMetaResult] = useState<MetaOnboardingResponse | null>(null);
+  const [metaError, setMetaError] = useState<string | null>(null);
+  const [metaPageId, setMetaPageId] = useState('');
+
   // ── Load ──
   const load = useCallback(async () => {
     setLoading(true);
@@ -169,6 +200,49 @@ export function PlatformSettings() {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function validateMetaOnboarding() {
+    setMetaLoading(true);
+    setMetaError(null);
+    try {
+      const res = await fetch('/api/admin/meta/onboarding');
+      const data = await res.json().catch(() => ({})) as Partial<MetaOnboardingResponse> & { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      const parsed = data as MetaOnboardingResponse;
+      setMetaResult(parsed);
+      setMetaPageId(parsed.recommendedPageId ?? parsed.pages[0]?.id ?? '');
+    } catch (err) {
+      setMetaError(err instanceof Error ? err.message : 'Failed to validate Meta onboarding');
+    } finally {
+      setMetaLoading(false);
+    }
+  }
+
+  async function autoSubscribeMetaPage() {
+    setMetaLoading(true);
+    setMetaError(null);
+    try {
+      const res = await fetch('/api/admin/meta/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageId: metaPageId || undefined }),
+      });
+      const data = await res.json().catch(() => ({})) as Partial<MetaOnboardingResponse> & { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      const parsed = data as MetaOnboardingResponse;
+      setMetaResult(parsed);
+      setSuccess('Meta onboarding automation completed. Page webhook subscription updated.');
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      setMetaError(err instanceof Error ? err.message : 'Failed to auto-subscribe page');
+    } finally {
+      setMetaLoading(false);
     }
   }
 
@@ -392,6 +466,79 @@ export function PlatformSettings() {
               placeholder="your-verify-token"
             />
           </Field>
+        </div>
+      </Card>
+
+      {/* ── Meta onboarding assistant ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🧭 Meta Onboarding Assistant</CardTitle>
+          <CardDescription>
+            One-click validation for Facebook/Instagram setup, plus automatic Page app subscription
+            for messaging webhooks.
+          </CardDescription>
+        </CardHeader>
+        <div className="space-y-4">
+          {metaError && (
+            <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-xs text-red-300">
+              {metaError}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={validateMetaOnboarding} isLoading={metaLoading}>
+              Validate Meta Setup
+            </Button>
+            <Button
+              onClick={autoSubscribeMetaPage}
+              isLoading={metaLoading}
+              disabled={!metaResult || metaResult.pages.length === 0}
+            >
+              Auto-Subscribe Page
+            </Button>
+          </div>
+
+          {metaResult && (
+            <div className="space-y-3 rounded-lg border border-outline-variant/20 bg-surface-container-low/40 p-4 text-xs text-on-surface-variant">
+              <p>
+                Callback URL: <span className="text-white">{metaResult.callbackUrl}</span>
+              </p>
+              <div className="grid gap-1 sm:grid-cols-2">
+                <p>Access token: {metaResult.checks.accessToken ? '✅' : '❌'}</p>
+                <p>Verify token: {metaResult.checks.verifyToken ? '✅' : '❌'}</p>
+                <p>App secret: {metaResult.checks.appSecret ? '✅' : '❌'}</p>
+                <p>Pages found: {metaResult.checks.pagesFound ? '✅' : '❌'}</p>
+                <p>IG-linked page: {metaResult.checks.instagramLinkedPage ? '✅' : '❌'}</p>
+              </div>
+
+              {metaResult.pages.length > 0 && (
+                <Field
+                  label="Target Page"
+                  hint="Choose which Facebook Page Sandra should auto-subscribe for messaging events."
+                >
+                  <select
+                    value={metaPageId}
+                    onChange={(e) => setMetaPageId(e.target.value)}
+                    className="w-full rounded-lg border border-outline-variant/20 bg-surface-container-low px-3 py-2 text-sm text-white"
+                  >
+                    {metaResult.pages.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.instagramUsername ? `(@${p.instagramUsername})` : ''} {p.subscribed ? '• already subscribed' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+
+              {metaResult.notes.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5">
+                  {metaResult.notes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </Card>
 

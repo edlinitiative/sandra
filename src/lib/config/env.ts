@@ -75,6 +75,10 @@ const envSchema = z.object({
   INSTAGRAM_PAGE_ACCESS_TOKEN: z.string().optional(),
   INSTAGRAM_APP_SECRET: z.string().optional(),
   INSTAGRAM_VERIFY_TOKEN: z.string().optional(),
+  // Optional aliases for the same Meta webhook challenge token.
+  // Useful when dashboard/setup labels it as "Facebook" or generic "Meta".
+  FACEBOOK_VERIFY_TOKEN: z.string().optional(),
+  META_VERIFY_TOKEN: z.string().optional(),
   INSTAGRAM_API_VERSION: z.string().default('v19.0'),
 
   // Email — inbox address for the agent's Gmail account (outbound sender)
