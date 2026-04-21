@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
+import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 
 const ADMIN_KEY_STORAGE = 'sandra_admin_api_key';
 
-type AdminTab = 'system' | 'analytics' | 'actions' | 'gaps' | 'tools';
+type AdminTab = 'system' | 'analytics' | 'actions' | 'gaps' | 'tools' | 'webhooks';
 
 interface Repo {
   owner: string;
@@ -110,6 +111,23 @@ interface DynamicToolEntry {
   createdAt: string;
 }
 
+interface WebhookHealthChannel {
+  channel: 'whatsapp' | 'instagram' | 'email';
+  configured: boolean;
+  recentSessions: number | null;
+  recentMessages: number | null;
+  lastMessageAt: string | null;
+  inboundHealth: 'healthy' | 'idle' | 'unconfigured' | 'degraded';
+  notes: string[];
+}
+
+interface WebhookHealthData {
+  status: 'ok' | 'degraded';
+  periodHours: number;
+  checkedAt: string;
+  channels: WebhookHealthChannel[];
+}
+
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('system');
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -161,6 +179,9 @@ export function AdminDashboard() {
   const [toolsError, setToolsError] = useState<string | null>(null);
   const [toolProcessing, setToolProcessing] = useState<string | null>(null);
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
+  const [webhookHealth, setWebhookHealth] = useState<WebhookHealthData | null>(null);
+  const [webhookLoading, setWebhookLoading] = useState(false);
+  const [webhookError, setWebhookError] = useState<string | null>(null);
 
   // Initial admin bootstrap should run once on mount; follow-up refreshes are explicit.
   useEffect(() => {
@@ -193,6 +214,8 @@ export function AdminDashboard() {
       void loadGaps(gapsFilter, adminKey);
     } else if (activeTab === 'tools') {
       void loadDynamicTools(adminKey);
+    } else if (activeTab === 'webhooks') {
+      void loadWebhookHealth(adminKey);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, adminKey]);
@@ -326,6 +349,28 @@ export function AdminDashboard() {
       setToolsError(err instanceof Error ? err.message : 'Failed to load dynamic tools');
     } finally {
       setToolsLoading(false);
+    }
+  }, []);
+
+  const loadWebhookHealth = useCallback(async (key: string) => {
+    if (!key) return;
+    setWebhookLoading(true);
+    setWebhookError(null);
+    try {
+      const res = await fetch('/api/admin/webhooks/health', {
+        headers: { 'x-api-key': key },
+      });
+      const json = await res.json() as WebhookHealthData | { error?: { message?: string } };
+      if (!res.ok) {
+        const errorJson = json as { error?: { message?: string } };
+        setWebhookError(errorJson.error?.message ?? 'Failed to load webhook health');
+      } else {
+        setWebhookHealth(json as WebhookHealthData);
+      }
+    } catch (err) {
+      setWebhookError(err instanceof Error ? err.message : 'Failed to load webhook health');
+    } finally {
+      setWebhookLoading(false);
     }
   }, []);
 
@@ -594,11 +639,7 @@ export function AdminDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (
@@ -659,7 +700,7 @@ export function AdminDashboard() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 overflow-x-auto rounded-xl bg-surface-container-low p-1">
-        {(['system', 'analytics', 'actions', 'gaps', 'tools'] as AdminTab[]).map((tab) => (
+        {(['system', 'analytics', 'actions', 'gaps', 'tools', 'webhooks'] as AdminTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -673,7 +714,8 @@ export function AdminDashboard() {
            : tab === 'analytics' ? '📊 Analytics'
            : tab === 'actions'   ? '🔐 Actions'
            : tab === 'gaps'      ? '🧠 Gaps'
-           :                       '🔧 Tools'}
+           : tab === 'tools'     ? '🔧 Tools'
+           :                       '📡 Webhooks'}
           </button>
         ))}
       </div>
@@ -1301,6 +1343,96 @@ export function AdminDashboard() {
                   </Card>
                 ))}
               </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── WEBHOOKS TAB ─────────────────────────────────── */}
+      {activeTab === 'webhooks' && (
+        <div className="space-y-6">
+          {!adminKey ? (
+            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to view channel webhook health.</p></Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Webhook Health</CardTitle>
+                  <CardDescription>
+                    Channel readiness and inbound activity over the last {webhookHealth?.periodHours ?? 24} hours.
+                  </CardDescription>
+                </CardHeader>
+                <div className="flex items-center gap-3">
+                  <Badge variant={webhookHealth?.status === 'ok' ? 'success' : 'warning'}>
+                    {webhookHealth?.status === 'ok' ? 'Operational' : 'Needs attention'}
+                  </Badge>
+                  <Button variant="secondary" size="sm" onClick={() => void loadWebhookHealth(adminKey)} isLoading={webhookLoading}>
+                    Refresh
+                  </Button>
+                  {webhookHealth?.checkedAt && (
+                    <span className="ml-auto text-sm text-outline">
+                      Checked {new Date(webhookHealth.checkedAt).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </Card>
+
+              {webhookError && <div className="rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-sm text-red-400">{webhookError}</div>}
+              {webhookLoading && !webhookHealth && <AdminDashboardSkeleton />}
+
+              {webhookHealth && (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {webhookHealth.channels.map((channel) => (
+                    <Card key={channel.channel} className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold capitalize text-white">{channel.channel}</h3>
+                          <p className="text-sm text-on-surface-variant">
+                            {channel.configured ? 'Configured' : 'Not configured'}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            channel.inboundHealth === 'healthy'
+                              ? 'success'
+                              : channel.inboundHealth === 'idle'
+                                ? 'default'
+                                : channel.inboundHealth === 'unconfigured'
+                                  ? 'warning'
+                                  : 'error'
+                          }
+                        >
+                          {channel.inboundHealth}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg bg-surface-container-low p-3">
+                          <p className="text-on-surface-variant">Recent sessions</p>
+                          <p className="mt-1 text-xl font-bold text-white">{formatMetric(channel.recentSessions)}</p>
+                        </div>
+                        <div className="rounded-lg bg-surface-container-low p-3">
+                          <p className="text-on-surface-variant">Inbound messages</p>
+                          <p className="mt-1 text-xl font-bold text-white">{formatMetric(channel.recentMessages)}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-outline">Last inbound</p>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                          {channel.lastMessageAt ? new Date(channel.lastMessageAt).toLocaleString() : 'No recent inbound activity'}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {channel.notes.map((note) => (
+                          <p key={note} className="text-xs text-on-surface-variant">• {note}</p>
+                        ))}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

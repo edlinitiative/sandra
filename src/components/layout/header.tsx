@@ -15,6 +15,8 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
+  // On /chat the slim ChatHeader handles mobile; hide global header on mobile only
+  const isChat = pathname.startsWith('/chat');
   const isActive = (href: string) => {
     if (href === '/chat') return pathname.startsWith('/chat');
     if (href === '/docs') return pathname.startsWith('/docs');
@@ -24,7 +26,7 @@ export function Header() {
 
   return (
     <header
-      className="shrink-0 border-b border-outline-variant/10 bg-surface/60 px-4 py-2.5 backdrop-blur-2xl sm:px-8 sm:py-3"
+      className={`shrink-0 border-b border-outline-variant/10 bg-surface/60 px-4 py-2.5 backdrop-blur-2xl sm:px-8 sm:py-3 ${isChat ? 'hidden sm:block' : ''}`}
       style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
     >
       <div className="flex items-center justify-between">

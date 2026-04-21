@@ -9,6 +9,7 @@ import { authenticateRequest, getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { errorResponse, SandraError, ProviderError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env, APP_NAME } from '@/lib/config';
+import { checkSlidingWindowRateLimit } from '@/lib/utils/rate-limit';
 
 const DEMO_RESPONSES: Record<string, Record<string, string>> = {
   en: {
@@ -73,6 +74,35 @@ export async function POST(request: Request) {
       userId: rawUserId,
       language: rawLanguage,
     } = parsed.data;
+
+    const clientIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      '127.0.0.1';
+
+    const chatRateLimit = checkSlidingWindowRateLimit({
+      key: `chat:${rawUserId ?? rawSessionId ?? clientIp}`,
+      limit: 12,
+      windowMs: 60_000,
+    });
+
+    if (!chatRateLimit.allowed) {
+      const err = new SandraError(
+        'Too many chat requests. Please wait a moment and try again.',
+        'RATE_LIMITED',
+        429,
+        { retryAfterMs: chatRateLimit.retryAfterMs },
+      );
+      const { envelope, status } = apiErrorResponse(err, requestId);
+      return NextResponse.json(envelope, {
+        status,
+        headers: {
+          'Retry-After': String(Math.max(1, Math.ceil(chatRateLimit.retryAfterMs / 1000))),
+          'X-RateLimit-Remaining': '0',
+        },
+      });
+    }
+
     const message = sanitizeInput(parsed.data.message);
     const sessionId = rawSessionId ?? crypto.randomUUID();
     const sessionLanguage = await getSessionLanguage(rawSessionId);

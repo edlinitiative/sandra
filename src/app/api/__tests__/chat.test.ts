@@ -16,6 +16,10 @@ const { mockResolveCanonicalUser, mockGetCanonicalUserLanguage } = vi.hoisted(()
   mockGetCanonicalUserLanguage: vi.fn(),
 }));
 
+const { mockCheckSlidingWindowRateLimit } = vi.hoisted(() => ({
+  mockCheckSlidingWindowRateLimit: vi.fn(),
+}));
+
 vi.mock('@/lib/agents', () => ({
   runSandraAgent: mockRunSandraAgent,
   runSandraAgentStream: vi.fn(),
@@ -49,6 +53,10 @@ vi.mock('@/lib/config', () => ({
   APP_NAME: 'Sandra',
 }));
 
+vi.mock('@/lib/utils/rate-limit', () => ({
+  checkSlidingWindowRateLimit: mockCheckSlidingWindowRateLimit,
+}));
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeRequest(body: unknown): Request {
@@ -64,6 +72,12 @@ function makeRequest(body: unknown): Request {
 describe('POST /api/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckSlidingWindowRateLimit.mockReturnValue({
+      allowed: true,
+      remaining: 11,
+      retryAfterMs: 0,
+      resetAt: Date.now() + 60_000,
+    });
     mockGetSessionLanguage.mockResolvedValue(undefined);
     mockEnsureSessionContinuity.mockResolvedValue(undefined);
     mockResolveCanonicalUser.mockResolvedValue({});
@@ -112,6 +126,25 @@ describe('POST /api/chat', () => {
     expect(response.status).toBe(400);
     expect(body.success).toBe(false);
     expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('returns 429 when chat rate limit is exceeded', async () => {
+    mockCheckSlidingWindowRateLimit.mockReturnValueOnce({
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: 30_000,
+      resetAt: Date.now() + 30_000,
+    });
+
+    const { POST } = await import('../chat/route');
+    const request = makeRequest({ message: 'Hello again', userId: 'web:user-1' });
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('RATE_LIMITED');
+    expect(response.headers.get('Retry-After')).toBe('30');
   });
 
   it('returns 400 for invalid JSON body', async () => {

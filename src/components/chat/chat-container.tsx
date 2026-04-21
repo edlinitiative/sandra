@@ -12,6 +12,7 @@ import { useSession } from '@/hooks/useSession';
 import { useUserIdentity } from '@/hooks/useUserIdentity';
 import { AmbientParticles } from '@/components/ui/ambient-particles';
 import { streamMessage, getConversation, submitFeedback } from '@/lib/client';
+import { ChatHistorySkeleton } from '@/components/ui/skeleton';
 
 type Language = 'en' | 'fr' | 'ht';
 
@@ -54,6 +55,9 @@ export function ChatContainer() {
   // Track whether we've attempted to restore so we only do it once
   const restoredRef = useRef(false);
 
+  // Track whether history restore is in flight
+  const [isRestoring, setIsRestoring] = useState(false);
+
   // Keep latest values in refs so callbacks never go stale
   const sessionIdRef = useRef(sessionId);
   sessionIdRef.current = sessionId;
@@ -88,6 +92,7 @@ export function ChatContainer() {
     if (!storedSessionId || restoredRef.current) return;
     restoredRef.current = true;
 
+    setIsRestoring(true);
     getConversation(storedSessionId)
       .then((data) => {
         // Sync language from server if user hasn't set one locally
@@ -114,9 +119,10 @@ export function ChatContainer() {
         }
       })
       .catch(() => {
-        // Restore failed (e.g. 401 for unauthenticated users or 404).
-        // Do NOT clear the session — the session ID is still valid for
-        // continuing the conversation even if we can't fetch history.
+        // Restore failed — session ID still valid for continuing.
+      });
+      .finally(() => {
+        setIsRestoring(false);
       });
   }, [storedSessionId]);
 
@@ -329,6 +335,7 @@ export function ChatContainer() {
     setIsLoading(false);
     sendingRef.current = false;
     setError(null);
+    setIsRestoring(false);
     clearSession();
     // Generate a fresh fallback session ID so the new chat doesn't reuse the old one
     fallbackIdRef.current = crypto.randomUUID();
@@ -365,7 +372,9 @@ export function ChatContainer() {
         {!isVoiceActive && (
           <AmbientParticles className="pointer-events-none fixed inset-0 z-0 opacity-40" />
         )}
-        {messages.length === 0 && !isLoading ? (
+        {isRestoring ? (
+          <ChatHistorySkeleton />
+        ) : messages.length === 0 && !isLoading ? (
           <ChatEmptyState onSend={handleSend} language={language} isLoading={isLoading} />
         ) : (
           <div className="mx-auto max-w-2xl space-y-1 px-3 py-3 sm:px-4 sm:py-4">
