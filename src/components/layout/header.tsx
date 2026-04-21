@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+
 import { OracleOrb } from '@/components/ui/oracle-orb';
 
 const SITE_NAME = 'Sandra';
@@ -15,8 +15,6 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-
   const isActive = (href: string) => {
     if (href === '/chat') return pathname.startsWith('/chat');
     if (href === '/docs') return pathname.startsWith('/docs');
@@ -60,46 +58,11 @@ export function Header() {
           </span>
         </div>
 
-        {/* Mobile: account + hamburger */}
-        <div className="flex items-center gap-1 sm:hidden">
-          <span className="material-symbols-outlined cursor-pointer p-1 text-2xl text-on-surface-variant">
-            account_circle
-          </span>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-on-surface-variant active:bg-surface-container"
-            aria-label="Toggle menu"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              {menuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              )}
-            </svg>
-          </button>
-        </div>
+        {/* Mobile: account icon only (nav handled by bottom bar) */}
+        <span className="material-symbols-outlined cursor-pointer p-1 text-2xl text-on-surface-variant transition-colors hover:text-white sm:hidden">
+          account_circle
+        </span>
       </div>
-
-      {/* Mobile dropdown menu */}
-      {menuOpen && (
-        <nav className="mt-2.5 flex flex-col gap-1 border-t border-outline-variant/10 pt-2 sm:hidden">
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMenuOpen(false)}
-              className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive(href)
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-on-surface-variant active:bg-surface-container'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      )}
     </header>
   );
 }

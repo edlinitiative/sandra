@@ -5,24 +5,29 @@ import { OracleOrb } from '@/components/ui/oracle-orb';
 
 const AGENT_NAME = 'Sandra';
 
-const SUGGESTED_QUESTIONS: Record<string, string[]> = {
+interface Suggestion {
+  text: string;
+  icon: string;
+}
+
+const SUGGESTED_QUESTIONS: Record<string, Suggestion[]> = {
   en: [
-    'What can you help me with?',
-    'What tools do you have?',
-    'Search the knowledge base',
-    'Show me available programs',
+    { text: 'What can you help me with?', icon: 'help' },
+    { text: 'What tools do you have?', icon: 'build' },
+    { text: 'Search the knowledge base', icon: 'search' },
+    { text: 'Show me available programs', icon: 'apps' },
   ],
   fr: [
-    "Comment pouvez-vous m'aider ?",
-    'Quels outils avez-vous ?',
-    'Chercher dans la base de connaissances',
-    'Montrer les programmes disponibles',
+    { text: "Comment pouvez-vous m'aider ?", icon: 'help' },
+    { text: 'Quels outils avez-vous ?', icon: 'build' },
+    { text: 'Chercher dans la base de connaissances', icon: 'search' },
+    { text: 'Montrer les programmes disponibles', icon: 'apps' },
   ],
   ht: [
-    'Kisa ou ka ede mwen ak?',
-    'Ki zouti ou genyen?',
-    'Chèche nan baz konesans la',
-    'Montre pwogram ki disponib yo',
+    { text: 'Kisa ou ka ede mwen ak?', icon: 'help' },
+    { text: 'Ki zouti ou genyen?', icon: 'build' },
+    { text: 'Chèche nan baz konesans la', icon: 'search' },
+    { text: 'Montre pwogram ki disponib yo', icon: 'apps' },
   ],
 };
 
@@ -40,7 +45,7 @@ export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: C
     setBucket(Math.floor(Date.now() / 60_000) % 3);
   }, []);
 
-  const questions = [
+  const questions: Suggestion[] = [
     ...allQuestions.slice(bucket * 2),
     ...allQuestions.slice(0, bucket * 2),
   ].slice(0, 4);
@@ -73,15 +78,22 @@ export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: C
 
       {/* Suggestion cards */}
       <div className="relative grid w-full max-w-lg gap-2 grid-cols-1 min-[400px]:grid-cols-2">
-        {questions.map((text) => (
+        {questions.map(({ text, icon }) => (
           <button
             key={text}
             onClick={() => onSend?.(text)}
-            className="group relative overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low/20 px-4 py-3 text-left text-sm text-on-surface-variant backdrop-blur-sm transition-all hover:border-primary/20 hover:bg-surface-container/40 hover:text-on-surface active:scale-[0.98]"
+            className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low/20 px-4 py-3 text-left text-sm text-on-surface-variant backdrop-blur-sm transition-all hover:border-primary/20 hover:bg-surface-container/40 hover:text-on-surface active:scale-[0.98]"
+            style={{ touchAction: 'manipulation' }}
           >
             {/* Hover glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/[0.03] to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
-            <span className="relative">{text}</span>
+            <span
+              className="material-symbols-outlined relative shrink-0 text-[18px] text-primary/60 transition-colors group-hover:text-primary/80"
+              style={{ fontVariationSettings: "'FILL' 0" }}
+            >
+              {icon}
+            </span>
+            <span className="relative leading-snug">{text}</span>
           </button>
         ))}
       </div>

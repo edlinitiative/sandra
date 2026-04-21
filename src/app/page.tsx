@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* ── Hero ───────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center overflow-hidden px-6 pb-32 pt-24 text-center">
+      <section className="relative flex flex-col items-center overflow-hidden px-6 pb-20 pt-14 text-center sm:pb-32 sm:pt-24">
         {/* Nebula background layers */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="animate-nebula-drift absolute -left-32 top-0 h-[500px] w-[500px] rounded-full bg-primary/[0.07] blur-[130px]" />
@@ -33,7 +33,7 @@ export default function HomePage() {
         </div>
 
         {/* Headline */}
-        <h1 className="relative mb-6 text-6xl font-black tracking-tighter md:text-8xl">
+        <h1 className="relative mb-4 text-4xl font-black tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
           <span className="bg-gradient-to-b from-white via-white/90 to-primary/60 bg-clip-text text-transparent">
             Meet{' '}
           </span>
@@ -44,12 +44,12 @@ export default function HomePage() {
         </h1>
 
         {/* Subheading */}
-        <p className="mb-12 max-w-2xl text-lg leading-relaxed text-on-surface-variant/80 md:text-xl">
+        <p className="mb-8 max-w-2xl text-base leading-relaxed text-on-surface-variant/80 sm:mb-12 sm:text-lg md:text-xl">
           An oracle of intelligence — multi-channel AI that sees, speaks, and knows.
         </p>
 
         {/* CTAs */}
-        <div className="relative flex flex-col items-center gap-4 sm:flex-row">
+        <div className="relative flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
           <Link
             href="/chat"
             className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-primary/90 px-10 py-4 text-sm font-bold text-white shadow-[0_0_30px_rgba(174,198,255,0.25)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(174,198,255,0.4)] active:scale-95"
@@ -69,7 +69,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Capabilities ───────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-6 pb-32">
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-32">
         <div className="mb-12 text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
             Capabilities

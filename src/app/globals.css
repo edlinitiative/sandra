@@ -262,3 +262,36 @@
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ── Touch & safe area ─────────────────────────────────────── */
+
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ── Reduced motion ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-nebula-drift,
+  .animate-orb-float,
+  .animate-oracle-breathe,
+  .animate-oracle-rotate,
+  .animate-float-up,
+  .animate-ring-out,
+  .animate-ring-out-delayed,
+  .animate-voice-nebula-a,
+  .animate-voice-nebula-b,
+  .animate-voice-nebula-c {
+    animation: none !important;
+  }
+}
