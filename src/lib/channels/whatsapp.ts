@@ -1,4 +1,5 @@
 import type { ChannelAdapter, InboundMessage, OutboundMessage, MessageAttachment } from './types';
+import { hasAgentLoopSentinel, tagAgentLoopSentinel } from './agent-loop-guard';
 import { formatForWhatsApp } from './whatsapp-formatter';
 import { transcribeAudio } from './voice';
 import { env } from '@/lib/config';
@@ -191,6 +192,10 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
       content = `[${message.type} message received — not supported yet]`;
     }
 
+    if (hasAgentLoopSentinel(content)) {
+      throw new Error('SKIP: Agent-originated message');
+    }
+
     // Detect group chat: group_id can be on the message or in context
     const groupId = message.group_id ?? message.context?.group_id ?? undefined;
     const isGroup = Boolean(groupId);
@@ -245,7 +250,7 @@ export class WhatsAppChannelAdapter implements ChannelAdapter {
       recipient_type: 'individual',
       to: message.recipientId,
       type: 'text',
-      text: { preview_url: false, body: formatForWhatsApp(message.content) },
+      text: { preview_url: false, body: formatForWhatsApp(tagAgentLoopSentinel(message.content)) },
     };
   }
 

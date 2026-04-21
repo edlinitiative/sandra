@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AGENT_LOOP_SENTINEL } from '../agent-loop-guard';
 import type { WhatsAppWebhookPayload } from '../whatsapp';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -191,6 +192,11 @@ describe('WhatsAppChannelAdapter', () => {
       await expect(adapter.parseInbound(payload)).rejects.toThrow('SKIP:');
     });
 
+    it('throws SKIP for agent-originated messages', async () => {
+      const payload = makeTextPayload({ body: `Automated${AGENT_LOOP_SENTINEL}` });
+      await expect(adapter.parseInbound(payload)).rejects.toThrow('SKIP: Agent-originated message');
+    });
+
     it('throws for non-whatsapp_business_account object', async () => {
       const payload = { object: 'instagram', entry: [] } as unknown as WhatsAppWebhookPayload;
       await expect(adapter.parseInbound(payload)).rejects.toThrow('Unexpected webhook object');
@@ -214,6 +220,7 @@ describe('WhatsAppChannelAdapter', () => {
       });
       const body = (result as { text: { body: string } }).text.body;
       expect(body).toContain('*Hello*');
+      expect(body).toContain(AGENT_LOOP_SENTINEL);
     });
   });
 

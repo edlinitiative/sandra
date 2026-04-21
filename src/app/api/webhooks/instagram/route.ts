@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getInstagramAdapter } from '@/lib/channels/instagram';
+import { getInstagramAdapter, createInstagramAdapter } from '@/lib/channels/instagram';
 import { resolveChannelIdentity } from '@/lib/channels/channel-identity';
 import { runSandraAgent } from '@/lib/agents';
 import { ensureSessionContinuity, getOrCreateSessionForChannel } from '@/lib/memory/session-continuity';
@@ -31,6 +31,37 @@ const activeProcessing = new Set<string>();
 /** Re-fire typing_on every N ms so Meta doesn't hide the indicator. */
 const TYPING_REFRESH_MS = 12_000;
 
+// ─── Adapter construction (DB → env credential merge) ─────────────────────────
+
+/**
+ * Build an Instagram adapter from a fully-resolved PlatformConfig.
+ * This pulls credentials from the tenant's agentConfig (admin UI) first,
+ * falling back to env vars — mirroring the WhatsApp tenant-routing pattern
+ * introduced in commit 944f730.
+ *
+ * Trims values defensively to defend against trailing newlines that crept in
+ * from Vercel env-var pasting (the same root cause as the WhatsApp 403
+ * outage). Returns the env-only singleton if nothing is configured at all,
+ * so isConfigured() can flag the misconfiguration cleanly.
+ */
+function buildInstagramAdapterFromConfig(
+  platformConfig: Awaited<ReturnType<typeof getPlatformConfig>>,
+) {
+  const pageAccessToken = (platformConfig.instagram.pageAccessToken ?? '').trim();
+  const verifyToken = (platformConfig.instagram.verifyToken ?? '').trim();
+
+  if (pageAccessToken && verifyToken) {
+    return createInstagramAdapter({ pageAccessToken, verifyToken });
+  }
+  return getInstagramAdapter();
+}
+
+/** Convenience used by GET (subscribe handshake). */
+async function getInstagramAdapterForTenant() {
+  const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
+  return buildInstagramAdapterFromConfig(platformConfig);
+}
+
 // ─── GET — Webhook verification (Meta challenge) ─────────────────────────────
 
 export async function GET(request: Request) {
@@ -39,7 +70,9 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token') ?? '';
   const challenge = searchParams.get('hub.challenge') ?? '';
 
-  const adapter = getInstagramAdapter();
+  // Build adapter from merged DB+env credentials so admins can configure
+  // Instagram entirely from the UI without setting env vars.
+  const adapter = await getInstagramAdapterForTenant();
   const verified = adapter.verifyWebhook({ mode, token, challenge });
 
   if (verified !== null) {
@@ -67,13 +100,40 @@ export async function POST(request: Request) {
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
   const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
-  const appSecret = platformConfig.instagram.appSecret;
-  if (appSecret) {
-    const signature = request.headers.get('x-hub-signature-256');
-    if (!verifyMetaSignature(rawText, signature, appSecret)) {
-      log.warn('Instagram webhook signature verification failed', { requestId });
+  // Meta may deliver webhooks from an app different than the one currently
+  // used for outbound sends in this tenant. Accept any configured Meta app
+  // secret for this project and require that at least one matches.
+  const signature = request.headers.get('x-hub-signature-256');
+  const candidateSecrets = [
+    platformConfig.instagram.appSecret,
+    env.INSTAGRAM_APP_SECRET,
+    env.WHATSAPP_APP_SECRET,
+    process.env.EDLIGHT_NEWS_APP_SECRET,
+    process.env.EDLIGHT_NEWS_APP_SECRET_2,
+    process.env.SANDRA_APP_SECRET,
+    process.env.SANDRA_INSTAGRAM_APP_SECRET,
+  ]
+    .map((value) => (value ?? '').trim())
+    .filter(Boolean);
+
+  const uniqueSecrets = [...new Set(candidateSecrets)];
+  if (uniqueSecrets.length > 0) {
+    const matchedSecret = uniqueSecrets.find((secret) =>
+      verifyMetaSignature(rawText, signature, secret),
+    );
+
+    if (!matchedSecret) {
+      log.warn('Instagram webhook signature verification failed', {
+        requestId,
+        checkedSecrets: uniqueSecrets.length,
+      });
       return new Response('Forbidden', { status: 403 });
     }
+
+    log.info('Instagram webhook signature verified', {
+      requestId,
+      secretPrefix: matchedSecret.slice(0, 8),
+    });
   }
 
   // Log the raw payload for debugging
@@ -92,20 +152,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
+  // Build the adapter from DB+env credentials (parity with WhatsApp routing).
+  const adapter = buildInstagramAdapterFromConfig(platformConfig);
+
   // Await processing — errors are caught inside so we always reach the 200
-  await processInboundAsync(rawBody, requestId);
+  await processInboundAsync(rawBody, requestId, adapter);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
 
 // ─── Background processing ────────────────────────────────────────────────────
 
-async function processInboundAsync(rawPayload: unknown, requestId: string): Promise<void> {
+async function processInboundAsync(
+  rawPayload: unknown,
+  requestId: string,
+  adapter: ReturnType<typeof getInstagramAdapter>,
+): Promise<void> {
   try {
-    const adapter = getInstagramAdapter();
-
     if (!adapter.isConfigured()) {
-      log.warn('Instagram adapter not configured — skipping inbound message');
+      log.warn('Instagram adapter not configured — skipping inbound message', {
+        requestId,
+        hint: 'Set INSTAGRAM_PAGE_ACCESS_TOKEN + INSTAGRAM_VERIFY_TOKEN (or BUSINESS_META_TOKEN), or configure them via the admin Platform Settings page.',
+      });
       return;
     }
 
@@ -164,7 +232,7 @@ async function _processMessage(ctx: {
   const { adapter, psid, pageId, content, inbound, requestId } = ctx;
 
   // Fetch sender's profile (name + username) for personalised responses
-  const profile = await adapter.fetchSenderProfile(psid);
+  const profile = await adapter.fetchSenderProfile(psid, pageId);
   const senderName = profile.name;
   const igUsername = profile.username;
 

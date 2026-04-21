@@ -33,6 +33,10 @@ function buildRawMessage(input: GmailDraftInput): string {
   lines.push(`Date: ${new Date().toUTCString()}`);
   lines.push(`MIME-Version: 1.0`);
 
+  for (const [name, value] of Object.entries(input.headers ?? {})) {
+    lines.push(`${name}: ${value}`);
+  }
+
   if (input.isHtml) {
     lines.push(`Content-Type: text/html; charset=UTF-8`);
   } else {
@@ -181,6 +185,7 @@ export interface GmailMessage {
   body?: string;
   date: string;
   labelIds: string[];
+  headers?: Record<string, string>;
 }
 
 export interface GmailReplyInput {
@@ -193,6 +198,7 @@ export interface GmailReplyInput {
   subject: string;
   body: string;
   cc?: string[];
+  headers?: Record<string, string>;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -295,6 +301,7 @@ export async function listMessages(
       const subject = extractHeader(headers, 'Subject');
       const date = extractHeader(headers, 'Date') || new Date(Number(msg.internalDate)).toUTCString();
       const body = extractBody(msg.payload as Record<string, unknown>).slice(0, 4000);
+      const headerMap = Object.fromEntries(headers.map((h) => [h.name, h.value]));
 
       messages.push({
         messageId: msg.id,
@@ -306,6 +313,7 @@ export async function listMessages(
         body: body || undefined,
         date,
         labelIds: msg.labelIds ?? [],
+        headers: headerMap,
       });
     } catch {
       // Skip messages that fail to parse
@@ -349,6 +357,7 @@ export async function getMessage(
 
   const headers = msg.payload.headers;
   const body = extractBody(msg.payload as Record<string, unknown>).slice(0, 4000);
+  const headerMap = Object.fromEntries(headers.map((h) => [h.name, h.value]));
 
   return {
     messageId: msg.id,
@@ -360,6 +369,7 @@ export async function getMessage(
     body: body || undefined,
     date: extractHeader(headers, 'Date') || new Date(Number(msg.internalDate)).toUTCString(),
     labelIds: msg.labelIds ?? [],
+    headers: headerMap,
   };
 }
 
@@ -389,6 +399,9 @@ export async function replyToMessage(
   lines.push(`References: <${input.inReplyToMessageId}>`);
   lines.push(`Date: ${new Date().toUTCString()}`);
   lines.push(`MIME-Version: 1.0`);
+  for (const [name, value] of Object.entries(input.headers ?? {})) {
+    lines.push(`${name}: ${value}`);
+  }
   lines.push(`Content-Type: text/plain; charset=UTF-8`);
   lines.push('');
   lines.push(input.body);

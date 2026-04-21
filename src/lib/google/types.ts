@@ -95,6 +95,8 @@ export interface GmailDraftInput {
   body: string;
   /** If true, body is HTML; otherwise plain text */
   isHtml?: boolean;
+  /** Optional custom RFC822 headers. */
+  headers?: Record<string, string>;
 }
 
 export interface GmailSendResult {

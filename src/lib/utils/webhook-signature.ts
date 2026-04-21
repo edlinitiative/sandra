@@ -46,7 +46,10 @@ export function verifyMetaSignature(
   );
 
   if (!isValid) {
-    log.warn('Webhook signature mismatch');
+    log.warn('Webhook signature mismatch', {
+      receivedHashPrefix: `${receivedHash.slice(0, 12)}...`,
+      expectedHashPrefix: `${expectedHash.slice(0, 12)}...`,
+    });
   }
 
   return isValid;

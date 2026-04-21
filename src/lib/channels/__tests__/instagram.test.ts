@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AGENT_LOOP_SENTINEL } from '../agent-loop-guard';
 import type { InstagramWebhookPayload } from '../instagram';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -124,6 +125,11 @@ describe('InstagramChannelAdapter', () => {
       await expect(adapter.parseInbound(makeEchoPayload())).rejects.toThrow('SKIP: Echo message');
     });
 
+    it('throws SKIP for agent-originated messages', async () => {
+      const payload = makeTextPayload({ text: `Automated${AGENT_LOOP_SENTINEL}` });
+      await expect(adapter.parseInbound(payload)).rejects.toThrow('SKIP: Agent-originated message');
+    });
+
     it('throws SKIP when no messaging events', async () => {
       const payload: InstagramWebhookPayload = { object: 'instagram', entry: [{ id: 'x', time: 0 }] };
       await expect(adapter.parseInbound(payload)).rejects.toThrow('SKIP:');
@@ -156,12 +162,15 @@ describe('InstagramChannelAdapter', () => {
       const body = result as { recipient: { id: string }; message: { text: string } };
       expect(body.recipient.id).toBe('psid-12345');
       expect(body.message.text).not.toContain('**');
+      expect(body.message.text).toContain(AGENT_LOOP_SENTINEL);
     });
   });
 
   describe('send()', () => {
     it('POSTs to Instagram Graph API', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ recipient_id: 'psid-12345' }) });
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'test-page-token' }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ recipient_id: 'psid-12345' }) });
 
       await adapter.send({
         channelType: 'instagram',
@@ -171,12 +180,18 @@ describe('InstagramChannelAdapter', () => {
         metadata: { pageId: 'ig-page-123' },
       });
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const [url, options] = mockFetch.mock.calls[0]! as [string, RequestInit];
-      expect(url).toContain('graph.facebook.com');
-      expect(url).toContain('v19.0');
-      expect(url).toContain('ig-page-123/messages');
-      expect(options.headers).toHaveProperty('Authorization', 'Bearer test-ig-token');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      const [resolveUrl] = mockFetch.mock.calls[0]! as [string, RequestInit];
+      expect(resolveUrl).toContain('graph.facebook.com');
+      expect(resolveUrl).toContain('v19.0');
+      expect(resolveUrl).toContain('/ig-page-123?fields=access_token');
+
+      const [sendUrl, sendOptions] = mockFetch.mock.calls[1]! as [string, RequestInit];
+      expect(sendUrl).toContain('graph.facebook.com');
+      expect(sendUrl).toContain('v19.0');
+      expect(sendUrl).toContain('/me/messages');
+      expect(sendOptions.headers).toHaveProperty('Authorization', 'Bearer test-page-token');
     });
 
     it('strips Markdown before sending', async () => {
@@ -194,7 +209,8 @@ describe('InstagramChannelAdapter', () => {
       expect(body.message.text).not.toContain('**');
       expect(body.message.text).not.toContain('_');
       expect(body.message.text).not.toContain('`');
-      expect(body.message.text).toBe('Bold and italic text with code');
+      expect(body.message.text).toContain('Bold and italic text with code');
+      expect(body.message.text).toContain(AGENT_LOOP_SENTINEL);
     });
 
     it('splits long content into multiple API calls', async () => {
