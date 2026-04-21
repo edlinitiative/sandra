@@ -12,6 +12,12 @@ type ChannelHealth = {
   recentSessions: number | null;
   recentMessages: number | null;
   lastMessageAt: string | null;
+  receivedCount: number;
+  processedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  lastFailureAt: string | null;
+  recentFailures: Array<{ createdAt: string; message: string }>;
   inboundHealth: 'healthy' | 'idle' | 'unconfigured' | 'degraded';
   notes: string[];
 };
@@ -97,6 +103,43 @@ async function getChannelStats(channel: ChannelKey, since: Date): Promise<Pick<C
   };
 }
 
+async function getWebhookLogStats(channel: ChannelKey, since: Date): Promise<Pick<ChannelHealth, 'receivedCount' | 'processedCount' | 'failedCount' | 'skippedCount' | 'lastFailureAt' | 'recentFailures'>> {
+  const resource = `webhook:${channel}`;
+
+  const [receivedCount, processedCount, failedCount, skippedCount, lastFailure, recentFailures] = await Promise.all([
+    db.auditLog.count({ where: { resource, action: 'webhook_received', createdAt: { gte: since } } }),
+    db.auditLog.count({ where: { resource, action: 'webhook_processed', createdAt: { gte: since } } }),
+    db.auditLog.count({ where: { resource, action: { in: ['webhook_failed', 'webhook_rejected'] }, createdAt: { gte: since } } }),
+    db.auditLog.count({ where: { resource, action: 'webhook_skipped', createdAt: { gte: since } } }),
+    db.auditLog.findFirst({
+      where: { resource, action: { in: ['webhook_failed', 'webhook_rejected'] }, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    }),
+    db.auditLog.findMany({
+      where: { resource, action: { in: ['webhook_failed', 'webhook_rejected'] }, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+      select: { createdAt: true, details: true },
+    }),
+  ]);
+
+  return {
+    receivedCount,
+    processedCount,
+    failedCount,
+    skippedCount,
+    lastFailureAt: lastFailure?.createdAt.toISOString() ?? null,
+    recentFailures: recentFailures.map((entry) => {
+      const details = (entry.details ?? {}) as Record<string, unknown>;
+      return {
+        createdAt: entry.createdAt.toISOString(),
+        message: String(details.reason ?? details.stage ?? 'unknown failure'),
+      };
+    }),
+  };
+}
+
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
@@ -109,13 +152,16 @@ export async function GET(request: Request) {
     configuredChannels.map(async ({ channel, configured, notes }) => {
       try {
         const stats = await getChannelStats(channel, since);
+        const logStats = await getWebhookLogStats(channel, since);
         const recentMessages = stats.recentMessages ?? 0;
         const recentSessions = stats.recentSessions ?? 0;
         const inboundHealth = !configured
           ? 'unconfigured'
-          : recentMessages > 0
+          : logStats.failedCount > 0 && logStats.processedCount === 0
+            ? 'degraded'
+          : logStats.processedCount > 0 || recentMessages > 0
             ? 'healthy'
-            : recentSessions > 0
+            : logStats.receivedCount > 0 || recentSessions > 0
               ? 'degraded'
               : 'idle';
 
@@ -124,6 +170,7 @@ export async function GET(request: Request) {
           configured,
           inboundHealth,
           notes,
+          ...logStats,
           ...stats,
         };
       } catch (error) {
@@ -133,6 +180,12 @@ export async function GET(request: Request) {
           recentSessions: null,
           recentMessages: null,
           lastMessageAt: null,
+          receivedCount: 0,
+          processedCount: 0,
+          failedCount: 0,
+          skippedCount: 0,
+          lastFailureAt: null,
+          recentFailures: [],
           inboundHealth: configured ? 'degraded' : 'unconfigured',
           notes: [
             ...notes,

@@ -117,6 +117,12 @@ interface WebhookHealthChannel {
   recentSessions: number | null;
   recentMessages: number | null;
   lastMessageAt: string | null;
+  receivedCount: number;
+  processedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  lastFailureAt: string | null;
+  recentFailures: Array<{ createdAt: string; message: string }>;
   inboundHealth: 'healthy' | 'idle' | 'unconfigured' | 'degraded';
   notes: string[];
 }
@@ -1408,13 +1414,31 @@ export function AdminDashboard() {
 
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="rounded-lg bg-surface-container-low p-3">
-                          <p className="text-on-surface-variant">Recent sessions</p>
-                          <p className="mt-1 text-xl font-bold text-white">{formatMetric(channel.recentSessions)}</p>
+                          <p className="text-on-surface-variant">Received</p>
+                          <p className="mt-1 text-xl font-bold text-white">{channel.receivedCount}</p>
                         </div>
                         <div className="rounded-lg bg-surface-container-low p-3">
-                          <p className="text-on-surface-variant">Inbound messages</p>
-                          <p className="mt-1 text-xl font-bold text-white">{formatMetric(channel.recentMessages)}</p>
+                          <p className="text-on-surface-variant">Processed</p>
+                          <p className="mt-1 text-xl font-bold text-white">{channel.processedCount}</p>
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg bg-surface-container-low p-3">
+                          <p className="text-on-surface-variant">Failed</p>
+                          <p className="mt-1 text-xl font-bold text-white">{channel.failedCount}</p>
+                        </div>
+                        <div className="rounded-lg bg-surface-container-low p-3">
+                          <p className="text-on-surface-variant">Skipped</p>
+                          <p className="mt-1 text-xl font-bold text-white">{channel.skippedCount}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg bg-surface-container-low p-3 text-sm">
+                        <p className="text-on-surface-variant">Observed app activity</p>
+                        <p className="mt-1 text-white">
+                          {formatMetric(channel.recentMessages)} inbound messages · {formatMetric(channel.recentSessions)} sessions
+                        </p>
                       </div>
 
                       <div>
@@ -1423,6 +1447,25 @@ export function AdminDashboard() {
                           {channel.lastMessageAt ? new Date(channel.lastMessageAt).toLocaleString() : 'No recent inbound activity'}
                         </p>
                       </div>
+
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-outline">Last failure</p>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                          {channel.lastFailureAt ? new Date(channel.lastFailureAt).toLocaleString() : 'No recent failures'}
+                        </p>
+                      </div>
+
+                      {channel.recentFailures.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs uppercase tracking-wide text-outline">Recent failures</p>
+                          {channel.recentFailures.map((failure) => (
+                            <div key={`${failure.createdAt}-${failure.message}`} className="rounded-lg border border-red-500/10 bg-red-950/20 p-2 text-xs text-red-300">
+                              <div>{failure.message}</div>
+                              <div className="mt-1 text-red-200/70">{new Date(failure.createdAt).toLocaleString()}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="space-y-1.5">
                         {channel.notes.map((note) => (

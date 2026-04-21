@@ -13,6 +13,7 @@ import {
   hasAgentLoopSentinel,
   stripAgentLoopSentinel,
 } from '@/lib/channels/agent-loop-guard';
+import { getRequestIp, logWebhookEvent } from '@/lib/webhooks/logger';
 
 const log = createLogger('api:webhooks:email');
 
@@ -21,6 +22,7 @@ const log = createLogger('api:webhooks:email');
 export async function POST(request: Request) {
   const requestId = generateRequestId();
   setCorrelationId(requestId);
+  const requestIp = getRequestIp(request);
 
   // SendGrid Inbound Parse sends multipart/form-data
   let fields: Record<string, string>;
@@ -38,12 +40,31 @@ export async function POST(request: Request) {
       const json = await request.clone().json() as Record<string, string>;
       fields = json;
     } catch {
+      await logWebhookEvent({
+        channel: 'email',
+        action: 'webhook_failed',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'decode', reason: 'unsupported_payload' },
+      });
       return NextResponse.json({ status: 'ok' }, { status: 200 });
     }
   }
 
+  await logWebhookEvent({
+    channel: 'email',
+    action: 'webhook_received',
+    requestId,
+    ip: requestIp,
+    details: {
+      from: fields.from ?? null,
+      subject: fields.subject ?? null,
+      messageId: fields.headers ? null : (fields['Message-Id'] ?? null),
+    },
+  });
+
   // Await processing — errors are caught inside so we always reach the 200
-  await processEmailAsync(fields, requestId);
+  await processEmailAsync(fields, requestId, requestIp);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
@@ -53,11 +74,19 @@ export async function POST(request: Request) {
 async function processEmailAsync(
   fields: Record<string, string>,
   requestId: string,
+  requestIp?: string,
 ): Promise<void> {
   try {
     const adapter = getEmailAdapter();
 
     if (!adapter.isConfigured()) {
+      await logWebhookEvent({
+        channel: 'email',
+        action: 'webhook_skipped',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'config', reason: 'adapter_not_configured' },
+      });
       log.warn('Email adapter not configured — skipping inbound email');
       return;
     }
@@ -68,8 +97,22 @@ async function processEmailAsync(
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
       if (msg.startsWith('SKIP:')) {
+        await logWebhookEvent({
+          channel: 'email',
+          action: 'webhook_skipped',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.info('Skipping email event', { reason: msg });
       } else {
+        await logWebhookEvent({
+          channel: 'email',
+          action: 'webhook_failed',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.warn('Failed to parse inbound email', { error: msg });
       }
       return;
@@ -85,10 +128,24 @@ async function processEmailAsync(
       || hasAgentLoopSentinel(cleanContent)
       || hasAgentSignature(cleanContent);
     if (isAgentMessage) {
+      await logWebhookEvent({
+        channel: 'email',
+        action: 'webhook_skipped',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'loop_guard', reason: 'agent_originated' },
+      });
       log.info('SKIP: Agent-originated inbound email detected');
       return;
     }
     if (!cleanContent) {
+      await logWebhookEvent({
+        channel: 'email',
+        action: 'webhook_skipped',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'content', reason: 'empty_after_strip' },
+      });
       log.info('SKIP: Empty email after stripping quoted history');
       return;
     }
@@ -144,7 +201,28 @@ async function processEmailAsync(
       to: fromEmail.slice(0, 6) + '****',
       toolsUsed: result.toolsUsed,
     });
+
+    await logWebhookEvent({
+      channel: 'email',
+      action: 'webhook_processed',
+      requestId,
+      ip: requestIp,
+      sessionId,
+      userId,
+      details: {
+        from: fromEmail,
+        subject: subject ?? null,
+        toolsUsed: result.toolsUsed,
+      },
+    });
   } catch (error) {
+    await logWebhookEvent({
+      channel: 'email',
+      action: 'webhook_failed',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'process', reason: error instanceof Error ? error.message : 'unknown' },
+    });
     log.error('Email webhook processing error', {
       error: error instanceof Error ? error.message : 'unknown',
       requestId,

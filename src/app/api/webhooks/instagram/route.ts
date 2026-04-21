@@ -18,6 +18,7 @@ import {
   extractVerificationCode,
 } from '@/lib/channels/email-verification';
 import { getUserMemoryStore } from '@/lib/memory/user-memory';
+import { getRequestIp, logWebhookEvent } from '@/lib/webhooks/logger';
 
 const log = createLogger('api:webhooks:instagram');
 
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const requestId = generateRequestId();
   setCorrelationId(requestId);
+  const requestIp = getRequestIp(request);
 
   let rawText: string;
   let rawBody: unknown;
@@ -95,8 +97,23 @@ export async function POST(request: Request) {
     rawText = await request.text();
     rawBody = JSON.parse(rawText);
   } catch {
+    await logWebhookEvent({
+      channel: 'instagram',
+      action: 'webhook_failed',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'decode', reason: 'invalid_json_body' },
+    });
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
+
+  await logWebhookEvent({
+    channel: 'instagram',
+    action: 'webhook_received',
+    requestId,
+    ip: requestIp,
+    details: { messageId: extractInstagramMessageId(rawBody) ?? null },
+  });
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
   const platformConfig = await getPlatformConfig(env.DEFAULT_TENANT_ID);
@@ -123,6 +140,13 @@ export async function POST(request: Request) {
     );
 
     if (!matchedSecret) {
+      await logWebhookEvent({
+        channel: 'instagram',
+        action: 'webhook_rejected',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'signature', reason: 'invalid_signature' },
+      });
       log.warn('Instagram webhook signature verification failed', {
         requestId,
         checkedSecrets: uniqueSecrets.length,
@@ -149,6 +173,13 @@ export async function POST(request: Request) {
   // ── Message deduplication ──────────────────────────────────────────────
   const messageId = extractInstagramMessageId(rawBody);
   if (isDuplicate(messageId)) {
+    await logWebhookEvent({
+      channel: 'instagram',
+      action: 'webhook_skipped',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'dedup', messageId: messageId ?? null, reason: 'duplicate' },
+    });
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
@@ -156,7 +187,7 @@ export async function POST(request: Request) {
   const adapter = buildInstagramAdapterFromConfig(platformConfig);
 
   // Await processing — errors are caught inside so we always reach the 200
-  await processInboundAsync(rawBody, requestId, adapter);
+  await processInboundAsync(rawBody, requestId, adapter, requestIp);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
@@ -167,9 +198,17 @@ async function processInboundAsync(
   rawPayload: unknown,
   requestId: string,
   adapter: ReturnType<typeof getInstagramAdapter>,
+  requestIp?: string,
 ): Promise<void> {
   try {
     if (!adapter.isConfigured()) {
+      await logWebhookEvent({
+        channel: 'instagram',
+        action: 'webhook_skipped',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'config', reason: 'adapter_not_configured' },
+      });
       log.warn('Instagram adapter not configured — skipping inbound message', {
         requestId,
         hint: 'Set INSTAGRAM_PAGE_ACCESS_TOKEN + INSTAGRAM_VERIFY_TOKEN (or BUSINESS_META_TOKEN), or configure them via the admin Platform Settings page.',
@@ -183,8 +222,22 @@ async function processInboundAsync(
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
       if (msg.startsWith('SKIP:')) {
+        await logWebhookEvent({
+          channel: 'instagram',
+          action: 'webhook_skipped',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.info('Skipping non-message Instagram event', { reason: msg });
       } else {
+        await logWebhookEvent({
+          channel: 'instagram',
+          action: 'webhook_failed',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.warn('Failed to parse Instagram inbound payload', { error: msg });
       }
       return;
@@ -205,11 +258,18 @@ async function processInboundAsync(
     activeProcessing.add(psid);
 
     try {
-      await _processMessage({ adapter, psid, pageId, content, inbound, requestId });
+      await _processMessage({ adapter, psid, pageId, content, inbound, requestId, requestIp });
     } finally {
       activeProcessing.delete(psid);
     }
   } catch (error) {
+    await logWebhookEvent({
+      channel: 'instagram',
+      action: 'webhook_failed',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'process', reason: error instanceof Error ? error.message : 'unknown' },
+    });
     log.error('Instagram webhook processing error', {
       error: error instanceof Error ? error.message : 'unknown',
       requestId,
@@ -228,8 +288,9 @@ async function _processMessage(ctx: {
   content: string;
   inbound: Awaited<ReturnType<ReturnType<typeof getInstagramAdapter>['parseInbound']>>;
   requestId: string;
+  requestIp?: string;
 }): Promise<void> {
-  const { adapter, psid, pageId, content, inbound, requestId } = ctx;
+  const { adapter, psid, pageId, content, inbound, requestId, requestIp } = ctx;
 
   // Fetch sender's profile (name + username) for personalised responses
   const profile = await adapter.fetchSenderProfile(psid, pageId);
@@ -398,6 +459,21 @@ async function _processMessage(ctx: {
       toolsUsed: result.toolsUsed,
       detectedLang: detectedLang ?? null,
       language,
+    });
+
+    await logWebhookEvent({
+      channel: 'instagram',
+      action: 'webhook_processed',
+      requestId,
+      ip: requestIp,
+      sessionId,
+      userId,
+      details: {
+        pageId: pageId ?? null,
+        psid,
+        toolsUsed: result.toolsUsed,
+        language: result.language,
+      },
     });
   } finally {
     clearInterval(typingInterval);

@@ -22,6 +22,7 @@ import {
   startEmailVerification,
   extractVerificationCode,
 } from '@/lib/channels/email-verification';
+import { getRequestIp, logWebhookEvent } from '@/lib/webhooks/logger';
 
 const log = createLogger('api:webhooks:whatsapp');
 
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
   // Always respond 200 quickly — Meta requires < 5s
   const requestId = generateRequestId();
   setCorrelationId(requestId);
+  const requestIp = getRequestIp(request);
 
   let rawText: string;
   let rawBody: unknown;
@@ -57,8 +59,23 @@ export async function POST(request: Request) {
     rawText = await request.text();
     rawBody = JSON.parse(rawText);
   } catch {
+    await logWebhookEvent({
+      channel: 'whatsapp',
+      action: 'webhook_failed',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'decode', reason: 'invalid_json_body' },
+    });
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
+
+  await logWebhookEvent({
+    channel: 'whatsapp',
+    action: 'webhook_received',
+    requestId,
+    ip: requestIp,
+    details: { phoneNumberId: extractPhoneNumberId(rawBody) ?? null },
+  });
 
   // ── Signature verification (Meta HMAC-SHA256) ─────────────────────────
   // Try to resolve tenant from phone_number_id for tenant-specific app secret,
@@ -74,6 +91,13 @@ export async function POST(request: Request) {
   if (appSecret) {
     const signature = request.headers.get('x-hub-signature-256');
     if (!verifyMetaSignature(rawText, signature, appSecret)) {
+      await logWebhookEvent({
+        channel: 'whatsapp',
+        action: 'webhook_rejected',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'signature', reason: 'invalid_signature' },
+      });
       log.warn('WhatsApp webhook signature verification failed', { requestId });
       return new Response('Forbidden', { status: 403 });
     }
@@ -85,6 +109,13 @@ export async function POST(request: Request) {
   if (isCallsWebhookEvent(rawBody)) {
     const voiceBridgeUrl = env.VOICE_BRIDGE_URL ?? '';
     if (!voiceBridgeUrl) {
+      await logWebhookEvent({
+        channel: 'whatsapp',
+        action: 'webhook_failed',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'voice_bridge', reason: 'missing_voice_bridge_url' },
+      });
       log.warn('VOICE_BRIDGE_URL not configured — cannot forward voice call');
       return NextResponse.json({ status: 'voice_not_configured' }, { status: 503 });
     }
@@ -101,11 +132,18 @@ export async function POST(request: Request) {
   // ── Message deduplication ──────────────────────────────────────────────
   const messageId = extractWhatsAppMessageId(rawBody);
   if (isDuplicate(messageId)) {
+    await logWebhookEvent({
+      channel: 'whatsapp',
+      action: 'webhook_skipped',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'dedup', messageId: messageId ?? null, reason: 'duplicate' },
+    });
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
   // Await processing — errors are caught inside so we always reach the 200
-  await processWebhookAsync(rawBody, requestId, resolvedTenant);
+  await processWebhookAsync(rawBody, requestId, resolvedTenant, requestIp);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }
@@ -149,6 +187,7 @@ async function processWebhookAsync(
   rawPayload: unknown,
   requestId: string,
   resolvedTenant: ResolvedWhatsAppTenant | null,
+  requestIp?: string,
 ): Promise<void> {
   try {
     // Use tenant-specific adapter if we resolved credentials, else fallback to env-based singleton
@@ -157,6 +196,13 @@ async function processWebhookAsync(
       : getWhatsAppAdapter();
 
     if (!adapter.isConfigured()) {
+      await logWebhookEvent({
+        channel: 'whatsapp',
+        action: 'webhook_skipped',
+        requestId,
+        ip: requestIp,
+        details: { stage: 'config', reason: 'adapter_not_configured' },
+      });
       log.warn('WhatsApp adapter not configured — skipping inbound message');
       return;
     }
@@ -168,8 +214,22 @@ async function processWebhookAsync(
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
       if (msg.startsWith('SKIP:')) {
+        await logWebhookEvent({
+          channel: 'whatsapp',
+          action: 'webhook_skipped',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.info('Skipping non-message webhook event', { reason: msg });
       } else {
+        await logWebhookEvent({
+          channel: 'whatsapp',
+          action: 'webhook_failed',
+          requestId,
+          ip: requestIp,
+          details: { stage: 'parse', reason: msg },
+        });
         log.warn('Failed to parse WhatsApp inbound payload', { error: msg });
       }
       return;
@@ -203,6 +263,7 @@ async function processWebhookAsync(
         displayName: displayName ?? undefined,
         groupId,
         requestId,
+        requestIp,
       });
     }
 
@@ -346,7 +407,29 @@ async function processWebhookAsync(
       chunks: chunks.length,
       toolsUsed: result.toolsUsed,
     });
+
+    await logWebhookEvent({
+      channel: 'whatsapp',
+      action: 'webhook_processed',
+      requestId,
+      ip: requestIp,
+      sessionId,
+      userId,
+      details: {
+        messageId: whatsappMessageId ?? null,
+        isGroup: false,
+        chunks: chunks.length,
+        toolsUsed: result.toolsUsed,
+      },
+    });
   } catch (error) {
+    await logWebhookEvent({
+      channel: 'whatsapp',
+      action: 'webhook_failed',
+      requestId,
+      ip: requestIp,
+      details: { stage: 'process', reason: error instanceof Error ? error.message : 'unknown' },
+    });
     log.error('WhatsApp webhook processing error', {
       error: error instanceof Error ? error.message : 'unknown',
       requestId,
@@ -366,10 +449,11 @@ interface GroupMessageParams {
   displayName: string | undefined;
   groupId: string;
   requestId: string;
+  requestIp?: string;
 }
 
 async function processGroupMessage(params: GroupMessageParams): Promise<void> {
-  const { adapter, inbound, phoneNumber, content, displayName, groupId, requestId } = params;
+  const { adapter, inbound, phoneNumber, content, displayName, groupId, requestId, requestIp } = params;
 
   // Resolve user identity (same as 1:1 — links phone to Sandra user)
   const identity = await resolveChannelIdentity({
@@ -487,5 +571,21 @@ async function processGroupMessage(params: GroupMessageParams): Promise<void> {
     mentionedBy: `${phoneNumber.slice(0, 4)}****`,
     chunks: chunks.length,
     toolsUsed: result.toolsUsed,
+  });
+
+  await logWebhookEvent({
+    channel: 'whatsapp',
+    action: 'webhook_processed',
+    requestId,
+    ip: requestIp,
+    sessionId: groupSessionId,
+    userId,
+    details: {
+      isGroup: true,
+      groupId,
+      mentionedBy: phoneNumber,
+      chunks: chunks.length,
+      toolsUsed: result.toolsUsed,
+    },
   });
 }
