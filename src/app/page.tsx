@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* ── Hero ───────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center overflow-hidden px-6 pb-20 pt-14 text-center sm:pb-32 sm:pt-24">
+      <section className="relative flex flex-col items-center overflow-hidden px-5 pb-20 pt-14 text-center sm:px-6 sm:pb-32 sm:pt-24">
         {/* Nebula background layers */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="animate-nebula-drift absolute -left-32 top-0 h-[500px] w-[500px] rounded-full bg-primary/[0.07] blur-[130px]" />
@@ -29,7 +29,9 @@ export default function HomePage() {
             className="absolute inset-0 -m-8 rounded-full border border-primary/5 animate-oracle-breathe"
             style={{ animationDelay: '-2s' }}
           />
-          <OracleOrb size={240} />
+          <div className="ai-orb-glow rounded-full">
+            <OracleOrb size={240} />
+          </div>
         </div>
 
         {/* Headline */}
@@ -52,7 +54,7 @@ export default function HomePage() {
         <div className="relative flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
           <Link
             href="/chat"
-            className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-primary/90 px-10 py-4 text-sm font-bold text-white shadow-[0_0_30px_rgba(174,198,255,0.25)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(174,198,255,0.4)] active:scale-95"
+            className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-primary/90 px-10 py-4 text-sm font-bold text-white shadow-[0_0_30px_rgba(174,198,255,0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(174,198,255,0.4)] active:scale-95"
           >
             <span className="relative z-10">Enter the oracle</span>
             <span className="material-symbols-outlined relative z-10 text-lg transition-transform group-hover:translate-x-0.5">
@@ -65,6 +67,11 @@ export default function HomePage() {
           >
             Admin Panel
           </Link>
+        </div>
+
+        <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-outline-variant/15 bg-surface-container-low/30 px-3 py-1 text-xs text-on-surface-variant/80">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
+          Multi-channel AI • WhatsApp • Instagram • Email • Voice
         </div>
       </section>
 
@@ -102,7 +109,7 @@ export default function HomePage() {
           ].map((card) => (
             <div
               key={card.title}
-              className="group relative overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-low/50 p-8 backdrop-blur-sm transition-all hover:border-outline-variant/20 hover:bg-surface-container/50"
+              className="group relative overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-low/50 p-6 shadow-[0_8px_20px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-outline-variant/20 hover:bg-surface-container/50 sm:p-8"
             >
               {/* Top glow line */}
               <div

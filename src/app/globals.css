@@ -277,6 +277,16 @@
   .safe-top {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  .surface-elevated {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
 }
 
 /* ── Reduced motion ────────────────────────────────────────── */

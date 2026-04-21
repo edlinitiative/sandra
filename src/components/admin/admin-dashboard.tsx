@@ -649,10 +649,10 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 py-2">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Sandra Admin</h1>
-        <p className="mt-1 text-sm text-on-surface-variant">Manage repositories, indexing, and system status.</p>
+    <div className="mx-auto max-w-5xl space-y-6 px-1 py-2 sm:space-y-8">
+      <div className="rounded-2xl border border-outline-variant/10 bg-surface-container-low/20 px-4 py-4 backdrop-blur-sm sm:px-5">
+        <h1 className="text-2xl font-bold text-white sm:text-[1.7rem]">Sandra Admin</h1>
+        <p className="mt-1 text-sm text-on-surface-variant">Manage repositories, indexing, channels, and runtime health.</p>
       </div>
 
       <Card>
@@ -705,15 +705,15 @@ export function AdminDashboard() {
       )}
 
       {/* Tab navigation */}
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-surface-container-low p-1">
+      <div className="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-outline-variant/10 bg-surface-container-low/85 p-1 backdrop-blur-xl">
         {(['system', 'analytics', 'actions', 'gaps', 'tools', 'webhooks'] as AdminTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all ${
+            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium capitalize transition-all touch-manipulation ${
               activeTab === tab
-                ? 'bg-surface-container-highest text-white shadow'
-                : 'text-on-surface-variant hover:text-on-surface'
+                ? 'bg-surface-container-highest text-white shadow shadow-black/20'
+                : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
             }`}
           >
             {tab === 'system'    ? '⚙️ System'

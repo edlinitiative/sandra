@@ -37,9 +37,25 @@ interface ChatEmptyStateProps {
   isLoading?: boolean;
 }
 
+const GREETING: Record<string, { title: string; subtitle: string }> = {
+  en: {
+    title: "Hi, I'm",
+    subtitle: 'Ask me anything — I can search, schedule, email, and more',
+  },
+  fr: {
+    title: 'Bonjour, je suis',
+    subtitle: "Posez-moi une question — je peux rechercher, planifier, envoyer des e-mails et plus.",
+  },
+  ht: {
+    title: 'Bonjou, mwen se',
+    subtitle: 'Mande m nenpòt bagay — mwen ka chèche, planifye, voye imel, ak plis.',
+  },
+};
+
 export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: ChatEmptyStateProps) {
   const [bucket, setBucket] = useState(0);
   const allQuestions = SUGGESTED_QUESTIONS[language] ?? SUGGESTED_QUESTIONS['en']!;
+  const greeting = GREETING[language] ?? GREETING['en']!;
 
   useEffect(() => {
     setBucket(Math.floor(Date.now() / 60_000) % 3);
@@ -67,22 +83,22 @@ export function ChatEmptyState({ onSend, language = 'en', isLoading = false }: C
 
       {/* Greeting */}
       <h2 className="relative mb-1 text-lg font-semibold tracking-tight text-white sm:text-xl">
-        Hi, I&apos;m{' '}
+        {greeting.title}{' '}
         <span className="bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
           {AGENT_NAME}
         </span>
       </h2>
-      <p className="relative mb-6 text-sm text-on-surface-variant/70 sm:mb-8">
-        Ask me anything — I can search, schedule, email, and more
+      <p className="relative mb-6 max-w-md text-center text-sm text-on-surface-variant/75 sm:mb-8">
+        {greeting.subtitle}
       </p>
 
       {/* Suggestion cards */}
-      <div className="relative grid w-full max-w-lg gap-2 grid-cols-1 min-[400px]:grid-cols-2">
+      <div className="relative grid w-full max-w-lg grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         {questions.map(({ text, icon }) => (
           <button
             key={text}
             onClick={() => onSend?.(text)}
-            className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low/20 px-4 py-3 text-left text-sm text-on-surface-variant backdrop-blur-sm transition-all hover:border-primary/20 hover:bg-surface-container/40 hover:text-on-surface active:scale-[0.98]"
+            className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-low/30 px-4 py-3 text-left text-sm text-on-surface-variant backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:bg-surface-container/50 hover:text-on-surface active:scale-[0.98]"
             style={{ touchAction: 'manipulation' }}
           >
             {/* Hover glow */}

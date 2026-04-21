@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex h-full flex-col overflow-hidden bg-surface font-sans text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
         <SessionProvider>
           <Header />
-          <main className="flex flex-1 flex-col overflow-hidden pb-16 sm:pb-0">{children}</main>
+          <main className="flex flex-1 flex-col overflow-hidden pb-20 sm:pb-0">{children}</main>
           <BottomNav />
         </SessionProvider>
       </body>
