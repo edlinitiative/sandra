@@ -1,4 +1,11 @@
 import type { ChannelAdapter, InboundMessage, OutboundMessage } from './types';
+import {
+  AGENT_LOOP_HEADER,
+  hasAgentSignature,
+  hasAgentLoopHeader,
+  hasAgentLoopSentinel,
+  tagAgentLoopSentinel,
+} from './agent-loop-guard';
 import { buildEmailBody } from './email-formatter';
 import { env } from '@/lib/config';
 import { APP_NAME } from '@/lib/config/constants';
@@ -82,6 +89,10 @@ export class EmailChannelAdapter implements ChannelAdapter {
       throw new Error('SKIP: Empty email body');
     }
 
+    const loopTagged = this._hasLoopHeaderString(payload['headers'])
+      || hasAgentLoopSentinel(text)
+      || hasAgentSignature(text);
+
     return {
       channelType: 'email',
       channelUserId: fromAddress,
@@ -93,6 +104,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
         fromName,
         to: payload['to'] ?? this.sandraEmail,
         inReplyTo: payload['in-reply-to'] ?? null,
+        agentLoopTagged: loopTagged,
       },
     };
   }
@@ -107,6 +119,11 @@ export class EmailChannelAdapter implements ChannelAdapter {
     const content = subject && !subject.startsWith('Re:')
       ? `Subject: ${subject}\n\n${(msg.body ?? msg.snippet).trim()}`
       : (msg.body ?? msg.snippet).trim();
+
+    const rawBody = msg.body ?? msg.snippet;
+    const loopTagged = hasAgentLoopHeader(msg.headers)
+      || hasAgentLoopSentinel(rawBody)
+      || hasAgentSignature(rawBody);
 
     if (!content) {
       throw new Error('SKIP: Empty Gmail message body');
@@ -124,6 +141,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
         fromName,
         to: this.sandraEmail,
         inReplyTo: null,
+        agentLoopTagged: loopTagged,
       },
     };
   }
@@ -152,9 +170,10 @@ export class EmailChannelAdapter implements ChannelAdapter {
     const subject = (message.metadata?.subject as string | undefined)
       ? `Re: ${message.metadata!.subject as string}`
       : `${APP_NAME}`;
-    const textBody = buildEmailBody({ response: message.content });
+    const textBody = buildEmailBody({ response: tagAgentLoopSentinel(message.content) });
     const threadId = message.metadata?.gmailThreadId as string | undefined;
     const inReplyToMessageId = message.metadata?.emailMessageId as string | undefined;
+    const headers = { [AGENT_LOOP_HEADER]: '1' };
 
     if (!env.DEFAULT_TENANT_ID) {
       throw new Error('DEFAULT_TENANT_ID not configured — cannot send email');
@@ -169,6 +188,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
         to: [message.recipientId],
         subject,
         body: textBody,
+        headers,
       });
     } else {
       await sendEmail(ctx, {
@@ -177,6 +197,7 @@ export class EmailChannelAdapter implements ChannelAdapter {
         subject,
         body: textBody,
         isHtml: false,
+        headers,
       });
     }
 
@@ -202,6 +223,11 @@ export class EmailChannelAdapter implements ChannelAdapter {
       }
     }
     return null;
+  }
+
+  private _hasLoopHeaderString(headersRaw: string | undefined): boolean {
+    if (!headersRaw) return false;
+    return Boolean(this._extractHeader(headersRaw, AGENT_LOOP_HEADER));
   }
 }
 

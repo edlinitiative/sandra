@@ -8,6 +8,11 @@ import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { extractEmailReply } from '@/lib/channels/email-formatter';
+import {
+  hasAgentSignature,
+  hasAgentLoopSentinel,
+  stripAgentLoopSentinel,
+} from '@/lib/channels/agent-loop-guard';
 
 const log = createLogger('api:webhooks:email');
 
@@ -75,7 +80,14 @@ async function processEmailAsync(
     const emailMessageId = metadata?.emailMessageId as string | undefined;
 
     // Strip quoted history from replies
-    const cleanContent = extractEmailReply(content);
+    const cleanContent = stripAgentLoopSentinel(extractEmailReply(content));
+    const isAgentMessage = metadata?.agentLoopTagged === true
+      || hasAgentLoopSentinel(cleanContent)
+      || hasAgentSignature(cleanContent);
+    if (isAgentMessage) {
+      log.info('SKIP: Agent-originated inbound email detected');
+      return;
+    }
     if (!cleanContent) {
       log.info('SKIP: Empty email after stripping quoted history');
       return;

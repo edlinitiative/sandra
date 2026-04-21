@@ -27,6 +27,11 @@ import { getScopesForRole } from '@/lib/auth';
 import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { generateRequestId, createLogger } from '@/lib/utils';
 import { extractEmailReply } from '@/lib/channels/email-formatter';
+import {
+  hasAgentSignature,
+  hasAgentLoopSentinel,
+  stripAgentLoopSentinel,
+} from '@/lib/channels/agent-loop-guard';
 import { listMessages, markAsRead } from '@/lib/google/gmail';
 import { resolveGoogleContext } from '@/lib/google/context';
 
@@ -111,7 +116,16 @@ export async function GET(request: Request) {
         const subject = metadata?.subject as string | undefined;
 
         // Strip quoted reply history
-        const cleanContent = extractEmailReply(content);
+        const cleanContent = stripAgentLoopSentinel(extractEmailReply(content));
+        const isAgentMessage = metadata?.agentLoopTagged === true
+          || hasAgentLoopSentinel(cleanContent)
+          || hasAgentSignature(cleanContent);
+        if (isAgentMessage) {
+          log.info('SKIP: Agent-originated email detected', { messageId: msg.messageId });
+          await markAsRead(ctx, msg.messageId).catch(() => {});
+          skipped++;
+          continue;
+        }
         if (!cleanContent) {
           log.info('SKIP: Empty after stripping quoted history', { messageId: msg.messageId });
           await markAsRead(ctx, msg.messageId).catch(() => {});

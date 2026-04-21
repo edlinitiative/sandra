@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AGENT_LOOP_SENTINEL } from '../agent-loop-guard';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,23 @@ describe('EmailChannelAdapter', () => {
       };
       expect(() => adapter.parseGmailMessage(gmailMsg)).toThrow('SKIP:');
     });
+
+    it('tags Gmail messages that carry the assistant footer signature', () => {
+      const gmailMsg = {
+        messageId: 'gm-signature',
+        threadId: 'thr-signature',
+        from: 'bot@example.com',
+        to: ['sandra@edlight.org'],
+        subject: 'Re: hello',
+        snippet: 'Hello\n\n--\nSandra\nAI Assistant',
+        body: 'Hello\n\n--\nSandra\nAI Assistant',
+        date: new Date().toUTCString(),
+        labelIds: ['UNREAD'],
+      };
+
+      const msg = adapter.parseGmailMessage(gmailMsg);
+      expect(msg.metadata?.agentLoopTagged).toBe(true);
+    });
   });
 
   describe('send()', () => {
@@ -148,6 +166,8 @@ describe('EmailChannelAdapter', () => {
       const call = mockReplyToMessage.mock.calls[0]![1] as Record<string, unknown>;
       expect(call.to).toEqual(['user@example.com']);
       expect(call.subject).toBe('Re: Question');
+      expect(call.body).toContain(AGENT_LOOP_SENTINEL);
+      expect(call.headers).toMatchObject({ 'X-Sandra-Agent': '1' });
     });
 
     it('calls sendEmail when no threadId is available (first contact)', async () => {
@@ -161,6 +181,39 @@ describe('EmailChannelAdapter', () => {
 
       expect(mockSendEmail).toHaveBeenCalledOnce();
       expect(mockReplyToMessage).not.toHaveBeenCalled();
+      const call = mockSendEmail.mock.calls[0]![1] as Record<string, unknown>;
+      expect(call.body).toContain(AGENT_LOOP_SENTINEL);
+      expect(call.headers).toMatchObject({ 'X-Sandra-Agent': '1' });
+    });
+
+    it('marks Gmail messages tagged by Sandra in metadata', () => {
+      const gmailMsg = {
+        messageId: 'gm-loop',
+        threadId: 'thr-loop',
+        from: 'bot@example.com',
+        to: ['sandra@edlight.org'],
+        subject: 'Re: hi',
+        snippet: 'hidden',
+        body: `Automated${AGENT_LOOP_SENTINEL}`,
+        date: new Date().toUTCString(),
+        labelIds: ['UNREAD'],
+        headers: { 'X-Sandra-Agent': '1' },
+      };
+
+      const msg = adapter.parseGmailMessage(gmailMsg);
+      expect(msg.metadata?.agentLoopTagged).toBe(true);
+    });
+
+    it('marks inbound raw payloads with assistant footer signature as agent-originated', async () => {
+      const fields = {
+        from: 'Bot <bot@example.com>',
+        to: 'sandra@edlight.org',
+        subject: 'Re: hello',
+        text: 'Automated\n\n--\nSandra\nAI Assistant',
+      };
+
+      const msg = await adapter.parseInbound(fields);
+      expect(msg.metadata?.agentLoopTagged).toBe(true);
     });
   });
 });
