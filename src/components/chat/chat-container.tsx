@@ -120,7 +120,7 @@ export function ChatContainer() {
       })
       .catch(() => {
         // Restore failed — session ID still valid for continuing.
-      });
+      })
       .finally(() => {
         setIsRestoring(false);
       });
