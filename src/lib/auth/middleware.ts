@@ -5,6 +5,7 @@
  * the canonical user record and their permissions.
  *
  * Supports:
+ * - NextAuth session cookie (Google/Facebook/Email OTP/Phone OAuth)
  * - `Authorization: Bearer <jwt>` — JWT token verification
  * - `x-user-id` header (development only) — direct external ID
  * - Anonymous fallback — guest scopes
@@ -13,7 +14,7 @@ import type { AuthResult, AuthenticatedUser, UserRole } from './types';
 import { verifyToken } from './token-verifier';
 import { getScopesForRole } from './permissions';
 import { db } from '@/lib/db';
-import { getUserByExternalId, resolveUserByExternalId } from '@/lib/db/users';
+import { getUserById, getUserByExternalId, resolveUserByExternalId } from '@/lib/db/users';
 import { createLogger } from '@/lib/utils';
 import { createHash } from 'crypto';
 import { getTenantFromHeaders } from './tenant-context';
@@ -30,6 +31,41 @@ const log = createLogger('auth:middleware');
 export async function authenticateRequest(
   request: Request,
 ): Promise<AuthResult> {
+  // 0. Try NextAuth session cookie (web/PWA users signed in via OAuth/OTP)
+  try {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (session?.user?.id) {
+      const user = await getUserById(db, session.user.id);
+      if (user) {
+        const role = (user.role as UserRole) ?? 'student';
+        const scopes = getScopesForRole(role);
+        const tenantId = await resolveTenantId(request, user.id);
+
+        log.info('Authenticated via NextAuth session', {
+          userId: user.id,
+          role,
+          tenantId: tenantId ?? 'none',
+        });
+
+        return {
+          authenticated: true,
+          user: {
+            id: user.id,
+            externalId: user.externalId ?? undefined,
+            email: user.email ?? undefined,
+            name: user.name ?? undefined,
+            role,
+            scopes,
+            tenantId: tenantId ?? undefined,
+          },
+        };
+      }
+    }
+  } catch {
+    // NextAuth not available (test env, missing config) — continue to Bearer
+  }
+
   // 1. Try Bearer token
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
