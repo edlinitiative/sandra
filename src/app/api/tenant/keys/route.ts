@@ -39,7 +39,7 @@ export async function GET() {
       return NextResponse.json({ error: 'No tenant found for this account' }, { status: 404 });
     }
 
-    const keys = await (db as unknown as TenantApiKeyDb).tenantApiKey.findMany({
+    const keys = await db.tenantApiKey.findMany({
       where: { tenantId },
       select: {
         id: true,
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     const keyHash = createHash('sha256').update(plaintext).digest('hex');
     const keyPrefix = plaintext.slice(0, 12);
 
-    const apiKey = await (db as unknown as TenantApiKeyDb).tenantApiKey.create({
+    const apiKey = await db.tenantApiKey.create({
       data: {
         tenantId,
         name,
@@ -122,22 +122,3 @@ export async function POST(request: Request) {
   }
 }
 
-// ─── Type helpers ─────────────────────────────────────────────────────────────
-
-interface TenantApiKeyRow {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  scopes: string[];
-  isActive: boolean;
-  expiresAt: Date | null;
-  lastUsedAt: Date | null;
-  createdAt: Date;
-}
-
-interface TenantApiKeyDb {
-  tenantApiKey: {
-    findMany: (args: unknown) => Promise<TenantApiKeyRow[]>;
-    create: (args: unknown) => Promise<TenantApiKeyRow>;
-  };
-}

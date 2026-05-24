@@ -2,10 +2,32 @@ import Link from 'next/link';
 import { APP_NAME } from '@/lib/config/constants';
 import { OracleOrb } from '@/components/ui/oracle-orb';
 import { GlitchText } from '@/components/ui/glitch-text';
+import { FooterLanguages } from '@/components/footer-languages';
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const showUnauthorized = params.error === 'unauthorized';
+
   return (
     <div className="flex-1 overflow-y-auto">
+      {showUnauthorized && (
+        <div className="mx-auto max-w-2xl px-6 pt-6">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-950/30 p-4 text-center text-sm text-red-400 backdrop-blur-sm"
+          >
+            Access denied. You must be an admin to view that page.{' '}
+            <a href="/login" className="underline hover:text-red-300">
+              Sign in with an admin account
+            </a>
+            .
+          </div>
+        </div>
+      )}
       {/* ── Hero ───────────────────────────────────────────── */}
       <section className="relative flex flex-col items-center overflow-hidden px-5 pb-20 pt-14 text-center sm:px-6 sm:pb-32 sm:pt-24">
         {/* Nebula background layers */}
@@ -175,12 +197,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-8">
           <span className="text-sm font-bold text-primary/80">English</span>
-          <span className="cursor-pointer text-sm text-on-surface-variant/40 transition-all hover:text-primary">
-            Fran&ccedil;ais
-          </span>
-          <span className="cursor-pointer text-sm text-on-surface-variant/40 transition-all hover:text-primary">
-            Krey&ograve;l Ayisyen
-          </span>
+          <FooterLanguages />
         </div>
       </footer>
     </div>

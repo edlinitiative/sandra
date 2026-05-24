@@ -148,7 +148,9 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? '🔴 Recording…' : (placeholder ?? 'Message Sandra…')}
           rows={1}
+          maxLength={10000}
           disabled={isLoading || isRecording || isVoiceLoading}
+          aria-label="Message Sandra"
           className="flex-1 resize-none bg-transparent px-2 py-2 text-base text-on-surface placeholder:text-on-surface-variant focus:outline-none disabled:opacity-40"
           style={{ maxHeight: '120px' }}
           onInput={(e) => {
@@ -165,6 +167,7 @@ export function ChatInput({
             onClick={handleMicClick}
             disabled={isLoading || isVoiceLoading}
             title={isRecording ? 'Stop recording' : 'Record voice message'}
+            aria-label={isRecording ? 'Stop recording' : 'Start voice recording'}
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
               isRecording
                 ? 'animate-pulse bg-red-500 text-white'
@@ -194,6 +197,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={!input.trim() || isLoading || isRecording || isVoiceLoading}
+          aria-label="Send message"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black transition-all hover:bg-slate-200 disabled:bg-outline disabled:text-on-surface-variant"
         >
           {isLoading ? (

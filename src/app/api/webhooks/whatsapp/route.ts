@@ -142,8 +142,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'ok' }, { status: 200 });
   }
 
-  // Await processing — errors are caught inside so we always reach the 200
-  await processWebhookAsync(rawBody, requestId, resolvedTenant, requestIp);
+  // Fire-and-forget processing — respond 200 immediately so Meta doesn't retry
+  void processWebhookAsync(rawBody, requestId, resolvedTenant, requestIp);
 
   return NextResponse.json({ status: 'ok' }, { status: 200 });
 }

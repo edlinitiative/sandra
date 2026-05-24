@@ -52,9 +52,11 @@ const EXT_FOR_MIME: Record<string, string> = {
 export async function POST(request: Request) {
   const requestId = generateRequestId();
 
-  // Auth is optional for voice routes during migration
   const auth = await authenticateRequest(request);
-  const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+  const userId = auth.user.id;
 
   let formData: FormData;
   try {

@@ -17,6 +17,10 @@ import { getRequestIp, logWebhookEvent } from '@/lib/webhooks/logger';
 
 const log = createLogger('api:webhooks:email');
 
+// NOTE: Signature verification should be implemented to validate that incoming
+// webhook payloads originate from the email provider. For example, SendGrid
+// provides the X-Twilio-Email-Event-Webhook-Signature header for this purpose.
+
 // ─── POST — SendGrid Inbound Parse webhook ────────────────────────────────────
 
 export async function POST(request: Request) {

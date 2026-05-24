@@ -50,8 +50,11 @@ vi.mock('@/lib/i18n', async (importOriginal) => {
   return { ...actual, resolveLanguage: vi.fn().mockReturnValue('en') };
 });
 
-vi.mock('@/lib/auth', () => ({
-  getScopesForRole: vi.fn().mockReturnValue([]),
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'voice-test-user', role: 'admin', scopes: ['*'], tenantId: 'test' },
+  }),
 }));
 
 vi.mock('@/lib/tools/resilience', () => ({

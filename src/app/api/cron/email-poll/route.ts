@@ -16,6 +16,7 @@
  *   "* /5 * * * *"  →  every 5 minutes
  */
 
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
 import { getEmailAdapter } from '@/lib/channels/email';
@@ -39,10 +40,17 @@ const log = createLogger('cron:email-poll');
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+function timingSafeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function verifyCronAuth(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
   if (authHeader && env.CRON_SECRET) {
-    if (authHeader.replace(/^Bearer\s+/i, '') === env.CRON_SECRET) return true;
+    if (timingSafeCompare(authHeader.replace(/^Bearer\s+/i, ''), env.CRON_SECRET)) return true;
   }
   const apiKey = request.headers.get('x-api-key');
   if (apiKey && env.ADMIN_API_KEY && apiKey === env.ADMIN_API_KEY) return true;

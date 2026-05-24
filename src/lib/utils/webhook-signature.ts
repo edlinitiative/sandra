@@ -23,9 +23,9 @@ export function verifyMetaSignature(
   }
 
   if (!appSecret) {
-    // If no secret is configured, skip verification (development mode)
-    log.warn('No app secret configured — skipping webhook signature verification');
-    return true;
+    log.warn('No app secret configured — cannot verify webhook signature');
+    // Only allow in development. In production, reject unverified webhooks.
+    return process.env.NODE_ENV !== 'production';
   }
 
   const [algorithm, receivedHash] = signatureHeader.split('=');

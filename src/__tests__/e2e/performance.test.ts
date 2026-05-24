@@ -93,6 +93,13 @@ vi.mock('@/lib/tools', () => ({
   },
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'test', role: 'admin', scopes: ['*'], tenantId: 'test' },
+  }),
+}));
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Build a 1536-dim random unit vector */
@@ -131,7 +138,7 @@ describe('T128: Performance Baseline', () => {
     const { GET } = await import('../../app/api/health/route');
 
     const start = Date.now();
-    const response = await GET();
+    const response = await GET(new Request('http://localhost/api/health'));
     const elapsed = Date.now() - start;
 
     expect(response.status).toBe(200);

@@ -8,7 +8,7 @@ const envSchema = z.object({
   // Core
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-  APP_SECRET: z.string().min(8).default('change-me-to-a-random-secret'),
+  APP_SECRET: z.string().min(32).optional(),
 
   // Database
   DATABASE_URL: z.string().default('postgresql://sandra:sandra@localhost:5432/sandra?schema=public'),
@@ -115,12 +115,15 @@ const envSchema = z.object({
   BIRTHDAY_ADMIN_PHONE: z.string().optional(),       // WhatsApp number to notify, e.g. "50938001234"
 
   // Cron / scheduled jobs
-  CRON_SECRET: z.string().optional(),                // Vercel Cron secret — protects /api/cron/* routes
+  CRON_SECRET: z.string().min(16).default('dev-cron-secret-change-me-in-production'), // Vercel Cron secret — protects /api/cron/* routes
 
   // Multi-tenant — fallback tenant for single-tenant / dev setups
   DEFAULT_TENANT_ID: z.string().optional(),          // Replaces hardcoded EdLight tenant ID
 
   // ── Auth providers (beyond Google which uses AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET) ──
+  // JWT signing secret for API tokens (Bearer auth). Generate with: openssl rand -base64 32
+  JWT_SECRET: z.string().min(32).optional(),
+
   // Facebook OAuth
   AUTH_FACEBOOK_ID: z.string().optional(),
   AUTH_FACEBOOK_SECRET: z.string().optional(),

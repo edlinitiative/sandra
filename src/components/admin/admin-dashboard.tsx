@@ -5,10 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Input } from '@/components/ui/input';
 import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
-
-const ADMIN_KEY_STORAGE = 'sandra_admin_api_key';
 
 type AdminTab = 'system' | 'analytics' | 'actions' | 'gaps' | 'tools' | 'webhooks';
 
@@ -141,8 +138,6 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState<string | null>(null);
   const [indexResult, setIndexResult] = useState<string | null>(null);
-  const [adminKey, setAdminKey] = useState('');
-  const [adminKeyDraft, setAdminKeyDraft] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [dbUnavailable, setDbUnavailable] = useState(false);
 
@@ -188,43 +183,7 @@ export function AdminDashboard() {
   const [webhookHealth, setWebhookHealth] = useState<WebhookHealthData | null>(null);
   const [webhookLoading, setWebhookLoading] = useState(false);
   const [webhookError, setWebhookError] = useState<string | null>(null);
-
-  // Initial admin bootstrap should run once on mount; follow-up refreshes are explicit.
-  useEffect(() => {
-    let storedKey = '';
-
-    try {
-      storedKey = sessionStorage.getItem(ADMIN_KEY_STORAGE) ?? '';
-    } catch {
-      storedKey = '';
-    }
-
-    if (storedKey) {
-      setAdminKey(storedKey);
-      setAdminKeyDraft(storedKey);
-      void loadData(storedKey);
-      return;
-    }
-
-    void loadHealth();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load tab-specific data when switching tabs
-  useEffect(() => {
-    if (!adminKey) return;
-    if (activeTab === 'analytics') {
-      void loadAnalytics(analyticsFrom, analyticsTo, adminKey);
-    } else if (activeTab === 'actions') {
-      void loadActions(actionsFilter, adminKey);
-    } else if (activeTab === 'gaps') {
-      void loadGaps(gapsFilter, adminKey);
-    } else if (activeTab === 'tools') {
-      void loadDynamicTools(adminKey);
-    } else if (activeTab === 'webhooks') {
-      void loadWebhookHealth(adminKey);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, adminKey]);
+  const [notification, setNotification] = useState<string | null>(null);
 
   async function loadHealth() {
     try {
@@ -238,13 +197,12 @@ export function AdminDashboard() {
     }
   }
 
-  const loadAnalytics = useCallback(async (from: string, to: string, key: string) => {
-    if (!key) return;
+  const loadAnalytics = useCallback(async (from: string, to: string) => {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
     try {
       const res = await fetch(`/api/analytics?from=${from}&to=${to}T23:59:59`, {
-        headers: { 'x-api-key': key, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       });
       const json = await res.json() as { data?: AnalyticsSummary; error?: { message?: string } };
       if (!res.ok) {
@@ -259,14 +217,13 @@ export function AdminDashboard() {
     }
   }, []);
 
-  const loadActions = useCallback(async (filter: 'pending' | 'all', key: string) => {
-    if (!key) return;
+  const loadActions = useCallback(async (filter: 'pending' | 'all') => {
     setActionsLoading(true);
     setActionsError(null);
     try {
       const status = filter === 'pending' ? '?status=pending' : '';
       const res = await fetch(`/api/actions${status}`, {
-        headers: { 'x-api-key': key, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       });
       const json = await res.json() as { data?: { actions: ActionEntry[]; total: number }; error?: { message?: string } };
       if (!res.ok) {
@@ -287,11 +244,11 @@ export function AdminDashboard() {
     try {
       const res = await fetch(`/api/actions/${id}/approve`, {
         method: 'POST',
-        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reviewedBy: 'admin' }),
       });
       if (res.ok) {
-        await loadActions(actionsFilter, adminKey);
+        await loadActions(actionsFilter);
       }
     } finally {
       setActionProcessing(null);
@@ -303,26 +260,23 @@ export function AdminDashboard() {
     try {
       const res = await fetch(`/api/actions/${id}/reject`, {
         method: 'POST',
-        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reviewedBy: 'admin', reason: 'Rejected via admin UI' }),
       });
       if (res.ok) {
-        await loadActions(actionsFilter, adminKey);
+        await loadActions(actionsFilter);
       }
     } finally {
       setActionProcessing(null);
     }
   };
 
-  const loadGaps = useCallback(async (filter: 'unreviewed' | 'all', key: string) => {
-    if (!key) return;
+  const loadGaps = useCallback(async (filter: 'unreviewed' | 'all') => {
     setGapsLoading(true);
     setGapsError(null);
     try {
       const reviewed = filter === 'all' ? 'all' : 'false';
-      const res = await fetch(`/api/capability-gaps?reviewed=${reviewed}&limit=100`, {
-        headers: { 'x-api-key': key },
-      });
+      const res = await fetch(`/api/capability-gaps?reviewed=${reviewed}&limit=100`);
       const json = await res.json() as { data?: { gaps: CapabilityGapEntry[]; total: number }; error?: { message?: string } };
       if (!res.ok) {
         setGapsError(json.error?.message ?? 'Failed to load capability gaps');
@@ -337,14 +291,11 @@ export function AdminDashboard() {
     }
   }, []);
 
-  const loadDynamicTools = useCallback(async (key: string) => {
-    if (!key) return;
+  const loadDynamicTools = useCallback(async () => {
     setToolsLoading(true);
     setToolsError(null);
     try {
-      const res = await fetch('/api/dynamic-tools', {
-        headers: { 'x-api-key': key },
-      });
+      const res = await fetch('/api/dynamic-tools');
       const json = await res.json() as { data?: { tools: DynamicToolEntry[] }; error?: { message?: string } };
       if (!res.ok) {
         setToolsError(json.error?.message ?? 'Failed to load dynamic tools');
@@ -358,14 +309,11 @@ export function AdminDashboard() {
     }
   }, []);
 
-  const loadWebhookHealth = useCallback(async (key: string) => {
-    if (!key) return;
+  const loadWebhookHealth = useCallback(async () => {
     setWebhookLoading(true);
     setWebhookError(null);
     try {
-      const res = await fetch('/api/admin/webhooks/health', {
-        headers: { 'x-api-key': key },
-      });
+      const res = await fetch('/api/admin/webhooks/health');
       const json = await res.json() as WebhookHealthData | { error?: { message?: string } };
       if (!res.ok) {
         const errorJson = json as { error?: { message?: string } };
@@ -385,21 +333,21 @@ export function AdminDashboard() {
     try {
       const res = await fetch(`/api/capability-gaps/${gapId}/generate`, {
         method: 'POST',
-        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
       const json = await res.json() as { data?: { result?: { success?: boolean; data?: { toolName?: string; message?: string } } } };
       if (res.ok && json.data?.result?.success) {
         const toolName = json.data.result.data?.toolName;
-        alert(`✅ Tool '${toolName}' generated and registered!`);
-        await loadGaps(gapsFilter, adminKey);
-        await loadDynamicTools(adminKey);
+        setNotification(`Tool '${toolName}' generated and registered!`);
+        await loadGaps(gapsFilter);
+        await loadDynamicTools();
       } else {
         const msg = json.data?.result?.data?.message ?? 'Generation failed';
-        alert(`❌ ${msg}`);
+        setNotification(`Failed: ${msg}`);
       }
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : 'unknown'}`);
+      setNotification(`Error: ${err instanceof Error ? err.message : 'unknown'}`);
     } finally {
       setGapGenerating(null);
     }
@@ -410,11 +358,11 @@ export function AdminDashboard() {
     try {
       const res = await fetch(`/api/dynamic-tools/${tool.id}`, {
         method: 'PATCH',
-        headers: { 'x-api-key': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !tool.enabled }),
       });
       if (res.ok) {
-        await loadDynamicTools(adminKey);
+        await loadDynamicTools();
       }
     } finally {
       setToolProcessing(null);
@@ -422,27 +370,26 @@ export function AdminDashboard() {
   };
 
   const handleDeleteTool = async (tool: DynamicToolEntry) => {
+    setNotification(`Delete dynamic tool '${tool.name}'? This cannot be undone.`);
+    // Deletion requires explicit confirmation via UI - cancel if no further action
+    // For inline notifications we leave the confirm in place but use the notification state
     if (!confirm(`Delete dynamic tool '${tool.name}'? This cannot be undone.`)) return;
     setToolProcessing(tool.id);
     try {
       const res = await fetch(`/api/dynamic-tools/${tool.id}`, {
         method: 'DELETE',
-        headers: { 'x-api-key': adminKey },
       });
       if (res.ok) {
-        await loadDynamicTools(adminKey);
+        await loadDynamicTools();
       }
     } finally {
       setToolProcessing(null);
     }
   };
 
-  async function fetchAdminJson(path: string, init: RequestInit = {}, key = adminKey) {
+  async function fetchAdminJson(path: string, init: RequestInit = {}) {
     const headers = new Headers(init.headers);
     headers.set('Content-Type', 'application/json');
-    if (key) {
-      headers.set('x-api-key', key);
-    }
 
     const response = await fetch(path, {
       ...init,
@@ -470,29 +417,21 @@ export function AdminDashboard() {
     return json as { data?: unknown };
   }
 
-  async function loadRepos(key = adminKey) {
-    if (!key) {
-      setRepos([]);
-      return;
-    }
-
-    const reposRes = await fetchAdminJson('/api/repos', undefined, key);
+  async function loadRepos() {
+    const reposRes = await fetchAdminJson('/api/repos');
     const data = reposRes.data as { repos?: Repo[] } | undefined;
     setRepos(data?.repos ?? []);
   }
 
-  async function loadData(key = adminKey) {
+  async function loadData() {
     setLoading(true);
     setAuthError(null);
     setDbUnavailable(false);
     try {
-      await Promise.all([loadHealth(), loadRepos(key)]);
+      await Promise.all([loadHealth(), loadRepos()]);
     } catch (err) {
       setRepos([]);
       if (err instanceof Error && (err as Error & { isDbError?: boolean }).isDbError) {
-        // DB is down — key is still valid, just show a banner
-        setAdminKey(key);
-        try { sessionStorage.setItem(ADMIN_KEY_STORAGE, key); } catch { /* ignore */ }
         setDbUnavailable(true);
       } else {
         setAuthError(err instanceof Error ? err.message : 'Failed to load admin data');
@@ -501,59 +440,23 @@ export function AdminDashboard() {
     }
   }
 
-  async function saveAdminKey() {
-    if (!adminKeyDraft.trim()) {
-      setAuthError('Enter an admin API key to access repository controls.');
-      return;
-    }
+  useEffect(() => {
+    void loadData();
+  }, [loadData, loadHealth]);
 
-    setLoading(true);
-    setAuthError(null);
-    setDbUnavailable(false);
-
-    try {
-      const normalizedKey = adminKeyDraft.trim();
-      await loadRepos(normalizedKey);
-      setAdminKey(normalizedKey);
-      try {
-        sessionStorage.setItem(ADMIN_KEY_STORAGE, normalizedKey);
-      } catch {
-        // Ignore storage errors
-      }
-      await loadHealth();
-    } catch (err) {
-      if (err instanceof Error && (err as Error & { isDbError?: boolean }).isDbError) {
-        // DB is down but key may be valid — store it and show a banner
-        setAdminKey(adminKeyDraft.trim());
-        try { sessionStorage.setItem(ADMIN_KEY_STORAGE, adminKeyDraft.trim()); } catch { /* ignore */ }
-        setDbUnavailable(true);
-        await loadHealth();
-      } else {
-        setAdminKey('');
-        setRepos([]);
-        setAuthError(err instanceof Error ? err.message : 'Invalid admin API key');
-        try {
-          sessionStorage.removeItem(ADMIN_KEY_STORAGE);
-        } catch {
-          // Ignore storage errors
-        }
-      }
-      setLoading(false);
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      void loadAnalytics(analyticsFrom, analyticsTo);
+    } else if (activeTab === 'actions') {
+      void loadActions(actionsFilter);
+    } else if (activeTab === 'gaps') {
+      void loadGaps(gapsFilter);
+    } else if (activeTab === 'tools') {
+      void loadDynamicTools();
+    } else if (activeTab === 'webhooks') {
+      void loadWebhookHealth();
     }
-  }
-
-  function clearAdminKey() {
-    setAdminKey('');
-    setAdminKeyDraft('');
-    setRepos([]);
-    setAuthError(null);
-    setDbUnavailable(false);
-    try {
-      sessionStorage.removeItem(ADMIN_KEY_STORAGE);
-    } catch {
-      // Ignore storage errors
-    }
-  }
+  }, [activeTab, loadAnalytics, loadActions, loadGaps, loadDynamicTools, loadWebhookHealth, analyticsFrom, analyticsTo, actionsFilter, gapsFilter]);
 
   async function sendTestMessage() {
     if (!testMessage.trim()) return;
@@ -585,11 +488,6 @@ export function AdminDashboard() {
   }
 
   async function triggerIndex(owner?: string, name?: string) {
-    if (!adminKey) {
-      setAuthError('Enter an admin API key before indexing repositories.');
-      return;
-    }
-
     const key = owner && name ? `${owner}/${name}` : 'all';
     setIndexing(key);
     setIndexResult(null);
@@ -602,7 +500,6 @@ export function AdminDashboard() {
         method: 'POST',
         body: JSON.stringify(body),
         },
-        adminKey,
       );
 
       const payload = data.data as {
@@ -619,7 +516,7 @@ export function AdminDashboard() {
       setIndexResult(
         `Indexed ${summary?.completed ?? results.length}/${summary?.total ?? results.length} repo(s), ${totalChunks} chunks created${failureSuffix}.`,
       );
-      await loadData(adminKey);
+      await loadData();
     } catch (err) {
       setIndexResult(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
@@ -655,38 +552,6 @@ export function AdminDashboard() {
         <p className="mt-1 text-sm text-on-surface-variant">Manage repositories, indexing, channels, and runtime health.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin Access</CardTitle>
-          <CardDescription>
-            Enter the admin API key to unlock repository status and indexing controls.
-          </CardDescription>
-        </CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Input
-            type="password"
-            value={adminKeyDraft}
-            onChange={(e) => setAdminKeyDraft(e.target.value)}
-            placeholder="Enter ADMIN_API_KEY"
-            error={authError ?? undefined}
-          />
-          <Button onClick={saveAdminKey} className="sm:w-auto">
-            Save Key
-          </Button>
-          {adminKey && (
-            <Button variant="secondary" onClick={clearAdminKey} className="sm:w-auto">
-              Clear Key
-            </Button>
-          )}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
-          <Badge variant={adminKey ? 'success' : 'warning'}>
-            {adminKey ? 'Authenticated' : 'Read-only'}
-          </Badge>
-          {authError && <span>{authError}</span>}
-        </div>
-      </Card>
-
       {/* Database unavailable banner */}
       {dbUnavailable && (
         <div className="rounded-lg border border-amber-500/20 bg-amber-950/30 p-4">
@@ -700,6 +565,16 @@ export function AdminDashboard() {
                 database.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inline notification banner */}
+      {notification && (
+        <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm text-on-surface">{notification}</p>
+            <button type="button" onClick={() => setNotification(null)} className="shrink-0 text-on-surface-variant hover:text-on-surface">✕</button>
           </div>
         </div>
       )}
@@ -773,7 +648,7 @@ export function AdminDashboard() {
 
           {/* Index All Button */}
           <div className="flex items-center gap-4">
-            <Button onClick={() => triggerIndex()} isLoading={indexing === 'all'} disabled={!adminKey}>
+            <Button onClick={() => triggerIndex()} isLoading={indexing === 'all'}>
               Index All Repositories
             </Button>
             {indexResult && (
@@ -842,14 +717,7 @@ export function AdminDashboard() {
           {/* Repository List */}
           <div>
             <h2 className="mb-4 text-lg font-semibold text-white">Registered Repositories</h2>
-            {!adminKey ? (
-              <Card>
-                <p className="text-sm text-on-surface-variant">
-                  Repository status and indexing controls unlock after you enter a valid admin key.
-                </p>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
+            <div className="grid gap-4">
                 {repos.map((repo) => (
                   <Card key={`${repo.owner}/${repo.name}`} className="flex items-center justify-between">
                     <div className="flex-1">
@@ -878,7 +746,6 @@ export function AdminDashboard() {
                         size="sm"
                         onClick={() => triggerIndex(repo.owner, repo.name)}
                         isLoading={indexing === `${repo.owner}/${repo.name}`}
-                        disabled={!adminKey}
                       >
                         Index
                       </Button>
@@ -886,7 +753,6 @@ export function AdminDashboard() {
                   </Card>
                 ))}
               </div>
-            )}
           </div>
         </div>
       )}
@@ -894,10 +760,7 @@ export function AdminDashboard() {
       {/* ── ANALYTICS TAB ─────────────────────────────────── */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          {!adminKey ? (
-            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to view analytics.</p></Card>
-          ) : (
-            <>
+          <>
               {/* Date range controls */}
               <Card>
                 <CardHeader>
@@ -924,7 +787,7 @@ export function AdminDashboard() {
                     />
                   </label>
                   <Button
-                    onClick={() => void loadAnalytics(analyticsFrom, analyticsTo, adminKey)}
+                    onClick={() => void loadAnalytics(analyticsFrom, analyticsTo)}
                     isLoading={analyticsLoading}
                     size="sm"
                   >
@@ -1052,17 +915,13 @@ export function AdminDashboard() {
                 </>
               )}
             </>
-          )}
         </div>
       )}
 
       {/* ── ACTIONS TAB ───────────────────────────────────── */}
       {activeTab === 'actions' && (
         <div className="space-y-6">
-          {!adminKey ? (
-            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to manage action requests.</p></Card>
-          ) : (
-            <>
+          <>
               <Card>
                 <CardHeader>
                   <CardTitle>Action Requests</CardTitle>
@@ -1077,7 +936,7 @@ export function AdminDashboard() {
                         key={f}
                         onClick={() => {
                           setActionsFilter(f);
-                          void loadActions(f, adminKey);
+                          void loadActions(f);
                         }}
                         className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
                           actionsFilter === f ? 'bg-surface-container-highest text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -1090,7 +949,7 @@ export function AdminDashboard() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => void loadActions(actionsFilter, adminKey)}
+                    onClick={() => void loadActions(actionsFilter)}
                     isLoading={actionsLoading}
                   >
                     Refresh
@@ -1174,16 +1033,12 @@ export function AdminDashboard() {
                 ))}
               </div>
             </>
-          )}
         </div>
       )}
       {/* ── GAPS TAB ──────────────────────────────────────── */}
       {activeTab === 'gaps' && (
         <div className="space-y-6">
-          {!adminKey ? (
-            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to view capability gaps.</p></Card>
-          ) : (
-            <>
+          <>
               <Card>
                 <CardHeader>
                   <CardTitle>Capability Gaps</CardTitle>
@@ -1198,7 +1053,7 @@ export function AdminDashboard() {
                         key={f}
                         onClick={() => {
                           setGapsFilter(f);
-                          void loadGaps(f, adminKey);
+                          void loadGaps(f);
                         }}
                         className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
                           gapsFilter === f ? 'bg-surface-container-highest text-white' : 'text-on-surface-variant hover:text-on-surface'
@@ -1208,7 +1063,7 @@ export function AdminDashboard() {
                       </button>
                     ))}
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => void loadGaps(gapsFilter, adminKey)} isLoading={gapsLoading}>Refresh</Button>
+                  <Button variant="secondary" size="sm" onClick={() => void loadGaps(gapsFilter)} isLoading={gapsLoading}>Refresh</Button>
                   <span className="ml-auto text-sm text-outline">{gapsTotal} total</span>
                 </div>
               </Card>
@@ -1259,17 +1114,13 @@ export function AdminDashboard() {
                 ))}
               </div>
             </>
-          )}
         </div>
       )}
 
       {/* ── TOOLS TAB ─────────────────────────────────────── */}
       {activeTab === 'tools' && (
         <div className="space-y-6">
-          {!adminKey ? (
-            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to manage dynamic tools.</p></Card>
-          ) : (
-            <>
+          <>
               <Card>
                 <CardHeader>
                   <CardTitle>Dynamic Tools</CardTitle>
@@ -1278,7 +1129,7 @@ export function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <div className="flex items-center gap-3">
-                  <Button variant="secondary" size="sm" onClick={() => void loadDynamicTools(adminKey)} isLoading={toolsLoading}>Refresh</Button>
+                  <Button variant="secondary" size="sm" onClick={() => void loadDynamicTools()} isLoading={toolsLoading}>Refresh</Button>
                   <span className="ml-auto text-sm text-outline">{dynamicTools.length} tool{dynamicTools.length !== 1 ? 's' : ''}</span>
                 </div>
               </Card>
@@ -1350,17 +1201,13 @@ export function AdminDashboard() {
                 ))}
               </div>
             </>
-          )}
         </div>
       )}
 
       {/* ── WEBHOOKS TAB ─────────────────────────────────── */}
       {activeTab === 'webhooks' && (
         <div className="space-y-6">
-          {!adminKey ? (
-            <Card><p className="text-sm text-on-surface-variant">Enter an admin key to view channel webhook health.</p></Card>
-          ) : (
-            <>
+          <>
               <Card>
                 <CardHeader>
                   <CardTitle>Webhook Health</CardTitle>
@@ -1372,7 +1219,7 @@ export function AdminDashboard() {
                   <Badge variant={webhookHealth?.status === 'ok' ? 'success' : 'warning'}>
                     {webhookHealth?.status === 'ok' ? 'Operational' : 'Needs attention'}
                   </Badge>
-                  <Button variant="secondary" size="sm" onClick={() => void loadWebhookHealth(adminKey)} isLoading={webhookLoading}>
+                  <Button variant="secondary" size="sm" onClick={() => void loadWebhookHealth()} isLoading={webhookLoading}>
                     Refresh
                   </Button>
                   {webhookHealth?.checkedAt && (
@@ -1477,7 +1324,6 @@ export function AdminDashboard() {
                 </div>
               )}
             </>
-          )}
         </div>
       )}
     </div>

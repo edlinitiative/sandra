@@ -55,3 +55,20 @@ export function checkSlidingWindowRateLimit({
 export function clearSlidingWindowRateLimits() {
   slidingWindows.clear();
 }
+
+const CLEANUP_INTERVAL_MS = 5 * 60_000;
+const MAX_WINDOW_MS = 15 * 60_000;
+
+if (typeof setInterval !== 'undefined' && process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, timestamps] of slidingWindows.entries()) {
+      const active = pruneTimestamps(timestamps, now, MAX_WINDOW_MS);
+      if (active.length === 0) {
+        slidingWindows.delete(key);
+      } else if (active.length !== timestamps.length) {
+        slidingWindows.set(key, active);
+      }
+    }
+  }, CLEANUP_INTERVAL_MS).unref();
+}

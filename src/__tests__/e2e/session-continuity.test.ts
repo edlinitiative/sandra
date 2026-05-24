@@ -82,6 +82,7 @@ vi.mock('@/lib/tools', () => ({
   toolRegistry: {
     getToolDefinitions: vi.fn().mockReturnValue([]),
     getToolNames: vi.fn().mockReturnValue([]),
+    getAll: vi.fn().mockReturnValue([]),
   },
   executeTool: vi.fn(),
 }));

@@ -14,6 +14,7 @@
  *   → Runs at 10:00 UTC every day (≈ 5 AM Haiti, 6 AM ET)
  */
 
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
 import { scanBirthdays, sendWhatsAppAlert } from '@/lib/tools/check-birthdays';
@@ -26,15 +27,20 @@ const log = createLogger('cron:daily-birthdays');
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
+function timingSafeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function verifyCronAuth(request: Request): boolean {
-  // 1. Vercel Cron header (Authorization: Bearer <CRON_SECRET>)
   const authHeader = request.headers.get('authorization');
   if (authHeader && env.CRON_SECRET) {
     const token = authHeader.replace(/^Bearer\s+/i, '');
-    if (token === env.CRON_SECRET) return true;
+    if (timingSafeCompare(token, env.CRON_SECRET)) return true;
   }
 
-  // 2. Admin API key (x-api-key: <ADMIN_API_KEY>)
   const apiKey = request.headers.get('x-api-key');
   if (apiKey && env.ADMIN_API_KEY && apiKey === env.ADMIN_API_KEY) return true;
 

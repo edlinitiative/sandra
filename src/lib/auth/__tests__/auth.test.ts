@@ -2,6 +2,13 @@
  * Tests for the auth module: token verifier, permissions, and middleware.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const mockEnv = { JWT_SECRET: undefined as string | undefined, NODE_ENV: 'test' };
+
+vi.mock('@/lib/config/env', () => ({
+  get env() { return mockEnv; },
+}));
+
 import { verifyToken, createToken } from '../token-verifier';
 import {
   getScopesForRole,
@@ -29,18 +36,15 @@ describe('verifyToken', () => {
   });
 
   it('returns null when JWT_SECRET is not set', () => {
-    const original = process.env.JWT_SECRET;
-    delete process.env.JWT_SECRET;
+    mockEnv.JWT_SECRET = undefined;
 
     const payload = verifyToken('some.jwt.token');
     expect(payload).toBeNull();
-
-    if (original) process.env.JWT_SECRET = original;
   });
 
   it('verifies a valid HS256 JWT', () => {
     const secret = 'test-secret-key-12345';
-    process.env.JWT_SECRET = secret;
+    mockEnv.JWT_SECRET = secret;
 
     const token = createToken(
       { sub: 'ext-user-1', role: 'student', email: 'test@edlight.org' },
@@ -53,23 +57,23 @@ describe('verifyToken', () => {
     expect(payload!.role).toBe('student');
     expect(payload!.email).toBe('test@edlight.org');
 
-    delete process.env.JWT_SECRET;
+    mockEnv.JWT_SECRET = undefined;
   });
 
   it('rejects a JWT with wrong signature', () => {
     const secret = 'test-secret-key-12345';
-    process.env.JWT_SECRET = secret;
+    mockEnv.JWT_SECRET = secret;
 
     const token = createToken({ sub: 'user-1' }, 'wrong-secret');
     const payload = verifyToken(token);
     expect(payload).toBeNull();
 
-    delete process.env.JWT_SECRET;
+    mockEnv.JWT_SECRET = undefined;
   });
 
   it('rejects an expired JWT', () => {
     const secret = 'test-secret-key-12345';
-    process.env.JWT_SECRET = secret;
+    mockEnv.JWT_SECRET = secret;
 
     const token = createToken(
       { sub: 'user-1', exp: Math.floor(Date.now() / 1000) - 3600 },
@@ -79,7 +83,7 @@ describe('verifyToken', () => {
     const payload = verifyToken(token);
     expect(payload).toBeNull();
 
-    delete process.env.JWT_SECRET;
+    mockEnv.JWT_SECRET = undefined;
   });
 });
 
@@ -90,11 +94,11 @@ describe('createToken', () => {
 
     expect(token.split('.')).toHaveLength(3);
 
-    process.env.JWT_SECRET = secret;
+    mockEnv.JWT_SECRET = secret;
     const payload = verifyToken(token);
     expect(payload!.sub).toBe('user-1');
     expect(payload!.role).toBe('admin');
-    delete process.env.JWT_SECRET;
+    mockEnv.JWT_SECRET = undefined;
   });
 });
 

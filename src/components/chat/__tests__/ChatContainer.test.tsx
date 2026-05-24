@@ -39,6 +39,7 @@ vi.mock('@/hooks/useSession', () => ({
 vi.mock('@/hooks/useUserIdentity', () => ({
   useUserIdentity: () => ({
     userId: 'web:test-user-123',
+    isResolving: false,
   }),
 }));
 

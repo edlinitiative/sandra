@@ -48,21 +48,36 @@ export interface VoiceConversationHandle {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const REALTIME_MODEL = 'gpt-4o-realtime-preview';
 
-const VOICE_INSTRUCTIONS = `You are Sandra, the friendly voice assistant for EdLight, an organization making education free and accessible in Haiti.
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function langHint(language: string | undefined): string | undefined {
+  if (!language) return undefined;
+  const base = language.toLowerCase().split('-')[0];
+  return base && ['en', 'fr', 'ht'].includes(base) ? base : undefined;
+}
+
+const VOICE_INSTRUCTIONS_MAP: Record<string, string> = {
+  en: `You are Sandra, the friendly voice assistant for EdLight, an organization making education free and accessible in Haiti.
 
 EdLight has five programs: ESLP (funded 2-week summer leadership for high schoolers), Nexus (international exchange residencies for university students), Academy (free bilingual video lessons in Maths, Physics, Chemistry, Economics), Code (free coding tracks: SQL, Python, HTML, CSS, JavaScript), and Labs (digital products for mission-led organizations). EdLight News curates external scholarship listings — EdLight does NOT offer its own scholarships. Website: edlight.org.
 
 This is a voice conversation. Be warm and conversational. Keep answers to 1-3 sentences unless the user asks for more detail. Never read bullet lists aloud — summarize naturally instead.
 
-ENDING THE CONVERSATION: When the user says goodbye, bye, thanks that's all, I'm done, or anything that signals they want to stop — give a warm closing reply and end it with exactly the phrase "Goodbye for now!". If someone asks you about anything violent, sexually explicit, hateful, or otherwise inappropriate, politely decline and end with "Goodbye for now!". The system will close the session automatically when you say that phrase.`;
+ENDING THE CONVERSATION: When the user says goodbye, bye, thanks that's all, I'm done, or anything that signals they want to stop — give a warm closing reply and end it with exactly the phrase "Goodbye for now!". If someone asks you about anything violent, sexually explicit, hateful, or otherwise inappropriate, politely decline and end with "Goodbye for now!". The system will close the session automatically when you say that phrase.`,
+  ht: `Ou se Sandra, asistan vokal zanmitay EdLight, yon òganizasyon k ap fè edikasyon gratis epi aksesib ann Ayiti.
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function langHint(language: string | undefined): string | undefined {
-  if (!language) return undefined;
-  const base = language.toLowerCase().split('-')[0];
-  const MAP: Record<string, string> = { ht: 'fr' };
-  return MAP[base ?? ''] ?? base ?? undefined;
-}
+EdLight gen senk pwogram: ESLP (yon kan ete lidèchip sibvansyone 2 semèn pou elèv lekòl segondè), Nexus (rezidans echanj entènasyonal pou etidyan inivèsite), Academy (leson videyo bileng gratis nan Matematik, Fizik, Chimi, Ekonomi), Code (kou pwogramasyon gratis: SQL, Python, HTML, CSS, JavaScript), ak Labs (pwodwi dijital pou òganizasyon ki gen misyon). EdLight News pibliye lis bous detid ekstèn — EdLight PA ofri pwòp bous detid li. Sitwèb: edlight.org.
+
+Sa a se yon konvèsasyon vokal. Rete cho epi pale natirèlman. Kenbe repons ou yo nan 1-3 fraz sof si itilizatè a mande plis detay. Pa janm li lis bal deyò awotvwa — rezime natirèlman pito.
+
+FIN KONVÈSASYON AN: Lè itilizatè a di orevwa, bye, mèsi se tout, oswa nenpòt bagay ki siyale yo vle kanpe — bay yon repons cho pou fèmen epi fini ak fraz egzak la "Goodbye for now!". Si yon moun mande w anyen vyolan, seksyèlman eksplisit, rayisab, oswa otreman apwopriye, refize avèk politès epi fini ak "Goodbye for now!". Sistèm nan ap fèmen sesyon an otomatikman lè w di fraz sa a.`,
+  fr: `Vous êtes Sandra, l'assistant vocal convivial d'EdLight, une organisation qui rend l'éducation gratuite et accessible en Haïti.
+
+EdLight a cinq programmes : ESLP (un camp d'été de leadership subventionné de 2 semaines pour les lycéens), Nexus (résidences d'échange international pour étudiants universitaires), Academy (leçons vidéo bilingues gratuites en Maths, Physique, Chimie, Économie), Code (parcours de programmation gratuits : SQL, Python, HTML, CSS, JavaScript) et Labs (produits numériques pour les organisations à mission). EdLight News publie des listes de bourses externes — EdLight n'offre PAS ses propres bourses. Site web : edlight.org.
+
+Ceci est une conversation vocale. Soyez chaleureux et conversationnel. Gardez les réponses à 1-3 phrases, sauf si l'utilisateur demande plus de détails. Ne lisez jamais de listes à puces à voix haute — résumez plutôt naturellement.
+
+FIN DE LA CONVERSATION : Lorsque l'utilisateur dit au revoir, bye, merci c'est tout, j'ai fini, ou tout ce qui signale qu'il veut arrêter — donnez une réponse chaleureuse de clôture et terminez exactement par la phrase "Goodbye for now!". Si quelqu'un vous pose des questions violentes, sexuellement explicites, haineuses ou autrement inappropriées, refusez poliment et terminez par "Goodbye for now!". Le système fermera automatiquement la session lorsque vous prononcerez cette phrase.`,
+};
 
 const FAREWELL_RE = /\b(bye|goodbye|good\s*bye|see\s+you|au\s*revoir|end\s+(the\s+)?(call|conversation|chat|session)|hang\s+up|i[''']m\s+(done|good|all\s+set)|that[''']?s?\s+all|no\s+more\s+questions|stop\s+(talking|the\s+(call|chat)))\b/i;
 const INAPPROPRIATE_RE = /\b(porn|sex(ual)?|naked|nude|kill\s+(you|someone|people)|murder|make\s+a\s+bomb|how\s+to\s+(hack|make\s+(drugs|weapons?))|racist|slur)\b/i;
@@ -320,11 +335,12 @@ export const VoiceConversation = forwardRef<VoiceConversationHandle, VoiceConver
 
       dc.onopen = () => {
         const hint = langHint(language);
+        const instructions = VOICE_INSTRUCTIONS_MAP[language?.toLowerCase() ?? ''] ?? VOICE_INSTRUCTIONS_MAP.en;
         sendEvent({
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
-            instructions: VOICE_INSTRUCTIONS,
+            instructions,
             voice: 'alloy',
             input_audio_transcription: {
               model: 'gpt-4o-transcribe',

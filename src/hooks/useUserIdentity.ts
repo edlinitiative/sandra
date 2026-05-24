@@ -10,13 +10,13 @@ function createAnonymousUserId(): string {
   return `${USER_ID_PREFIX}${crypto.randomUUID()}`;
 }
 
-export function useUserIdentity(): { userId: string | null } {
+export function useUserIdentity(): { userId: string | null; isResolving: boolean } {
   const { data: session, status } = useSession();
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
 
   // Generate / restore anonymous ID for unauthenticated users
   useEffect(() => {
-    if (status === 'authenticated') return;
+    if (status !== 'unauthenticated') return;
     try {
       const stored = localStorage.getItem(USER_ID_KEY);
       if (stored) {
@@ -33,8 +33,13 @@ export function useUserIdentity(): { userId: string | null } {
 
   // When authenticated, use the Sandra user ID from the session
   if (status === 'authenticated') {
-    return { userId: session?.user?.id ?? null };
+    return { userId: session?.user?.id ?? null, isResolving: false };
   }
 
-  return { userId: anonymousId };
+  // Session is still loading — wait before resolving identity
+  if (status === 'loading') {
+    return { userId: null, isResolving: true };
+  }
+
+  return { userId: anonymousId, isResolving: anonymousId === null };
 }

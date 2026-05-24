@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   }
 
   if (session.user.role !== 'admin') {
-    redirect('/?error=unauthorized');
+    redirect('/login?error=AccessDenied');
   }
 
   return (

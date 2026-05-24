@@ -36,9 +36,11 @@ export function ChatContainer() {
   const [activeToolCall, setActiveToolCall] = useState<string | null>(null);
   const streamBufferRef = useRef('');
   const { sessionId: storedSessionId, setSessionId, clearSession } = useSession();
-  const { userId } = useUserIdentity();
+  const { userId, isResolving } = useUserIdentity();
   const fallbackIdRef = useRef(crypto.randomUUID());
   const sessionId = storedSessionId ?? fallbackIdRef.current;
+  const isResolvingRef = useRef(isResolving);
+  isResolvingRef.current = isResolving;
   const [language, setLanguageState] = useState<Language>('en');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -178,6 +180,8 @@ export function ChatContainer() {
   // ── Send message (streaming) ──────────────────────────────────────────────
   const handleSend = useCallback(
     async (content: string) => {
+      // Wait until user identity is resolved before sending
+      if (isResolvingRef.current) return;
       // Ref-based guard: survives between React renders, prevents rapid double-send
       if (sendingRef.current) return;
       sendingRef.current = true;
@@ -267,9 +271,7 @@ export function ChatContainer() {
         ]);
       } finally {
         sendingRef.current = false;
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     },
     [setSessionId],

@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getVectorStore } from '@/lib/knowledge';
 import { APP_NAME, APP_VERSION } from '@/lib/config';
+import { env } from '@/lib/config';
 import { toolRegistry } from '@/lib/tools';
+import { authenticateRequest } from '@/lib/auth/middleware';
 
 const startedAt = Date.now();
 
@@ -13,7 +15,15 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([promise, timeout]);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await authenticateRequest(request);
+  const apiKey = request.headers.get('x-api-key');
+  const isAuthorized = auth.authenticated || (apiKey && env.ADMIN_API_KEY && apiKey === env.ADMIN_API_KEY);
+
+  if (!isAuthorized) {
+    return NextResponse.json({ status: 'ok' });
+  }
+
   const timestamp = new Date().toISOString();
   const checks: Record<string, string> = {};
   let totalRepos: number | null = null;

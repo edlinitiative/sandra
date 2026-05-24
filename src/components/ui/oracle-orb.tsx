@@ -82,8 +82,10 @@ export function OracleOrb({ size = 200, active = false, className }: OracleOrbPr
 
     let t = 0;
     let raf: number;
+    let animating = true;
 
     const draw = () => {
+      if (!animating) return;
       const isActive = activeRef.current;
       const speedMul = isActive ? 2.5 : 1;
       const glowIntensity = isActive ? 0.45 : 0.2;
@@ -210,7 +212,24 @@ export function OracleOrb({ size = 200, active = false, className }: OracleOrbPr
 
     raf = requestAnimationFrame(draw);
 
-    return () => cancelAnimationFrame(raf);
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          animating = true;
+          raf = requestAnimationFrame(draw);
+        } else {
+          animating = false;
+          cancelAnimationFrame(raf);
+        }
+      },
+      { threshold: 0 },
+    );
+    if (canvasRef.current) io.observe(canvasRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+    };
   }, [size]);
 
   return (

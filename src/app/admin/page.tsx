@@ -10,7 +10,7 @@ export default async function AdminPage() {
   }
 
   if (session.user.role !== 'admin') {
-    redirect('/?error=unauthorized');
+    redirect('/login?error=AccessDenied');
   }
 
   return <AdminDashboard />;

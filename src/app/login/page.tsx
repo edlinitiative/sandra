@@ -61,10 +61,13 @@ function LoginForm() {
   const [method, setMethod] = useState<AuthMethod>('email');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [socialBusy, setSocialBusy] = useState(false);
 
   // ── Email OTP state ──
   const [emailStep, setEmailStep] = useState<'input' | 'verify'>('input');
   const [email, setEmail] = useState('');
+  const emailRef = useRef(email);
+  useEffect(() => { emailRef.current = email; }, [email]);
   const [emailOtp, setEmailOtp] = useState('');
   const [emailCooldown, setEmailCooldown] = useState(0);
 
@@ -127,7 +130,7 @@ function LoginForm() {
       const res = await fetch('/api/auth/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: email.trim() }),
+        body: JSON.stringify({ identifier: emailRef.current.trim() }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Failed to send code'); return; }
@@ -135,7 +138,7 @@ function LoginForm() {
       startCooldown();
     } catch { setError('Network error. Please try again.'); }
     finally { setBusy(false); }
-  }, [email, startCooldown]);
+  }, [startCooldown]);
 
   // ── Email: verify OTP ──
   const handleEmailVerify = useCallback(async (e: FormEvent) => {
@@ -149,7 +152,6 @@ function LoginForm() {
         callbackUrl,
         redirect: true,
       });
-      setError('Invalid or expired code. Please try again.');
     } catch { setError('Verification failed.'); }
     finally { setBusy(false); }
   }, [email, emailOtp, callbackUrl]);
@@ -210,8 +212,6 @@ function LoginForm() {
         callbackUrl,
         redirect: true,
       });
-
-      setError('Verification failed. Please try again.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid code';
       if (msg.includes('invalid-verification-code')) {
@@ -287,6 +287,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              aria-label="Email address"
               className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
               autoComplete="email"
               autoFocus
@@ -311,6 +312,7 @@ function LoginForm() {
               value={emailOtp}
               onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
+              aria-label="Verification code"
               className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-on-surface placeholder:text-on-surface-variant/20 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
               autoComplete="one-time-code"
               autoFocus
@@ -322,7 +324,7 @@ function LoginForm() {
               <button type="button" onClick={() => { setEmailStep('input'); setEmailOtp(''); setError(null); }} className="text-on-surface-variant/50 transition-colors hover:text-primary">
                 ← Change email
               </button>
-              <button type="button" onClick={(e) => handleEmailSend(e)} disabled={emailCooldown > 0} className="text-on-surface-variant/50 transition-colors hover:text-primary disabled:opacity-30">
+              <button type="button" onClick={() => { handleEmailSend({ preventDefault: () => {} } as FormEvent<HTMLFormElement>); }} disabled={emailCooldown > 0} className="text-on-surface-variant/50 transition-colors hover:text-primary disabled:opacity-30">
                 {emailCooldown > 0 ? `Resend in ${emailCooldown}s` : 'Resend code'}
               </button>
             </div>
@@ -338,6 +340,7 @@ function LoginForm() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 234 567 8900"
+              aria-label="Phone number"
               className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
               autoComplete="tel"
               autoFocus
@@ -362,6 +365,7 @@ function LoginForm() {
               value={phoneCode}
               onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
+              aria-label="Phone verification code"
               className="w-full rounded-xl border border-outline-variant/15 bg-surface-container-lowest/60 px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-on-surface placeholder:text-on-surface-variant/20 outline-none backdrop-blur-sm transition-colors focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
               autoComplete="one-time-code"
               autoFocus
@@ -382,7 +386,7 @@ function LoginForm() {
 
         {/* Error display */}
         {error && (
-          <p className="mt-3 text-center text-xs font-medium text-red-400/90">{error}</p>
+          <p role="alert" className="mt-3 text-center text-xs font-medium text-red-400/90">{error}</p>
         )}
 
         {/* ── Divider ─────────────────────────────────── */}
@@ -396,14 +400,24 @@ function LoginForm() {
 
         {/* ── Social buttons ──────────────────────────── */}
         <div className="flex w-full flex-col gap-2.5">
-          <button onClick={() => signIn('google', { callbackUrl })} className={socialBtnClass}>
-            <GoogleIcon />
+          <button
+            onClick={() => { setSocialBusy(true); signIn('google', { callbackUrl }); }}
+            disabled={socialBusy}
+            className={socialBtnClass}
+          >
+            {socialBusy ? <Spinner /> : <GoogleIcon />}
             Google
           </button>
-          <button onClick={() => signIn('facebook', { callbackUrl })} className={socialBtnClass}>
-            <FacebookIcon />
-            Facebook
-          </button>
+          {process.env.NEXT_PUBLIC_FACEBOOK_ENABLED === 'true' && (
+            <button
+              onClick={() => { setSocialBusy(true); signIn('facebook', { callbackUrl }); }}
+              disabled={socialBusy}
+              className={socialBtnClass}
+            >
+              {socialBusy ? <Spinner /> : <FacebookIcon />}
+              Facebook
+            </button>
+          )}
         </div>
 
         <p className="mt-8 max-w-xs text-center text-[0.65rem] leading-relaxed text-outline/40">

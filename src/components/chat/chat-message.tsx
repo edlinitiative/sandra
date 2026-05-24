@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { OracleOrb } from '@/components/ui/oracle-orb';
 
 interface ChatMessageProps {
@@ -160,7 +160,7 @@ function inlineMarkdown(text: string): React.ReactNode {
   return parts.length === 1 ? parts[0] : parts;
 }
 
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
   role,
   content,
   timestamp,
@@ -200,15 +200,7 @@ export function ChatMessage({
           </div>
 
           <div className="pl-6 text-[15px] leading-[1.75] text-on-surface sm:pl-8">
-            {isLoading ? (
-              <div className="flex items-center gap-1.5 py-2">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '0ms' }} />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '150ms' }} />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-outline" style={{ animationDelay: '300ms' }} />
-              </div>
-            ) : (
-              <div className="space-y-1">{renderMarkdown(content)}</div>
-            )}
+            <div className="space-y-1">{renderMarkdown(content)}</div>
           </div>
 
           {/* Feedback — tiny, only visible on hover */}
@@ -271,5 +263,10 @@ export function ChatMessage({
       )}
     </div>
   );
-}
+}, (prev, next) => {
+  return prev.content === next.content
+    && prev.role === next.role
+    && prev.followUps === next.followUps
+    && prev.isLoading === next.isLoading;
+});
 

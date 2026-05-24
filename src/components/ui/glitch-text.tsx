@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
 
@@ -13,14 +13,17 @@ export function GlitchText({ text, className }: GlitchTextProps) {
   const [display, setDisplay] = useState(text);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const iterRef = useRef(0);
+  const textRef = useRef(text);
+  textRef.current = text;
 
-  const scramble = () => {
+  const scramble = useCallback(() => {
+    const currentText = textRef.current;
     if (timerRef.current) clearInterval(timerRef.current);
     iterRef.current = 0;
     timerRef.current = setInterval(() => {
       iterRef.current += 0.4;
       setDisplay(
-        text
+        currentText
           .split('')
           .map((ch, i) => {
             if (ch === ' ') return ' ';
@@ -29,12 +32,12 @@ export function GlitchText({ text, className }: GlitchTextProps) {
           })
           .join(''),
       );
-      if (iterRef.current >= text.length) {
+      if (iterRef.current >= currentText.length) {
         clearInterval(timerRef.current!);
-        setDisplay(text);
+        setDisplay(currentText);
       }
     }, 25);
-  };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(scramble, 280);
@@ -42,8 +45,7 @@ export function GlitchText({ text, className }: GlitchTextProps) {
       clearTimeout(t);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
+  }, [text, scramble]);
 
   return (
     // tabular-nums keeps layout stable while chars change width

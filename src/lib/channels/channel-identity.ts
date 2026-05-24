@@ -98,31 +98,34 @@ export async function resolveChannelIdentity(
     displayName,
   });
 
-  // Create the user first
-  const user = await db.user.create({
-    data: {
-      name: displayName ?? null,
-      language,
-      channel,
-      externalId: `${channel}:${externalId}`,
-    },
-  });
-
-  // Create the channel identity record
   const identityId = crypto.randomUUID();
-  await db.$executeRaw`
-    INSERT INTO "ChannelIdentity" (id, "userId", channel, "externalId", "displayName", verified, metadata, "updatedAt")
-    VALUES (
-      ${identityId},
-      ${user.id},
-      ${channel},
-      ${externalId},
-      ${displayName ?? null},
-      false,
-      ${metadata ? JSON.stringify(metadata) : null}::jsonb,
-      NOW()
-    )
-  `;
+
+  const user = await db.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        name: displayName ?? null,
+        language,
+        channel,
+        externalId: `${channel}:${externalId}`,
+      },
+    });
+
+    await tx.$executeRaw`
+      INSERT INTO "ChannelIdentity" (id, "userId", channel, "externalId", "displayName", verified, metadata, "updatedAt")
+      VALUES (
+        ${identityId},
+        ${created.id},
+        ${channel},
+        ${externalId},
+        ${displayName ?? null},
+        false,
+        ${metadata ? JSON.stringify(metadata) : null}::jsonb,
+        NOW()
+      )
+    `;
+
+    return created;
+  });
 
   log.info('Created new channel user', {
     userId: user.id,

@@ -34,8 +34,10 @@ export function AmbientParticles({ className }: { className?: string }) {
     }));
 
     let raf: number;
+    let animating = true;
 
     const draw = () => {
+      if (!animating) return;
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
@@ -86,9 +88,24 @@ export function AmbientParticles({ className }: { className?: string }) {
     });
     ro.observe(canvas);
 
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          animating = true;
+          raf = requestAnimationFrame(draw);
+        } else {
+          animating = false;
+          cancelAnimationFrame(raf);
+        }
+      },
+      { threshold: 0 },
+    );
+    if (canvasRef.current) io.observe(canvasRef.current);
+
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
     };
   }, []);
 

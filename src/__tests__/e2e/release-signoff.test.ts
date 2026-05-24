@@ -119,6 +119,13 @@ vi.mock('@/lib/config', () => ({
   APP_VERSION: '1.0.0',
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'test', role: 'admin', scopes: ['*'], tenantId: 'test' },
+  }),
+}));
+
 function makeJsonRequest(url: string, body: unknown, extraHeaders?: Record<string, string>): Request {
   return new Request(`http://localhost${url}`, {
     method: 'POST',
@@ -414,7 +421,7 @@ describe('Sandra V2 release-signoff contracts', () => {
 
   it('GET /api/health returns the stable operator summary contract', async () => {
     const { GET } = await import('../../app/api/health/route');
-    const response = await GET();
+    const response = await GET(new Request('http://localhost/api/health'));
     const body = await response.json();
 
     expect(response.status).toBe(200);

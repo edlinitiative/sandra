@@ -18,48 +18,51 @@ function getUrl(input: RequestInfo | URL): string {
 
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
 
+const defaultHealth = {
+  name: 'Sandra',
+  version: '1.0.0',
+  status: 'ok',
+  timestamp: '2026-03-17T00:00:00.000Z',
+  checks: { database: 'ok', vectorStore: 'ok' },
+  summary: {
+    repos: { total: 4, active: 4, indexed: 2, indexing: 1, error: 0 },
+    tools: { count: 5, registered: ['searchKnowledgeBase'] },
+    knowledge: { indexedSources: 4, indexedDocuments: 24, vectorStoreChunks: 120 },
+  },
+};
+
+const defaultRepos = {
+  data: {
+    repos: [
+      {
+        owner: 'edlinitiative',
+        name: 'code',
+        displayName: 'EdLight Code',
+        description: 'Coding courses',
+        url: 'https://github.com/edlinitiative/code',
+        branch: 'main',
+        docsPath: 'docs',
+        isActive: true,
+        syncStatus: 'indexed',
+        lastIndexedAt: '2026-03-17T00:00:00.000Z',
+        indexedDocumentCount: 12,
+      },
+    ],
+  },
+};
+
 describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
     fetchMock.mockImplementation(async (input, init) => {
       const url = getUrl(input);
 
       if (url === '/api/health') {
-        return jsonResponse({
-          name: 'Sandra',
-          version: '1.0.0',
-          status: 'ok',
-          timestamp: '2026-03-17T00:00:00.000Z',
-          checks: { database: 'ok', vectorStore: 'ok' },
-          summary: {
-            repos: { total: 4, active: 4, indexed: 2, indexing: 1, error: 0 },
-            tools: { count: 5, registered: ['searchKnowledgeBase'] },
-            knowledge: { indexedSources: 4, indexedDocuments: 24, vectorStoreChunks: 120 },
-          },
-        });
+        return jsonResponse(defaultHealth);
       }
 
       if (url === '/api/repos') {
-        return jsonResponse({
-          data: {
-            repos: [
-              {
-                owner: 'edlinitiative',
-                name: 'code',
-                displayName: 'EdLight Code',
-                description: 'Coding courses',
-                url: 'https://github.com/edlinitiative/code',
-                branch: 'main',
-                docsPath: 'docs',
-                isActive: true,
-                syncStatus: 'indexed',
-                lastIndexedAt: '2026-03-17T00:00:00.000Z',
-                indexedDocumentCount: 12,
-              },
-            ],
-          },
-        });
+        return jsonResponse(defaultRepos);
       }
 
       if (url === '/api/index') {
@@ -81,53 +84,41 @@ describe('AdminDashboard', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows read-only state before an admin key is provided', async () => {
+  it('renders admin dashboard title', async () => {
     const { AdminDashboard } = await import('../admin-dashboard');
     render(<AdminDashboard />);
 
-    expect(await screen.findByText('Read-only')).toBeInTheDocument();
-    expect(
-      screen.getByText('Repository status and indexing controls unlock after you enter a valid admin key.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Sandra Admin')).toBeInTheDocument();
   });
 
-  it('saves an admin key and loads repository data with x-api-key', async () => {
+  it('loads and displays health data on mount', async () => {
     const { AdminDashboard } = await import('../admin-dashboard');
     render(<AdminDashboard />);
 
-    const input = await screen.findByPlaceholderText('Enter ADMIN_API_KEY');
-    fireEvent.change(input, { target: { value: 'super-secret-key' } });
-    fireEvent.click(screen.getByText('Save Key'));
+    expect(await screen.findByText('Sandra v1.0.0')).toBeInTheDocument();
+    expect(screen.getByText('24')).toBeInTheDocument();
+    expect(screen.getByText('database: ok')).toBeInTheDocument();
+    expect(screen.getByText('vectorStore: ok')).toBeInTheDocument();
+  });
 
-    expect(await screen.findByText('Authenticated')).toBeInTheDocument();
+  it('loads and displays repository data', async () => {
+    const { AdminDashboard } = await import('../admin-dashboard');
+    render(<AdminDashboard />);
+
     expect(await screen.findByText('EdLight Code')).toBeInTheDocument();
-
-    const repoCall = fetchMock.mock.calls.find(([request]) => getUrl(request) === '/api/repos');
-    expect(repoCall).toBeDefined();
-    expect(new Headers(repoCall?.[1]?.headers).get('x-api-key')).toBe('super-secret-key');
+    expect(screen.getByText('Registered Repositories')).toBeInTheDocument();
   });
 
-  it('renders an explicit auth error when the admin key is invalid', async () => {
+  it('does not show repo data when repos endpoint returns 401', async () => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = getUrl(input);
 
       if (url === '/api/health') {
-        return jsonResponse({
-          name: 'Sandra',
-          version: '1.0.0',
-          status: 'ok',
-          timestamp: '2026-03-17T00:00:00.000Z',
-          checks: { database: 'ok' },
-          summary: {
-            repos: { total: 4, active: 4, indexed: 2, indexing: 1, error: 0 },
-            tools: { count: 5, registered: [] },
-            knowledge: { indexedSources: 4, indexedDocuments: 24, vectorStoreChunks: 120 },
-          },
-        });
+        return jsonResponse(defaultHealth);
       }
 
       if (url === '/api/repos') {
-        return jsonResponse({ error: { message: 'Invalid admin API key' } }, 401);
+        return jsonResponse({ error: { message: 'Unauthorized' } }, 401);
       }
 
       return jsonResponse({ error: { message: `Unhandled fetch for ${url}` } }, 500);
@@ -136,18 +127,11 @@ describe('AdminDashboard', () => {
     const { AdminDashboard } = await import('../admin-dashboard');
     render(<AdminDashboard />);
 
-    const input = await screen.findByPlaceholderText('Enter ADMIN_API_KEY');
-    fireEvent.change(input, { target: { value: 'wrong-key' } });
-    fireEvent.click(screen.getByText('Save Key'));
-
-    const errors = await screen.findAllByText('Invalid admin API key');
-    expect(errors.length).toBeGreaterThan(0);
-    expect(screen.getByText('Read-only')).toBeInTheDocument();
+    expect(await screen.findByText('Sandra v1.0.0')).toBeInTheDocument();
+    expect(screen.queryByText('EdLight Code')).not.toBeInTheDocument();
   });
 
-  it('indexes all repositories with the saved admin key and an empty body', async () => {
-    sessionStorage.setItem('sandra_admin_api_key', 'stored-admin-key');
-
+  it('indexes all repositories and shows result', async () => {
     const { AdminDashboard } = await import('../admin-dashboard');
     render(<AdminDashboard />);
 
@@ -161,7 +145,5 @@ describe('AdminDashboard', () => {
 
     const indexCall = fetchMock.mock.calls.find(([request]) => getUrl(request) === '/api/index');
     expect(indexCall).toBeDefined();
-    expect(new Headers(indexCall?.[1]?.headers).get('x-api-key')).toBe('stored-admin-key');
-    expect(indexCall?.[1]?.body).toBe('{}');
   });
 });

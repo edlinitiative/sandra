@@ -7,6 +7,7 @@
 import { createHmac } from 'crypto';
 import type { TokenPayload } from './types';
 import { createLogger } from '@/lib/utils';
+import { env } from '@/lib/config/env';
 
 const log = createLogger('auth:token');
 
@@ -30,7 +31,7 @@ export function verifyToken(token: string): TokenPayload | null {
     return null;
   }
 
-  const secret = process.env.JWT_SECRET;
+  const secret = env.JWT_SECRET;
   if (!secret) {
     log.warn('JWT_SECRET not configured, cannot verify token');
     return null;

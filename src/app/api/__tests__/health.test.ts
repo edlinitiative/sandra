@@ -50,7 +50,16 @@ vi.mock('@/lib/tools', () => ({
   },
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'test', role: 'admin', scopes: ['*'], tenantId: 'test' },
+  }),
+}));
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+const healthRequest = new Request('http://localhost/api/health');
 
 describe('GET /api/health', () => {
   beforeEach(() => {
@@ -71,7 +80,7 @@ describe('GET /api/health', () => {
     mockVectorStoreCount.mockResolvedValue(42);
 
     const { GET } = await import('../health/route');
-    const response = await GET();
+    const response = await GET(healthRequest);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -102,7 +111,7 @@ describe('GET /api/health', () => {
     mockVectorStoreCount.mockResolvedValue(0);
 
     const { GET } = await import('../health/route');
-    const response = await GET();
+    const response = await GET(healthRequest);
     const body = await response.json();
 
     expect(response.status).toBe(503);
@@ -117,7 +126,7 @@ describe('GET /api/health', () => {
     mockVectorStoreCount.mockRejectedValue(new Error('Vector store unavailable'));
 
     const { GET } = await import('../health/route');
-    const response = await GET();
+    const response = await GET(healthRequest);
     const body = await response.json();
 
     expect(response.status).toBe(503);
@@ -132,7 +141,7 @@ describe('GET /api/health', () => {
     mockVectorStoreCount.mockResolvedValue(0);
 
     const { GET } = await import('../health/route');
-    const response = await GET();
+    const response = await GET(healthRequest);
     const body = await response.json();
 
     expect(body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);

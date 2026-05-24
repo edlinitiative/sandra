@@ -30,9 +30,13 @@ export function ChatHeader() {
       </div>
 
       {/* Account */}
-      <span className="material-symbols-outlined h-9 w-9 cursor-pointer p-1 text-[22px] text-on-surface-variant">
-        account_circle
-      </span>
+      <Link
+        href="/profile"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors active:bg-surface-container"
+        aria-label="Account settings"
+      >
+        <span className="material-symbols-outlined text-[22px]">account_circle</span>
+      </Link>
     </div>
   );
 }

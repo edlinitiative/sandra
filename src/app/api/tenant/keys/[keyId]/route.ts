@@ -37,7 +37,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'No tenant found' }, { status: 404 });
     }
 
-    const existing = await (db as unknown as TenantApiKeyDb).tenantApiKey.findFirst({
+    const existing = await db.tenantApiKey.findFirst({
       where: { id: keyId, tenantId },
     });
     if (!existing) {
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid request', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const updated = await (db as unknown as TenantApiKeyDb).tenantApiKey.update({
+    const updated = await db.tenantApiKey.update({
       where: { id: keyId },
       data: parsed.data,
       select: { id: true, name: true, keyPrefix: true, scopes: true, isActive: true, expiresAt: true, createdAt: true },
@@ -78,7 +78,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'No tenant found' }, { status: 404 });
     }
 
-    const existing = await (db as unknown as TenantApiKeyDb).tenantApiKey.findFirst({
+    const existing = await db.tenantApiKey.findFirst({
       where: { id: keyId, tenantId },
     });
     if (!existing) {
@@ -86,7 +86,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     }
 
     // Soft-delete: set isActive = false so history is preserved
-    await (db as unknown as TenantApiKeyDb).tenantApiKey.update({
+    await db.tenantApiKey.update({
       where: { id: keyId },
       data: { isActive: false },
     });
@@ -99,22 +99,3 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 }
 
-// ─── Type helpers ─────────────────────────────────────────────────────────────
-
-interface TenantApiKeyRow {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  scopes: string[];
-  isActive: boolean;
-  expiresAt: Date | null;
-  lastUsedAt?: Date | null;
-  createdAt: Date;
-}
-
-interface TenantApiKeyDb {
-  tenantApiKey: {
-    findFirst: (args: unknown) => Promise<TenantApiKeyRow | null>;
-    update: (args: unknown) => Promise<TenantApiKeyRow>;
-  };
-}

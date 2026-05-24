@@ -12,7 +12,7 @@ export default async function IntegrationsPage() {
   }
 
   if (session.user.role !== 'admin') {
-    redirect('/?error=unauthorized');
+    redirect('/login?error=AccessDenied');
   }
 
   const tenantId = await resolveTenantForUser(session.user.id);

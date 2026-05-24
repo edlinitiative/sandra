@@ -15,9 +15,11 @@ import { authenticateRequest } from '@/lib/auth/middleware';
 import { getSandraSystemPrompt } from '@/lib/agents/prompts';
 
 export async function POST(req: Request) {
-  // Auth is optional for voice routes during migration
   const auth = await authenticateRequest(req);
-  const userId = auth.authenticated ? auth.user.id : 'anonymous-voice';
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+  const userId = auth.user.id;
 
   // ── Provider gate: only OpenAI supports realtime sessions today ──────────
   const realtimeProvider = env.REALTIME_PROVIDER ?? 'openai';

@@ -74,7 +74,7 @@ export function DocsSidebar() {
             Contact EdLight to provision a dedicated tenant for your platform.
           </p>
           <a
-            href="mailto:hello@edlight.org"
+            href="mailto:sandra@edlight.org"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-fixed"
           >
             Get in touch

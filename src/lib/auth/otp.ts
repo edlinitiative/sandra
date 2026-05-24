@@ -14,6 +14,8 @@ const log = createLogger('auth:otp');
 const CODE_LENGTH = 6;
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
+const FAILED_WINDOW_MS = 15 * 60 * 1000; // 15 min window for counting total failures
+const MAX_TOTAL_FAILURES = 10; // lockout after this many failures in the window
 
 /**
  * Generate a cryptographically random 6-digit code.
@@ -48,7 +50,8 @@ export async function createOtp(
     },
   });
 
-  log.info('OTP created', { identifier: normalizedId, type });
+  const redacted = normalizedId.replace(/.(?=.{3})/g, '*');
+  log.info('OTP created', { identifier: redacted, type });
   return code;
 }
 
@@ -69,21 +72,36 @@ export async function verifyOtp(
     },
   });
 
+  const redacted = normalizedId.replace(/.(?=.{3})/g, '*');
+
   if (!record) {
-    log.warn('OTP not found', { identifier: normalizedId });
+    log.warn('OTP not found', { identifier: redacted });
+    // Check account-level brute force lockout
+    const failures = await countRecentFailures(normalizedId);
+    if (failures >= MAX_TOTAL_FAILURES) {
+      log.warn('OTP account locked due to too many failures', { identifier: redacted, failures });
+    }
     return false;
   }
 
   // Check expiry
   if (record.expiresAt < new Date()) {
-    log.warn('OTP expired', { identifier: normalizedId });
+    log.warn('OTP expired', { identifier: redacted });
     await db.otpCode.delete({ where: { id: record.id } }).catch(() => {});
     return false;
   }
 
-  // Check attempts
+  // Check account-level brute force lockout
+  const failures = await countRecentFailures(normalizedId);
+  if (failures >= MAX_TOTAL_FAILURES) {
+    log.warn('OTP account locked due to too many failures', { identifier: redacted, failures });
+    await db.otpCode.delete({ where: { id: record.id } }).catch(() => {});
+    return false;
+  }
+
+  // Check per-code attempts
   if (record.attempts >= MAX_ATTEMPTS) {
-    log.warn('OTP max attempts exceeded', { identifier: normalizedId });
+    log.warn('OTP max attempts exceeded', { identifier: redacted });
     await db.otpCode.delete({ where: { id: record.id } }).catch(() => {});
     return false;
   }
@@ -96,8 +114,24 @@ export async function verifyOtp(
 
   // Code matches — delete and return success
   await db.otpCode.delete({ where: { id: record.id } }).catch(() => {});
-  log.info('OTP verified', { identifier: normalizedId });
+  log.info('OTP verified', { identifier: redacted });
   return true;
+}
+
+/**
+ * Count how many failed OTP verification attempts occurred for an identifier
+ * within the recent window (for account-level brute force protection).
+ */
+async function countRecentFailures(identifier: string): Promise<number> {
+  const windowStart = new Date(Date.now() - FAILED_WINDOW_MS);
+  const recentCodes = await db.otpCode.findMany({
+    where: {
+      identifier,
+      createdAt: { gte: windowStart },
+    },
+    select: { attempts: true },
+  });
+  return recentCodes.reduce((sum, c) => sum + c.attempts, 0);
 }
 
 /**

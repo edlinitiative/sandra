@@ -28,7 +28,16 @@ vi.mock('@/lib/tools', () => ({
   },
 }));
 
+vi.mock('@/lib/auth/middleware', () => ({
+  authenticateRequest: vi.fn().mockResolvedValue({
+    authenticated: true,
+    user: { id: 'test', role: 'admin', scopes: ['*'], tenantId: 'test' },
+  }),
+}));
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+const healthRequest = new Request('http://localhost/api/health');
 
 describe('GET /api/health (enhanced)', () => {
   beforeEach(() => {
@@ -37,7 +46,7 @@ describe('GET /api/health (enhanced)', () => {
 
   it('includes uptime, latency, and memory in response', async () => {
     const { GET } = await import('../health/route');
-    const response = await GET();
+    const response = await GET(healthRequest);
     const body = await response.json();
 
     expect(response.status).toBe(200);

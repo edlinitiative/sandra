@@ -82,8 +82,8 @@ export default function PrivacyPolicyPage() {
               Conversation data is retained for the duration of your account. You may request
               deletion of your data by contacting us at{' '}
               {/* TODO: make configurable per tenant */}
-              <a href="mailto:privacy@example.com" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
-                privacy@example.com
+              <a href="mailto:sandra@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                sandra@edlight.org
               </a>
               .
             </p>
@@ -107,8 +107,8 @@ export default function PrivacyPolicyPage() {
             <p>
               For questions about this Privacy Policy, please contact us at{' '}
               {/* TODO: make configurable per tenant */}
-              <a href="mailto:privacy@example.com" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
-                privacy@example.com
+              <a href="mailto:sandra@edlight.org" className="text-primary underline underline-offset-2 hover:text-primary-fixed">
+                sandra@edlight.org
               </a>
               .
             </p>
