@@ -32,10 +32,12 @@ export async function POST(req: Request) {
 
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: 'OPENAI_API_KEY is not configured' },
+      { error: 'Voice is not configured — OPENAI_API_KEY is missing' },
       { status: 500 },
     );
   }
+
+  const realtimeModel = env.REALTIME_MODEL ?? 'gpt-4o-mini-realtime-preview';
 
   // Allow caller to pass a language hint (default en)
   let language: 'en' | 'fr' | 'ht' = 'en';
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: env.REALTIME_MODEL ?? 'gpt-4o-realtime-preview',
+        model: realtimeModel,
         voice: env.OPENAI_TTS_VOICE ?? 'alloy',
         instructions,
       }),
@@ -63,8 +65,13 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const body = await res.text();
+      const hint = res.status === 404
+        ? `Model "${realtimeModel}" not found — it may be deprecated or your API key lacks Realtime API access. Set REALTIME_MODEL to a current model (e.g. "gpt-4o-mini-realtime-preview") and ensure your OpenAI account has Realtime API billing enabled.`
+        : res.status === 403
+        ? `Your OpenAI API key does not have access to the Realtime API. Enable it at https://platform.openai.com/settings/organization/billing or set REALTIME_MODEL to an available model.`
+        : '';
       return NextResponse.json(
-        { error: `OpenAI error ${res.status}: ${body}` },
+        { error: `Voice session failed (OpenAI ${res.status}): ${body}${hint ? `\n\n${hint}` : ''}` },
         { status: 502 },
       );
     }
