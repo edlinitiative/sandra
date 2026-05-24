@@ -27,6 +27,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     // Google Workspace — read-only access for basic tenant members
     'drive:read',
     'contacts:read',
+    'calendar:read',
     'calendar:write',
     'gmail:read',
     'gmail:draft',
@@ -48,6 +49,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'contacts:read',
     'gmail:read',
     'gmail:draft',
+    'calendar:read',
     'calendar:write',
     'tasks:write',
     'forms:read',
@@ -76,6 +78,7 @@ const ROLE_SCOPES: Record<UserRole, string[]> = {
     'gmail:read',
     'gmail:draft',
     'gmail:send',
+    'calendar:read',
     'calendar:write',
     'tasks:write',
     'zoom:meeting',
