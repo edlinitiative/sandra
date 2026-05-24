@@ -10,6 +10,8 @@ import { setCorrelationId, clearCorrelationId } from '@/lib/tools/resilience';
 import { errorResponse, SandraError, ProviderError, ValidationError, chatInputSchema, sanitizeInput, generateRequestId, successResponse, apiErrorResponse } from '@/lib/utils';
 import { env, APP_NAME } from '@/lib/config';
 import { checkSlidingWindowRateLimit } from '@/lib/utils/rate-limit';
+import { db, getUserById } from '@/lib/db';
+import type { UserRole } from '@/lib/auth/types';
 
 const DEMO_RESPONSES: Record<string, Record<string, string>> = {
   en: {
@@ -125,17 +127,42 @@ export async function POST(request: Request) {
       userId: canonicalUser.userId,
     });
 
-    // Resolve auth scopes (optional — anonymous users get guest scopes)
+    // Resolve auth scopes — try NextAuth session first, then Bearer token, then guest
     let scopes = getScopesForRole('guest');
     let authTenantId: string | undefined;
+    let resolvedUserId = canonicalUser.userId;
+    let resolvedUserRole: UserRole = 'guest';
+
+    // 1. Try NextAuth session (cookie-based, used by web/PWA frontend)
+    //    Uses dynamic import so test environments without next/server don't break.
     try {
-      const authResult = await authenticateRequest(request);
-      if (authResult.authenticated) {
-        scopes = authResult.user.scopes;
-        authTenantId = authResult.user.tenantId;
+      const { auth } = await import('@/auth');
+      const session = await auth();
+      if (session?.user?.id) {
+        const user = await getUserById(db, session.user.id);
+        if (user) {
+          resolvedUserId = user.id;
+          resolvedUserRole = (user.role as UserRole) ?? 'student';
+          scopes = getScopesForRole(resolvedUserRole);
+        }
       }
     } catch {
-      // Continue with guest scopes
+      // NextAuth unavailable (test env, or no cookies) — continue below
+    }
+
+    // 2. Fall back to Bearer token or API key (used by WhatsApp, Instagram, etc.)
+    if (resolvedUserId === canonicalUser.userId && !scopes.some((s) => s !== 'knowledge:read' && s !== 'repos:read')) {
+      try {
+        const authResult = await authenticateRequest(request);
+        if (authResult.authenticated) {
+          resolvedUserId = authResult.user.id;
+          resolvedUserRole = authResult.user.role;
+          scopes = authResult.user.scopes;
+          authTenantId = authResult.user.tenantId;
+        }
+      } catch {
+        // Continue with guest scopes
+      }
     }
 
     // Demo mode: return canned response when API key is not configured
@@ -159,7 +186,7 @@ export async function POST(request: Request) {
     const result = await runSandraAgent({
       message,
       sessionId,
-      userId: canonicalUser.userId,
+      userId: resolvedUserId,
       language,
       channel: 'web',
       scopes,

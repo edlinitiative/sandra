@@ -1,7 +1,7 @@
 import type { ChannelType } from '@/lib/channels/types';
 import type { SupportedLanguage } from '@/lib/i18n/types';
 import { isValidLanguage } from '@/lib/i18n';
-import { db, getUserByExternalId, resolveUserByExternalId } from '@/lib/db';
+import { db, getUserById, getUserByExternalId, resolveUserByExternalId } from '@/lib/db';
 import { promoteSessionInsightsToUserMemory } from '@/lib/memory/session-insights';
 import { getPrismaSessionStore } from '@/lib/memory/session-store';
 import { createLogger } from '@/lib/utils';
@@ -36,11 +36,34 @@ export async function resolveCanonicalUser(
   }
 
   try {
-    const user = await resolveUserByExternalId(db, {
-      externalId: normalizedExternalId,
-      language: params.language,
-      channel: params.channel,
-    });
+    // If the provided ID looks like a Sandra internal cuid (starts with common
+    // cuid prefixes like "user_" or matches cuid pattern), try direct lookup first.
+    // This handles the case where the frontend sends session.user.id (internal
+    // Sandra cuid) rather than an external identity string like "google:1234".
+    const isInternalId =
+      normalizedExternalId.startsWith('user_') ||
+      /^[a-z][a-z0-9_]{10,}$/.test(normalizedExternalId);
+
+    let user: Awaited<ReturnType<typeof resolveUserByExternalId>>;
+
+    if (isInternalId) {
+      const byId = await getUserById(db, normalizedExternalId);
+      if (byId) {
+        user = byId;
+      } else {
+        user = await resolveUserByExternalId(db, {
+          externalId: normalizedExternalId,
+          language: params.language,
+          channel: params.channel,
+        });
+      }
+    } else {
+      user = await resolveUserByExternalId(db, {
+        externalId: normalizedExternalId,
+        language: params.language,
+        channel: params.channel,
+      });
+    }
 
     if (params.sessionId && existingSession && existingSession.userId !== user.id) {
       await promoteSessionInsightsToUserMemory(params.sessionId, user.id).catch((error) => {

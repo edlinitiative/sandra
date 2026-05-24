@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { useState, useRef, useEffect } from 'react';
 
 import { OracleOrb } from '@/components/ui/oracle-orb';
 
@@ -15,7 +17,10 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  // On /chat the slim ChatHeader handles mobile; hide global header on mobile only
+  const { data: session, status } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const isChat = pathname.startsWith('/chat');
   const isActive = (href: string) => {
     if (href === '/chat') return pathname.startsWith('/chat');
@@ -23,6 +28,21 @@ export function Header() {
     if (href === '/admin') return pathname.startsWith('/admin');
     return pathname === href;
   };
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [menuOpen]);
+
+  const isAuthenticated = status === 'authenticated';
+  const isLoading = status === 'loading';
 
   return (
     <header
@@ -55,15 +75,110 @@ export function Header() {
               {label}
             </Link>
           ))}
-          <span className="material-symbols-outlined cursor-pointer text-2xl text-on-surface-variant transition-colors hover:text-primary">
-            account_circle
-          </span>
+
+          {/* Account area */}
+          {isLoading ? (
+            <span className="material-symbols-outlined animate-pulse text-2xl text-on-surface-variant">
+              account_circle
+            </span>
+          ) : isAuthenticated ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-1.5 rounded-full border border-outline-variant/20 px-2 py-1 text-xs font-medium text-on-surface-variant transition-colors hover:border-outline-variant/40 hover:text-white"
+              >
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="h-5 w-5 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-lg">account_circle</span>
+                )}
+                <span className="max-w-[120px] truncate">
+                  {session?.user?.name ?? session?.user?.email ?? 'User'}
+                </span>
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-outline-variant/15 bg-surface-container-high/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                  <div className="border-b border-outline-variant/10 px-3 py-2.5">
+                    <p className="text-sm font-medium text-white truncate">
+                      {session?.user?.name ?? 'Signed in'}
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant truncate">
+                      {session?.user?.email ?? ''}
+                    </p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-wider text-primary/60">
+                      {session?.user?.role ?? 'student'}
+                    </p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      href="/chat"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-white"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <span className="material-symbols-outlined text-lg">chat</span>
+                      Chat
+                    </Link>
+                    {session?.user?.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-white"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                        Admin
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        signOut({ callbackUrl: '/' });
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-950/30"
+                    >
+                      <span className="material-symbols-outlined text-lg">logout</span>
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn(undefined, { callbackUrl: '/chat' })}
+              className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-all hover:border-primary/50 hover:bg-primary/20"
+            >
+              <span className="material-symbols-outlined text-base">login</span>
+              Sign in
+            </button>
+          )}
         </div>
 
         {/* Mobile: account icon only (nav handled by bottom bar) */}
-        <span className="material-symbols-outlined cursor-pointer p-1 text-2xl text-on-surface-variant transition-colors hover:text-white sm:hidden">
-          account_circle
-        </span>
+        {isLoading ? (
+          <span className="material-symbols-outlined animate-pulse p-1 text-2xl text-on-surface-variant sm:hidden">
+            account_circle
+          </span>
+        ) : isAuthenticated ? (
+          <Link
+            href="/chat"
+            className="material-symbols-outlined p-1 text-2xl text-primary transition-colors hover:text-white sm:hidden"
+          >
+            account_circle
+          </Link>
+        ) : (
+          <button
+            onClick={() => signIn(undefined, { callbackUrl: '/chat' })}
+            className="material-symbols-outlined p-1 text-2xl text-primary transition-colors hover:text-white sm:hidden"
+          >
+            login
+          </button>
+        )}
       </div>
     </header>
   );
