@@ -46,8 +46,6 @@ export interface VoiceConversationHandle {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const REALTIME_MODEL = 'gpt-realtime';
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function langHint(language: string | undefined): string | undefined {
   if (!language) return undefined;
@@ -363,7 +361,7 @@ export const VoiceConversation = forwardRef<VoiceConversationHandle, VoiceConver
       await pc.setLocalDescription(offer);
 
       const sdpRes = await fetch(
-        `https://api.openai.com/v1/realtime?model=${REALTIME_MODEL}`,
+        'https://api.openai.com/v1/realtime',
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${ephemeralKey}`, 'Content-Type': 'application/sdp' },
