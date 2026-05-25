@@ -60,8 +60,6 @@ export async function POST(req: Request) {
         session: {
           type: 'realtime',
           model: realtimeModel,
-          modalities: ['audio', 'text'],
-          voice: env.OPENAI_TTS_VOICE ?? 'alloy',
           instructions,
         },
       }),
