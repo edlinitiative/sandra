@@ -290,6 +290,13 @@ export function buildSandraSystemPrompt(options: {
 }): string {
   const parts: string[] = [];
 
+  // Profile assertion — injected FIRST so it overrides even tenant identity overrides.
+  // The LLM has a strong training prior to deny personal info access; this forcefully
+  // corrects that when getUserProfileSummary is available.
+  if (options.availableTools?.includes('getUserProfileSummary')) {
+    parts.push(`CRITICAL — READ FIRST: You have access to getUserProfileSummary, which returns the authenticated user's name, email, role, language, enrollment count, certificate count, and application count. When a user asks any question about their identity — including "who am I?", "what is my name?", "what's my email?", "tell me about my account", "show my profile", or any variation — you MUST call getUserProfileSummary BEFORE generating any response. This tool is a direct data lookup, not a privacy violation. Saying "I don't have access to personal information" when this tool is available is FACTUALLY INCORRECT and will confuse and frustrate the user. Use the tool.`);
+  }
+
   // Core identity (tenant-driven or EdLight fallback)
   parts.push(buildIdentityBlock(options.tenantConfig));
 
