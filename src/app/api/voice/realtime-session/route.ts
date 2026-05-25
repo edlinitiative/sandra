@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const realtimeModel = env.REALTIME_MODEL ?? 'gpt-4o-mini-realtime-preview';
+  const realtimeModel = env.REALTIME_MODEL ?? 'gpt-realtime';
 
   // Allow caller to pass a language hint (default en)
   let language: 'en' | 'fr' | 'ht' = 'en';
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   const instructions = getSandraSystemPrompt({ language });
 
   try {
-    const res = await fetch('https://api.openai.com/v1/realtime/sessions', {
+    const res = await fetch('https://api.openai.com/v1/realtime', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: realtimeModel,
+        modalities: ['audio', 'text'],
         voice: env.OPENAI_TTS_VOICE ?? 'alloy',
         instructions,
       }),
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const body = await res.text();
       const hint = res.status === 404
-        ? `Model "${realtimeModel}" not found — it may be deprecated or your API key lacks Realtime API access. Set REALTIME_MODEL to a current model (e.g. "gpt-4o-mini-realtime-preview") and ensure your OpenAI account has Realtime API billing enabled.`
+        ? `Model "${realtimeModel}" not found — it may be deprecated or your API key lacks Realtime API access. Set REALTIME_MODEL to a current model (e.g. "gpt-realtime") and ensure your OpenAI account has Realtime API billing enabled.`
         : res.status === 403
         ? `Your OpenAI API key does not have access to the Realtime API. Enable it at https://platform.openai.com/settings/organization/billing or set REALTIME_MODEL to an available model.`
         : '';

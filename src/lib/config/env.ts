@@ -93,7 +93,7 @@ const envSchema = z.object({
 
   // Realtime voice sessions (WebRTC ephemeral key minting)
   REALTIME_PROVIDER: z.string().optional(),    // defaults to 'openai'
-  REALTIME_MODEL: z.string().optional(),        // defaults to 'gpt-4o-mini-realtime-preview'
+  REALTIME_MODEL: z.string().optional(),        // defaults to 'gpt-realtime'
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

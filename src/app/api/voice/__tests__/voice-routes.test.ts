@@ -210,7 +210,7 @@ describe('POST /api/voice/realtime-session', () => {
     expect(body.client_secret.value).toBe('ek_ephemeral_xyz');
     expect(body.model).toBe('gpt-4o-realtime-preview');
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/realtime/sessions',
+      'https://api.openai.com/v1/realtime',
       expect.objectContaining({ method: 'POST' }),
     );
   });
