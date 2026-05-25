@@ -113,7 +113,7 @@ beforeEach(() => {
     // Ephemeral key endpoint
     if (urlStr.includes('/api/voice/realtime-session')) {
       return new Response(JSON.stringify({
-        client_secret: { value: 'ek-test-12345' },
+        value: 'ek-test-12345',
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -450,7 +450,7 @@ describe('VoiceConversation — audio element requirements', () => {
 describe('VoiceConversation — SDP exchange', () => {
   it('should POST SDP offer to OpenAI with ephemeral key', async () => {
     const ephemeralKey = 'ek-test-12345';
-    const model = 'gpt-4o-realtime-preview';
+    const model = 'gpt-realtime';
     const sdp = 'mock-sdp-offer';
 
     await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {

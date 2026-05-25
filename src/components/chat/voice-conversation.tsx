@@ -46,7 +46,7 @@ export interface VoiceConversationHandle {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const REALTIME_MODEL = 'gpt-4o-realtime-preview';
+const REALTIME_MODEL = 'gpt-realtime';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function langHint(language: string | undefined): string | undefined {
@@ -291,11 +291,11 @@ export const VoiceConversation = forwardRef<VoiceConversationHandle, VoiceConver
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language }),
       });
-      const tokenBody = await tokenRes.json() as { client_secret?: { value: string }; error?: string };
+      const tokenBody = await tokenRes.json() as { value?: string; error?: string };
       if (!tokenRes.ok) {
         throw new Error(tokenBody.error ?? 'Failed to create realtime session');
       }
-      const ephemeralKey = tokenBody.client_secret!.value;
+      const ephemeralKey = tokenBody.value!;
 
       // 2. Peer connection
       const pc = new RTCPeerConnection({

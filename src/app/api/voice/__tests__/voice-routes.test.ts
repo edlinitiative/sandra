@@ -194,11 +194,14 @@ describe('POST /api/voice/realtime-session', () => {
 
   it('returns the OpenAI session payload including client_secret', async () => {
     const sessionPayload = {
-      id: 'sess_abc123',
-      object: 'realtime.session',
-      model: 'gpt-4o-realtime-preview',
-      voice: 'alloy',
-      client_secret: { value: 'ek_ephemeral_xyz', expires_at: 9999999999 },
+      value: 'ek_ephemeral_xyz',
+      expires_at: 9999999999,
+      session: {
+        id: 'sess_abc123',
+        object: 'realtime.session',
+        model: 'gpt-realtime',
+        voice: 'alloy',
+      },
     };
     mockFetch.mockResolvedValue(new Response(JSON.stringify(sessionPayload), { status: 200 }));
 
@@ -207,10 +210,10 @@ describe('POST /api/voice/realtime-session', () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.client_secret.value).toBe('ek_ephemeral_xyz');
-    expect(body.model).toBe('gpt-4o-realtime-preview');
+    expect(body.value).toBe('ek_ephemeral_xyz');
+    expect(body.session.model).toBe('gpt-realtime');
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/realtime/sessions',
+      'https://api.openai.com/v1/realtime/client_secrets',
       expect.objectContaining({ method: 'POST' }),
     );
   });

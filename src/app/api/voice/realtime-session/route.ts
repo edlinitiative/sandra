@@ -50,17 +50,20 @@ export async function POST(req: Request) {
   const instructions = getSandraSystemPrompt({ language });
 
   try {
-    const res = await fetch('https://api.openai.com/v1/realtime/sessions', {
+    const res = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: realtimeModel,
-        modalities: ['audio', 'text'],
-        voice: env.OPENAI_TTS_VOICE ?? 'alloy',
-        instructions,
+        session: {
+          type: 'realtime',
+          model: realtimeModel,
+          modalities: ['audio', 'text'],
+          voice: env.OPENAI_TTS_VOICE ?? 'alloy',
+          instructions,
+        },
       }),
     });
 
