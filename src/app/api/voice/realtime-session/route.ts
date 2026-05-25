@@ -13,6 +13,9 @@ import { NextResponse } from 'next/server';
 import { env } from '@/lib/config';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { getSandraSystemPrompt } from '@/lib/agents/prompts';
+import { createLogger } from '@/lib/utils';
+
+const log = createLogger('voice:realtime-session');
 
 export async function POST(req: Request) {
   const auth = await authenticateRequest(req);
@@ -50,30 +53,42 @@ export async function POST(req: Request) {
   const instructions = getSandraSystemPrompt({ language });
 
   try {
+    const requestBody = JSON.stringify({
+      session: {
+        type: 'realtime',
+        model: realtimeModel,
+        instructions,
+      },
+    });
+    log.info('Sending client_secrets request', {
+      model: realtimeModel,
+      type: 'realtime',
+      instructionsLen: instructions.length,
+    });
+
     const res = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        session: {
-          type: 'realtime',
-          model: realtimeModel,
-          instructions,
-        },
-      }),
+      body: requestBody,
     });
 
     if (!res.ok) {
-      const body = await res.text();
+      const errorBody = await res.text();
+      log.error('client_secrets request failed', {
+        status: res.status,
+        error: errorBody.slice(0, 500),
+        sentBody: requestBody.slice(0, 200),
+      });
       const hint = res.status === 404
         ? `Model "${realtimeModel}" not found — it may be deprecated or your API key lacks Realtime API access. Set REALTIME_MODEL to a current model (e.g. "gpt-realtime") and ensure your OpenAI account has Realtime API billing enabled.`
         : res.status === 403
         ? `Your OpenAI API key does not have access to the Realtime API. Enable it at https://platform.openai.com/settings/organization/billing or set REALTIME_MODEL to an available model.`
         : '';
       return NextResponse.json(
-        { error: `Voice session failed (OpenAI ${res.status}): ${body}${hint ? `\n\n${hint}` : ''}` },
+        { error: `Voice session failed (OpenAI ${res.status}): ${errorBody}${hint ? `\n\n${hint}` : ''}` },
         { status: 502 },
       );
     }
