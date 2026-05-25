@@ -287,14 +287,43 @@ export function buildSandraSystemPrompt(options: {
   retrievalContext?: string;
   availableTools?: string[];
   tenantConfig?: TenantAgentConfig;
+  /** Authenticated user's name — injected directly so the LLM always knows who it's talking to */
+  userName?: string | null;
+  /** Authenticated user's email */
+  userEmail?: string | null;
+  /** Authenticated user's role */
+  userRole?: string;
 }): string {
   const parts: string[] = [];
 
-  // Profile assertion — injected FIRST so it overrides even tenant identity overrides.
+  // Direct identity injection — give the LLM the user's info upfront so it never
+  // needs to guess or deny knowing who the user is. This is the single source of
+  // truth for user identity in the conversation.
+  if (options.userName || options.userEmail) {
+    const identityLines: string[] = ['IMPORTANT — You are currently talking to an authenticated user:'];
+    if (options.userName && options.userName !== 'Not set') {
+      identityLines.push(`- Name: ${options.userName}`);
+    }
+    if (options.userEmail && options.userEmail !== 'Not set') {
+      identityLines.push(`- Email: ${options.userEmail}`);
+    }
+    if (options.userRole) {
+      identityLines.push(`- Role: ${options.userRole}`);
+    }
+    identityLines.push(
+      '',
+      'Use this information when the user asks about themselves. You know who they are.',
+      'Do NOT say "I don\'t have access to personal information" — their info is right here.',
+    );
+    parts.push(identityLines.join('\n'));
+  }
+
+  // Profile assertion — injected so the LLM knows it can get MORE details (enrollments,
+  // certificates, preferences, etc.) beyond the basic identity injected above.
   // The LLM has a strong training prior to deny personal info access; this forcefully
   // corrects that when getUserProfileSummary is available.
   if (options.availableTools?.includes('getUserProfileSummary')) {
-    parts.push(`CRITICAL — READ FIRST: You have access to getUserProfileSummary, which returns the authenticated user's name, email, role, language, enrollment count, certificate count, and application count. When a user asks any question about their identity — including "who am I?", "what is my name?", "what's my email?", "tell me about my account", "show my profile", or any variation — you MUST call getUserProfileSummary BEFORE generating any response. This tool is a direct data lookup, not a privacy violation. Saying "I don't have access to personal information" when this tool is available is FACTUALLY INCORRECT and will confuse and frustrate the user. Use the tool.`);
+    parts.push(`CRITICAL — READ FIRST: You have access to getUserProfileSummary, which returns the authenticated user's detailed profile including enrollment count, certificate count, application count, language preferences, and more. When a user asks about their profile details beyond basic identity — like "what courses am I enrolled in?", "show my certificates", "what's my application status?" — you MUST call getUserProfileSummary BEFORE generating any response. This tool is a direct data lookup, not a privacy violation. Saying "I don't have access to personal information" when this tool is available is FACTUALLY INCORRECT and will confuse and frustrate the user. Use the tool.`);
   }
 
   // Core identity (tenant-driven or EdLight fallback)

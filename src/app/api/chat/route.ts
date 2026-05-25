@@ -132,6 +132,8 @@ export async function POST(request: Request) {
     let authTenantId: string | undefined;
     let resolvedUserId = canonicalUser.userId;
     let resolvedUserRole: UserRole = 'guest';
+    let resolvedUserName: string | null = null;
+    let resolvedUserEmail: string | null = null;
 
     // 1. Try NextAuth session (cookie-based, used by web/PWA frontend)
     //    Uses dynamic import so test environments without next/server don't break.
@@ -144,6 +146,8 @@ export async function POST(request: Request) {
           resolvedUserId = user.id;
           resolvedUserRole = (user.role as UserRole) ?? 'student';
           scopes = getScopesForRole(resolvedUserRole);
+          resolvedUserName = user.name;
+          resolvedUserEmail = user.email;
         }
       }
     } catch {
@@ -191,6 +195,9 @@ export async function POST(request: Request) {
       channel: 'web',
       scopes,
       tenantId: authTenantId,
+      userName: resolvedUserName,
+      userEmail: resolvedUserEmail,
+      userRole: resolvedUserRole,
     });
 
     return NextResponse.json(

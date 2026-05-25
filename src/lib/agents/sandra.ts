@@ -175,6 +175,9 @@ export async function runSandraAgent(
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
       tenantConfig,
+      userName: input.userName,
+      userEmail: input.userEmail,
+      userRole: input.userRole,
     });
 
     // 5. Assemble messages — build multimodal content when image attachments are present
@@ -559,6 +562,9 @@ export async function* runSandraAgentStream(
       retrievalContext: retrievalContextStr,
       availableTools: toolNames,
       tenantConfig: tenantConfigStream,
+      userName: input.userName,
+      userEmail: input.userEmail,
+      userRole: input.userRole,
     });
 
     // Assemble messages — build multimodal content when image attachments are present

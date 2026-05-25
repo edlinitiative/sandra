@@ -15,6 +15,12 @@ export interface AgentInput {
   channel: ChannelType;
   /** Display name of the person messaging (used for personalisation on social channels) */
   senderName?: string;
+  /** Authenticated user's name (injected directly into system prompt for reliable identity) */
+  userName?: string | null;
+  /** Authenticated user's email (injected directly into system prompt for reliable identity) */
+  userEmail?: string | null;
+  /** Authenticated user's role (injected directly into system prompt for reliable identity) */
+  userRole?: string;
   /** Image attachments to pass to gpt-4o vision (base64 data URLs from WhatsApp/Instagram) */
   attachments?: MessageAttachment[];
   /** Permission scopes for tool execution. Defaults to ['knowledge:read', 'repos:read'] */
