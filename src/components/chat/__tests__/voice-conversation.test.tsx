@@ -450,16 +450,17 @@ describe('VoiceConversation — audio element requirements', () => {
 describe('VoiceConversation — SDP exchange', () => {
   it('should POST SDP offer to OpenAI with ephemeral key', async () => {
     const ephemeralKey = 'ek-test-12345';
+    const model = 'gpt-realtime';
     const sdp = 'mock-sdp-offer';
 
-    await fetch('https://api.openai.com/v1/realtime', {
+    await fetch(`https://api.openai.com/v1/realtime/calls?model=${model}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${ephemeralKey}`, 'Content-Type': 'application/sdp' },
       body: sdp,
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/realtime',
+      `https://api.openai.com/v1/realtime/calls?model=${model}`,
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({

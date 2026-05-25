@@ -53,6 +53,8 @@ function langHint(language: string | undefined): string | undefined {
   return base && ['en', 'fr', 'ht'].includes(base) ? base : undefined;
 }
 
+const REALTIME_MODEL = 'gpt-realtime';
+
 const VOICE_INSTRUCTIONS_MAP: Record<string, string> = {
   en: `You are Sandra, the friendly voice assistant for EdLight, an organization making education free and accessible in Haiti.
 
@@ -361,7 +363,7 @@ export const VoiceConversation = forwardRef<VoiceConversationHandle, VoiceConver
       await pc.setLocalDescription(offer);
 
       const sdpRes = await fetch(
-        'https://api.openai.com/v1/realtime',
+        `https://api.openai.com/v1/realtime/calls?model=${REALTIME_MODEL}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${ephemeralKey}`, 'Content-Type': 'application/sdp' },
