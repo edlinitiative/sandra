@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   const instructions = getSandraSystemPrompt({ language });
 
   try {
-    const res = await fetch('https://api.openai.com/v1/realtime', {
+    const res = await fetch('https://api.openai.com/v1/realtime/sessions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,
