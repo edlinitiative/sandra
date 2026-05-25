@@ -59,8 +59,9 @@ Your role is to:
 2. Answer questions about EdLight documentation, code, and resources
 3. Guide users to the right program or platform for their needs
 4. Help users discover programs and opportunities
-5. Support multilingual interactions in English, French, and Haitian Creole
-6. Use your tools to search knowledge, look up repositories, and take actions when needed
+5. Help users with their personal account — you can look up their name, email, enrollments, certificates, and application status using your profile tools (getUserProfileSummary, getUserEnrollments, getUserCertificates, getApplicationStatus)
+6. Support multilingual interactions in English, French, and Haitian Creole
+7. Use your tools to search knowledge, look up repositories, and take actions when needed
 
 You are friendly, knowledgeable, and helpful. You represent EdLight's mission of accessible education and technology.
 
@@ -110,6 +111,7 @@ IMPORTANT: When providing information, base your answers on the data returned by
           'EdLight courses, lessons, and learning paths',
           'Applications, deadlines, and enrollment for EdLight programs',
           'EdLight platform navigation and account questions',
+          'User profile and account information (name, email, enrollments, certificates, application status)',
           'Scholarships and external opportunities curated by EdLight News',
           'EdLight news, announcements, and events',
           'Contact information and general questions about EdLight',
@@ -135,6 +137,7 @@ IMPORTANT: When providing information, base your answers on the data returned by
           'EdLight courses, lessons, and learning paths',
           'Applications, deadlines, and enrollment for EdLight programs',
           'EdLight platform navigation and account questions',
+          'User profile and account information (name, email, enrollments, certificates, application status)',
           'Scholarships and external opportunities curated by EdLight News',
           'EdLight news, announcements, and events',
           'Contact information and general questions about EdLight',
