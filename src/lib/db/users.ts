@@ -49,32 +49,47 @@ export async function resolveUserByExternalId(
   // 2. If no externalId match, try to find an existing user by email and link them.
   //    This handles the case where a user was seeded/created before they ever
   //    logged in via OAuth (e.g. admin users), so their externalId is null.
+  //    Also handles guest users who chatted before logging in — promote them to
+  //    at least 'student' since they just authenticated via OAuth/OTP.
   if (input.email) {
     const byEmail = await prisma.user.findFirst({
       where: { email: input.email, externalId: null },
     });
     if (byEmail) {
+      const updateData: Prisma.UserUpdateInput = {
+        externalId: input.externalId,
+      };
+      // Promote guests who just authenticated for the first time
+      if (byEmail.role === 'guest') {
+        updateData.role = 'student';
+      }
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.language !== undefined) updateData.language = input.language;
+      if (input.channel !== undefined) updateData.channel = input.channel;
       return prisma.user.update({
         where: { id: byEmail.id },
-        data: {
-          externalId: input.externalId,
-          ...(input.name !== undefined ? { name: input.name } : {}),
-          ...(input.language !== undefined ? { language: input.language } : {}),
-          ...(input.channel !== undefined ? { channel: input.channel } : {}),
-        },
+        data: updateData,
       });
     }
   }
 
-  // 3. No match at all — create a new user
-  return prisma.user.create({
-    data: {
-      externalId: input.externalId,
-      name: input.name ?? undefined,
-      email: input.email ?? undefined,
-      language: input.language ?? 'en',
-      channel: input.channel ?? DEFAULT_CHANNEL,
-      metadata: input.metadata as Prisma.InputJsonValue | undefined,
-    },
-  });
+  // 3. No match at all — create a new user.
+  //    OAuth/OTP sign-ins use 'student' role; everything else (unauthenticated
+  //    canonical user flow) falls through to the Prisma default ('guest').
+  const isAuthIdentity = input.externalId.startsWith('google:') ||
+    input.externalId.startsWith('facebook:') ||
+    input.externalId.startsWith('email:') ||
+    input.externalId.startsWith('phone:');
+  const createData: Prisma.UserCreateInput = {
+    externalId: input.externalId,
+    name: input.name ?? undefined,
+    email: input.email ?? undefined,
+    language: input.language ?? 'en',
+    channel: input.channel ?? DEFAULT_CHANNEL,
+    metadata: input.metadata as Prisma.InputJsonValue | undefined,
+  };
+  if (isAuthIdentity) {
+    createData.role = 'student';
+  }
+  return prisma.user.create({ data: createData });
 }
