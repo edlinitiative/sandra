@@ -56,3 +56,7 @@ dkmv/
 tasks/
 .vercel
 .env*.local
+.env*
+
+# Playwright MCP scratch output (screenshots, page dumps) from verification runs.
+.playwright-mcp/
