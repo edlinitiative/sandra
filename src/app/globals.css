@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+/* Material Symbols, cut down to the icons this app renders and the axes it
+   uses (opsz 24, wght 400, GRAD 0, FILL 0..1). The full variable font is
+   3.9 MB and blocked the first paint for ~24 s on a throttled phone; this
+   subset is ~9 KB. icon_names must stay alphabetical. When a new icon is
+   added anywhere, add its name here too, or it renders as its ligature text. */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=account_circle,admin_panel_settings,apps,arrow_back,arrow_forward,badge,book_2,build,calendar,chat,chat_bubble,check_box_outline_blank,check_circle,code,dashboard,dns,extension,forum,group,help,home,hub,info,lightbulb,link,lock,login,logout,mail,menu_book,neurology,passkey,photo_camera,psychology,search,settings,shield,swap_horiz,sync,tasks,translate,trending_up,tune,videocam,visibility,visibility_off&display=block');
 
 @tailwind base;
 @tailwind components;
